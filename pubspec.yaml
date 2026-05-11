@@ -91,7 +91,6 @@ flutter_launcher_icons:
   android: "launcher_icon" # "true" per sovrascrivere o inserisci un nome personalizzato
   ios: true
   image_path: "assets/icon/UniPath_ICON.png"
-  
-  # Opzionale: se usi icone adattive su Android
-  # adaptive_icon_background: "#ffffff" # o un percorso immagine
-  # adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icon/UniPath_ICON.png"
