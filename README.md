@@ -24,8 +24,3 @@ Applicazione mobile sviluppata per il corso di Mobile Programming, finalizzata a
 - Lucia Iasevoli 0612709030
 - Andrea Di Vito 0612709214
 - Matteo Muccio 0612709614
-- Francesca Gaia Amato - 0612708845
-- Lucia Monetta - 0612709620
-- Lucia Iasevoli - 0612709030
-- Andrea Di Vito - 0612709214
-- Matteo Muccio - 0612709614
