@@ -35,7 +35,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     Center(child: Text('Dashboard: Riepilogo e Statistiche')), // 
     Center(child: Text('Gestione Corsi')), // 
     Center(child: Text('Esami e Scadenze')), // 
-    Center(child: Text('Pianificazione Studio❤️')), // 
+    Center(child: Text('Pianificazione Studio')), // 
   ];
 
   void _onItemTapped(int index) {
