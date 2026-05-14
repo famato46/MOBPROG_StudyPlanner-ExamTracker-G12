@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/planner_provider.dart';
+import 'providers/theme_provider.dart';
+import 'screens/main_screen.dart';
 
 void main() {
   runApp(const StudyPlannerApp());
@@ -9,59 +13,67 @@ class StudyPlannerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Study Planner G12',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
-      home: const MainNavigationScreen(),
-    );
-  }
-}
-
-class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
-
-  @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
-}
-
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 0;
-
-  // Elenco delle schermate principali richieste dalla traccia [cite: 19]
-  static const List<Widget> _pages = <Widget>[
-    Center(child: Text('Dashboard: Riepilogo e Statistiche')), // 
-    Center(child: Text('Gestione Corsi')), // 
-    Center(child: Text('Esami e Scadenze')), // 
-    Center(child: Text('Pianificazione Studio')), // 
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Study Planner - Gruppo 12'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Corsi'),
-          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Esami'),
-          BottomNavigationBarItem(icon: Icon(Icons.schedule), label: 'Studio'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PlannerProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'UniPath - Study Planner',
+            debugShowCheckedModeBanner: false,
+            
+            // Tema chiaro
+            theme: ThemeData(
+              brightness: Brightness.light,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+              scaffoldBackgroundColor: const Color(0xFFF9F9F7),
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+              ),
+              cardTheme: const CardThemeData(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+            ),
+            
+            // Tema scuro
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              appBarTheme: const AppBarTheme(
+                centerTitle: true,
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+              ),
+              cardTheme: const CardThemeData(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+            ),
+            
+            // Selezione tema dinamica
+            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            
+            home: const MainScreen(),
+          );
+        },
       ),
     );
   }
