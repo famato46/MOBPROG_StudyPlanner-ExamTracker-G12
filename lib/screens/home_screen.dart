@@ -10,9 +10,33 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Variabile per sapere se siamo in Dark Mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.home, size: 20, color: isDark ? Colors.white : AppColors.home),
+              const SizedBox(width: 8),
+              Text(
+                'Dashboard',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.home,
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
@@ -49,9 +73,9 @@ class HomeScreen extends StatelessWidget {
                     )),
                 const SizedBox(height: 20),
               ],
-              const SectionHeader(
-                  titolo: 'Panoramica', icona: Icons.dashboard_outlined),
-              const SizedBox(height: 12),
+              
+              // SEZIONE PANORAMICA RIMOSSA COME RICHIESTO!
+              // QUI SOTTO HO RIMESSO LE TUE "ROW" ESATTE CON I TUOI CAMPI CORRETTI:
               Row(
                 children: [
                   Expanded(

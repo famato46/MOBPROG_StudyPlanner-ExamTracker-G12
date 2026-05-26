@@ -68,9 +68,33 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
-      return Scaffold(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
       appBar: AppBar(
-        title: const Text('Corsi'),
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            // Manteniamo il titolo con il container leggermente staccato
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.book, size: 20, color: isDark ? Colors.white : AppColors.courses),
+              const SizedBox(width: 8),
+              Text(
+                'Corsi',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.courses,
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
@@ -97,31 +121,43 @@ class _CoursesScreenState extends State<CoursesScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: TextField(
                   controller: _searchController,
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     hintText: 'Cerca per nome o docente...',
-                    prefixIcon: Icon(Icons.search, color: AppColors.courses),
+                    hintStyle: TextStyle(color: isDark ? Colors.grey[400] : AppColors.textMuted),
+                    prefixIcon: Icon(Icons.search, color: isDark ? Colors.white70 : AppColors.courses),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear),
+                            icon: Icon(Icons.clear, color: isDark ? Colors.white70 : Colors.black54),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
                           )
                         : null,
+                    // Riduciamo l'impatto visivo del bordo per uniformarlo alle card
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none, // Tolto il bordo netto per dare un look pulito come le card
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.courses.withOpacity(0.5), width: 1.5),
                     ),
                     filled: true,
-                    fillColor: AppColors.surface,
+                    // MODIFICA PRINCIPALE: Stesso colore delle Card nativa in Material 3
+                    fillColor: Theme.of(context).colorScheme.surfaceContainer,
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
               ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
                     ('tutti', 'Tutti'),
@@ -139,8 +175,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         selected: selected,
                         selectedColor: AppColors.courses.withOpacity(0.2),
                         checkmarkColor: AppColors.coursesDark,
-                        onSelected: (_) =>
-                            setState(() => _filterStato = entry.$1),
+                        onSelected: (_) => setState(() => _filterStato = entry.$1),
                       ),
                     );
                   }).toList(),
@@ -152,8 +187,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.school_outlined,
-                                size: 64, color: AppColors.courses),
+                            Icon(Icons.school_outlined, size: 64, color: AppColors.courses),
                             const SizedBox(height: 16),
                             Text(
                               provider.courses.isEmpty
@@ -176,14 +210,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
                             background: Container(
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.only(right: 20),
-                              margin:
-                                  const EdgeInsets.symmetric(vertical: 4),
+                              margin: const EdgeInsets.symmetric(vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.danger,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white),
+                              child: const Icon(Icons.delete, color: Colors.white),
                             ),
                             confirmDismiss: (_) async {
                               return await showDialog<bool>(
@@ -194,16 +226,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
                                       'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
+                                      onPressed: () => Navigator.pop(context, false),
                                       child: const Text('Annulla'),
                                     ),
                                     TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text('Elimina',
-                                          style: TextStyle(
-                                              color: AppColors.danger)),
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: Text('Elimina', style: TextStyle(color: AppColors.danger)),
                                     ),
                                   ],
                                 ),
@@ -212,9 +240,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                             onDismissed: (_) {
                               provider.deleteCourse(course.id);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content:
-                                        Text('${course.nome} eliminato')),
+                                SnackBar(content: Text('${course.nome} eliminato')),
                               );
                             },
                             child: _CourseCard(
@@ -224,8 +250,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      CourseDetailScreen(course: course),
+                                  builder: (_) => CourseDetailScreen(course: course),
                                 ),
                               ),
                             ),
@@ -265,7 +290,6 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: AppColors.surface,
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
         onTap: onTap,
@@ -289,24 +313,20 @@ class _CourseCard extends StatelessWidget {
                   children: [
                     Text(
                       course.nome,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       course.docente,
-                      style:
-                          TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _Chip(
-                            label: '${course.cfu} CFU',
-                            color: AppColors.courses),
+                        _Chip(label: '${course.cfu} CFU', color: AppColors.courses),
                         const SizedBox(width: 6),
                         _Chip(label: statoLabel, color: statoColor),
                         if (course.votoOttenuto != null) ...[
@@ -345,8 +365,7 @@ class _Chip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-            fontSize: 11, color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
       ),
     );
   }

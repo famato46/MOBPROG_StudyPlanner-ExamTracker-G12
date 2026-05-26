@@ -2,25 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
-import '../widgets/section_header.dart';
 
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Aggiunta variabile per controllare la Dark Mode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistiche'),
+        // Modifica 1: Titolo nel contenitore ovale
+        title: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.bar_chart,
+                size: 20,
+                color: isDark ? Colors.white : AppColors.stats,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Statistiche',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.stats,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const SectionHeader(
-                  titolo: 'Riepilogo Generale', icona: Icons.bar_chart),
-              const SizedBox(height: 12),
+              // Modifica 2: Rimossa la SectionHeader "Riepilogo Generale"
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
