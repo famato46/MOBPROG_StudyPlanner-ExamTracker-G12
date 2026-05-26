@@ -76,8 +76,8 @@ class DatabaseHelper {
         durataEffettiva INTEGER,
         completata INTEGER NOT NULL,
         tipo TEXT NOT NULL,
-        FOREIGN KEY (courseId) REFERENCES courses (id) ON DELETE SET NULL,
-        FOREIGN KEY (examId) REFERENCES exams (id) ON DELETE SET NULL
+        FOREIGN KEY (courseId) REFERENCES courses (id) ON DELETE CASCADE,
+        FOREIGN KEY (examId) REFERENCES exams (id) ON DELETE CASCADE
       )
     ''');
 
@@ -95,8 +95,8 @@ class DatabaseHelper {
         tempoStimato INTEGER,
         tempoEffettivo INTEGER,
         note TEXT,
-        FOREIGN KEY (courseId) REFERENCES courses (id) ON DELETE SET NULL,
-        FOREIGN KEY (examId) REFERENCES exams (id) ON DELETE SET NULL
+        FOREIGN KEY (courseId) REFERENCES courses (id) ON DELETE CASCADE,
+        FOREIGN KEY (examId) REFERENCES exams (id) ON DELETE CASCADE
       )
     ''');
   }
