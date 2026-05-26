@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main_screen.dart'; 
+import '../utils/app_colors.dart';
+import 'main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,27 +17,48 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   _navigaVersoHome() async {
-    // Aspetta 2.5 secondi per far vedere il logo in tutto il suo splendore
     await Future.delayed(const Duration(milliseconds: 2500), () {});
-    
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => MainScreen()), // Niente 'const' qui, come abbiamo imparato!
+      MaterialPageRoute(builder: (context) => const MainScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Se il tuo logo sta meglio su sfondo nero, cambia in Colors.black
       body: Center(
-        // Ora mostriamo SOLO l'immagine, perfettamente al centro
-        child: Image.asset(
-          'assets/icon/UniPath_ICON.png',
-          width: 150, // Puoi aumentare questo numero se vuoi il logo più grande (es. 200)
-          height: 150,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/icon/UniPath_ICON.png',
+              width: 130,
+              height: 130,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'UniPath',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Study Planner & Exam Tracker',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 40),
+            CircularProgressIndicator(
+              color: AppColors.home,
+            ),
+          ],
         ),
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
+import '../widgets/section_header.dart';
 
 class ExamsScreen extends StatelessWidget {
   const ExamsScreen({super.key});
@@ -9,14 +11,28 @@ class ExamsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Esami e Scadenze'),
       ),
-      body: const Center(
-        child: Text('Lista Esami - Coming Soon'),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const SectionHeader(
+              titolo: 'Esami e Scadenze', icona: Icons.calendar_today),
+          const SizedBox(height: 24),
+          Center(
+            child: Column(
+              children: [
+                Icon(Icons.calendar_today, size: 64, color: AppColors.exams),
+                const SizedBox(height: 16),
+                Text('Lista Esami - In arrivo',
+                    style: TextStyle(color: AppColors.textMuted)),
+              ],
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Navigare a form aggiungi esame
-        },
-        child: const Icon(Icons.add),
+        backgroundColor: AppColors.exams,
+        onPressed: () {},
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

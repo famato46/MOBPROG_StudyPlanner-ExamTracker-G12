@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 import 'home_screen.dart';
 import 'courses_screen.dart';
 import 'exams_screen.dart';
@@ -15,12 +16,20 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const CoursesScreen(),
-    const ExamsScreen(),
-    const PlanningScreen(),
-    const StatsScreen(),
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    CoursesScreen(),
+    ExamsScreen(),
+    PlanningScreen(),
+    StatsScreen(),
+  ];
+
+  final List<Color> _sectionColors = const [
+    AppColors.home,
+    AppColors.courses,
+    AppColors.exams,
+    AppColors.planning,
+    AppColors.stats,
   ];
 
   @override
@@ -35,29 +44,17 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Colors.grey,
+        backgroundColor: AppColors.surface,
+        selectedItemColor: _sectionColors[_currentIndex],
+        unselectedItemColor: AppColors.textMuted,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Corsi'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
+              icon: Icon(Icons.calendar_today), label: 'Esami'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: 'Corsi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Esami',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.event_note),
-            label: 'Pianifica',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Stats',
-          ),
+              icon: Icon(Icons.event_note), label: 'Pianifica'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),
     );

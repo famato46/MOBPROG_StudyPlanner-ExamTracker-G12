@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/planner_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
+import 'utils/app_colors.dart';
 
 void main() {
   runApp(const StudyPlannerApp());
@@ -24,24 +25,30 @@ class StudyPlannerApp extends StatelessWidget {
             title: 'UniPath - Study Planner',
             debugShowCheckedModeBanner: false,
             
-            // Tema chiaro
+           // Tema chiaro
             theme: ThemeData(
               brightness: Brightness.light,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
+                seedColor: AppColors.home, // lavanda come colore base
                 brightness: Brightness.light,
+                surface: AppColors.surface,
               ),
               useMaterial3: true,
-              scaffoldBackgroundColor: const Color(0xFFF9F9F7),
+              scaffoldBackgroundColor: AppColors.background,
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                foregroundColor: AppColors.textPrimary,
               ),
-              cardTheme: const CardThemeData(
-                elevation: 2,
+              cardTheme: CardThemeData(
+                elevation: 0,
+                color: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: AppColors.textMuted.withOpacity(0.15),
+                  ),
                 ),
               ),
             ),
@@ -50,7 +57,7 @@ class StudyPlannerApp extends StatelessWidget {
             darkTheme: ThemeData(
               brightness: Brightness.dark,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
+                seedColor: AppColors.home,
                 brightness: Brightness.dark,
               ),
               useMaterial3: true,
@@ -60,10 +67,10 @@ class StudyPlannerApp extends StatelessWidget {
                 elevation: 0,
                 backgroundColor: Colors.transparent,
               ),
-              cardTheme: const CardThemeData(
-                elevation: 2,
+              cardTheme: CardThemeData(
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
