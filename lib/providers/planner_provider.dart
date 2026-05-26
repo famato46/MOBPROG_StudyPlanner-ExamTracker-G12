@@ -215,6 +215,39 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ========== FUNZIONE SPECIALE POMODORO =======
+  
+  /// Salva la sessione di studio derivata dal Timer Pomodoro 
+  /// e aggiorna il tempo effettivo della Task nel database
+  Future<void> savePomodoroSession({
+    required String titolo,
+    String? courseId,
+    String? examId,
+    required String taskId, // IMPORTANTE: L'ID della Task che stavamo studiando
+    required int durataEffettiva,
+    String tipo = 'pomodoro',
+  }) async {
+    // 1. Crea l'oggetto sessione
+    final newSession = StudySession(
+      id: _uuid.v4(),
+      titolo: titolo,
+      courseId: courseId,
+      examId: examId,
+      data: DateTime.now(),
+      durataPianificata: durataEffettiva, // Nel pomodoro coincidono
+      durataEffettiva: durataEffettiva,
+      completata: true, // Il timer ha finito
+      tipo: tipo,
+    );
+
+    // 2. Chiama la TRANSAZIONE SQL nel DatabaseHelper
+    await _db.saveSessionAndUpdateTaskTime(newSession, taskId);
+
+    // 3. Ricarica i dati dal DB per aggiornare tutta l'app 
+    // (così la task mostrerà subito i minuti aggiornati!)
+    await loadData();
+  }
+
   StudySession? getStudySessionById(String id) {
     try {
       return _studySessions.firstWhere((s) => s.id == id);

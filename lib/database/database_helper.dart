@@ -355,4 +355,40 @@ class DatabaseHelper {
     Database db = await database;
     await db.close();
   }
+  // ========================================
+  // ========== TRANSAZIONE POMODORO ========
+  // ========================================
+  
+  /// Salva una sessione di studio e aggiorna il tempo effettivo della Task associata
+  Future<void> saveSessionAndUpdateTaskTime(StudySession session, String taskId) async {
+    Database db = await database;
+    
+    // Usiamo una transaction: o fa entrambe le cose, o non ne fa nessuna (sicurezza dei dati)
+    await db.transaction((txn) async {
+      // 1. Inserisce la sessione nello storico
+      await txn.insert('study_sessions', session.toMap());
+
+      // 2. Legge la task corrente dal database
+      List<Map<String, dynamic>> taskMap = await txn.query(
+        'tasks',
+        where: 'id = ?',
+        whereArgs: [taskId],
+      );
+
+      if (taskMap.isNotEmpty) {
+        Task currentTask = Task.fromMap(taskMap.first);
+        
+        // 3. Calcola il nuovo tempo totale
+        int nuovoTempoEffettivo = (currentTask.tempoEffettivo ?? 0) + (session.durataEffettiva ?? 0);
+
+        // 4. Aggiorna la task con il nuovo tempo effettivo
+        await txn.update(
+          'tasks',
+          {'tempoEffettivo': nuovoTempoEffettivo},
+          where: 'id = ?',
+          whereArgs: [taskId],
+        );
+      }
+    });
+  }
 }
