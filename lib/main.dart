@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/planner_provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/main_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const StudyPlannerApp());
@@ -71,7 +71,7 @@ class StudyPlannerApp extends StatelessWidget {
             // Selezione tema dinamica
             themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             
-            home: const MainScreen(),
+            home: const SplashScreen(),
           );
         },
       ),

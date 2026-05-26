@@ -17,10 +17,10 @@ dependencies:
   # UUID per ID univoci
   uuid: ^4.5.3
   
-  # State Management (Provider pattern del prof)
+  # State Management
   provider: ^6.1.1
   
-  # Database locale SQLite (RICHIESTO)
+  # Database locale SQLite
   sqflite: ^2.3.0
   path_provider: ^2.1.1
   path: ^1.9.0
@@ -43,9 +43,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  # Se hai l'icona dell'app, decommentala
-  # assets:
-  #   - assets/icon/UniPath_ICON.png
+  assets:
+  - assets/icon/UniPath_ICON.png
 
 flutter_launcher_icons:
   android: "launcher_icon"
