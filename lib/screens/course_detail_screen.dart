@@ -9,7 +9,6 @@ class CourseDetailScreen extends StatelessWidget {
   final Course course;
   const CourseDetailScreen({super.key, required this.course});
 
-  // Helper per convertire le stringhe del database in etichette leggibili
   String _formatStato(String stato) {
     switch (stato) {
       case 'da_iniziare': return 'Da iniziare';
@@ -21,29 +20,60 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
+  // Riquadrino titolo AppBar — stesso pattern delle altre schermate
+  Widget _buildTitleBadge(BuildContext context, String nome) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.book,
+              size: 20,
+              color: isDark ? Colors.white : AppColors.courses),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              nome,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : AppColors.courses,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<PlannerProvider>(
       builder: (context, provider, child) {
-        final updatedCourse = provider.getCourseById(course.id) ?? course;
+        final updatedCourse =
+            provider.getCourseById(course.id) ?? course;
         final exams = provider.getExamsByCourse(updatedCourse.id);
         final tasks = provider.getTasksByCourse(updatedCourse.id);
 
         return Scaffold(
-          backgroundColor: AppColors.coursesLight,
+          // FIX: rimosso backgroundColor fisso — ora segue il tema
           appBar: AppBar(
-            title: Text(updatedCourse.nome),
-            backgroundColor: AppColors.coursesLight,
-            foregroundColor: AppColors.coursesDark,
+            // FIX: rimossi backgroundColor e foregroundColor fissi
+            title: _buildTitleBadge(context, updatedCourse.nome),
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        // CORREZIONE: Aggiornato il parametro in courseToEdit
-                        CourseFormScreen(courseToEdit: updatedCourse),
+                    builder: (_) => CourseFormScreen(
+                        courseToEdit: updatedCourse),
                   ),
                 ),
               ),
@@ -58,12 +88,15 @@ class CourseDetailScreen extends StatelessWidget {
                           'Eliminare questo corso? Saranno eliminati anche esami e attività collegate.'),
                       actions: [
                         TextButton(
-                            onPressed: () => Navigator.pop(context, false),
+                            onPressed: () =>
+                                Navigator.pop(context, false),
                             child: const Text('Annulla')),
                         TextButton(
-                            onPressed: () => Navigator.pop(context, true),
+                            onPressed: () =>
+                                Navigator.pop(context, true),
                             child: Text('Elimina',
-                                style: TextStyle(color: AppColors.danger))),
+                                style: TextStyle(
+                                    color: AppColors.danger))),
                       ],
                     ),
                   );
@@ -78,10 +111,11 @@ class CourseDetailScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // FIX: rimosso color: AppColors.surface fisso dalla Card
               Card(
-                color: AppColors.surface,
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -90,35 +124,40 @@ class CourseDetailScreen extends StatelessWidget {
                       _InfoRow('Docente', updatedCourse.docente),
                       _InfoRow('CFU', updatedCourse.cfu.toString()),
                       _InfoRow('Semestre', updatedCourse.semestre),
-                      // CORREZIONE: Formattato lo stato in modo che sia leggibile
                       _InfoRow('Stato', _formatStato(updatedCourse.stato)),
                       if (updatedCourse.votoOttenuto != null)
-                        _InfoRow('Voto ottenuto', '${updatedCourse.votoOttenuto}/30'),
+                        _InfoRow('Voto ottenuto',
+                            '${updatedCourse.votoOttenuto}/30'),
                       if (updatedCourse.votoDesiderato != null)
-                        _InfoRow('Voto mirato', '${updatedCourse.votoDesiderato}/30'),
-                      if (updatedCourse.note != null && updatedCourse.note!.isNotEmpty)
+                        _InfoRow('Voto mirato',
+                            '${updatedCourse.votoDesiderato}/30'),
+                      if (updatedCourse.note != null &&
+                          updatedCourse.note!.isNotEmpty)
                         _InfoRow('Note', updatedCourse.note!),
-                      if (updatedCourse.materialeAssociato != null && updatedCourse.materialeAssociato!.isNotEmpty)
-                        _InfoRow('Materiale', updatedCourse.materialeAssociato!),
+                      if (updatedCourse.materialeAssociato != null &&
+                          updatedCourse.materialeAssociato!.isNotEmpty)
+                        _InfoRow('Materiale',
+                            updatedCourse.materialeAssociato!),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
+
+              // FIX: rimosso color: AppColors.coursesDark fisso — usa tema
               Text('Esami (${exams.length})',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.coursesDark)),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               if (exams.isEmpty)
                 Text('Nessun esame collegato.',
                     style: TextStyle(color: AppColors.textMuted))
               else
                 ...exams.map((e) => Card(
-                      color: AppColors.surface,
+                      // FIX: rimosso color fisso
                       child: ListTile(
-                        leading: Icon(Icons.event, color: AppColors.exams),
+                        leading:
+                            Icon(Icons.event, color: AppColors.exams),
                         title: Text(e.titolo),
                         subtitle: Text(
                             '${e.tipologia} · ${e.data.day}/${e.data.month}/${e.data.year}'),
@@ -130,18 +169,18 @@ class CourseDetailScreen extends StatelessWidget {
                       ),
                     )),
               const SizedBox(height: 20),
+
+              // FIX: rimosso color: AppColors.coursesDark fisso
               Text('Attività (${tasks.length})',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.coursesDark)),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               if (tasks.isEmpty)
                 Text('Nessuna attività collegata.',
                     style: TextStyle(color: AppColors.textMuted))
               else
                 ...tasks.map((t) => Card(
-                      color: AppColors.surface,
+                      // FIX: rimosso color fisso
                       child: CheckboxListTile(
                         title: Text(
                           t.titolo,
@@ -185,7 +224,9 @@ class _InfoRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMuted)),
           ),
-          Expanded(child: Text(value, style: const TextStyle(fontSize: 15))),
+          Expanded(
+              child:
+                  Text(value, style: const TextStyle(fontSize: 15))),
         ],
       ),
     );

@@ -16,6 +16,7 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   String _searchQuery = '';
   String _filterStato = 'tutti';
+  String _filterSemestre = 'tutti_sem'; // AGGIUNTO
   String _sortBy = 'nome';
 
   final TextEditingController _searchController = TextEditingController();
@@ -32,7 +33,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
           c.nome.toLowerCase().contains(_searchQuery.toLowerCase()) ||
               c.docente.toLowerCase().contains(_searchQuery.toLowerCase());
       final matchStato = _filterStato == 'tutti' || c.stato == _filterStato;
-      return matchSearch && matchStato;
+      final matchSemestre = _filterSemestre == 'tutti_sem' ||
+          c.semestre == _filterSemestre; // AGGIUNTO
+      return matchSearch && matchStato && matchSemestre;
     }).toList();
 
     switch (_sortBy) {
@@ -75,14 +78,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
         title: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            // Manteniamo il titolo con il container leggermente staccato
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.book, size: 20, color: isDark ? Colors.white : AppColors.courses),
+              Icon(Icons.book,
+                  size: 20,
+                  color: isDark ? Colors.white : AppColors.courses),
               const SizedBox(width: 8),
               Text(
                 'Corsi',
@@ -117,28 +121,38 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
           return Column(
             children: [
+              // Barra di ricerca
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: TextField(
                   controller: _searchController,
-                  style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
                     hintText: 'Cerca per nome o docente...',
-                    hintStyle: TextStyle(color: isDark ? Colors.grey[400] : AppColors.textMuted),
-                    prefixIcon: Icon(Icons.search, color: isDark ? Colors.white70 : AppColors.courses),
+                    hintStyle: TextStyle(
+                        color: isDark
+                            ? Colors.grey[400]
+                            : AppColors.textMuted),
+                    prefixIcon: Icon(Icons.search,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.courses),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear, color: isDark ? Colors.white70 : Colors.black54),
+                            icon: Icon(Icons.clear,
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black54),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
                           )
                         : null,
-                    // Riduciamo l'impatto visivo del bordo per uniformarlo alle card
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none, // Tolto il bordo netto per dare un look pulito come le card
+                      borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -146,18 +160,23 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.courses.withOpacity(0.5), width: 1.5),
+                      borderSide: BorderSide(
+                          color: AppColors.courses.withOpacity(0.5),
+                          width: 1.5),
                     ),
                     filled: true,
-                    // MODIFICA PRINCIPALE: Stesso colore delle Card nativa in Material 3
-                    fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                    fillColor:
+                        Theme.of(context).colorScheme.surfaceContainer,
                   ),
                   onChanged: (val) => setState(() => _searchQuery = val),
                 ),
               ),
+
+              // Filtro stato
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
                     ('tutti', 'Tutti'),
@@ -173,34 +192,71 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       child: FilterChip(
                         label: Text(entry.$2),
                         selected: selected,
-                        selectedColor: AppColors.courses.withOpacity(0.2),
+                        selectedColor:
+                            AppColors.courses.withOpacity(0.2),
                         checkmarkColor: AppColors.coursesDark,
-                        onSelected: (_) => setState(() => _filterStato = entry.$1),
+                        onSelected: (_) =>
+                            setState(() => _filterStato = entry.$1),
                       ),
                     );
                   }).toList(),
                 ),
               ),
+
+              // Filtro semestre — AGGIUNTO
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(
+                    left: 12, right: 12, bottom: 8),
+                child: Row(
+                  children: [
+                    ('tutti_sem', 'Tutti i semestri'),
+                    ('Primo semestre 2024/25', '1° sem 24/25'),
+                    ('Secondo semestre 2024/25', '2° sem 24/25'),
+                    ('Primo semestre 2025/26', '1° sem 25/26'),
+                    ('Secondo semestre 2025/26', '2° sem 25/26'),
+                  ].map((entry) {
+                    final selected = _filterSemestre == entry.$1;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(entry.$2),
+                        selected: selected,
+                        selectedColor:
+                            AppColors.courses.withOpacity(0.2),
+                        checkmarkColor: AppColors.coursesDark,
+                        onSelected: (_) => setState(
+                            () => _filterSemestre = entry.$1),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              // Lista corsi
               Expanded(
                 child: courses.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.school_outlined, size: 64, color: AppColors.courses),
+                            Icon(Icons.school_outlined,
+                                size: 64, color: AppColors.courses),
                             const SizedBox(height: 16),
                             Text(
                               provider.courses.isEmpty
                                   ? 'Nessun corso aggiunto.\nPremi + per iniziare!'
                                   : 'Nessun corso trovato.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.coursesDark),
+                              style: TextStyle(
+                                  color: AppColors.coursesDark),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                        padding: const EdgeInsets.fromLTRB(
+                            16, 0, 16, 80),
                         itemCount: courses.length,
                         itemBuilder: (context, index) {
                           final course = courses[index];
@@ -209,29 +265,39 @@ class _CoursesScreenState extends State<CoursesScreen> {
                             direction: DismissDirection.endToStart,
                             background: Container(
                               alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 20),
-                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding:
+                                  const EdgeInsets.only(right: 20),
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 4),
                               decoration: BoxDecoration(
                                 color: AppColors.danger,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius:
+                                    BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.delete, color: Colors.white),
+                              child: const Icon(Icons.delete,
+                                  color: Colors.white),
                             ),
                             confirmDismiss: (_) async {
                               return await showDialog<bool>(
                                 context: context,
                                 builder: (_) => AlertDialog(
-                                  title: const Text('Elimina corso'),
+                                  title:
+                                      const Text('Elimina corso'),
                                   content: Text(
                                       'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context, false),
+                                      onPressed: () => Navigator.pop(
+                                          context, false),
                                       child: const Text('Annulla'),
                                     ),
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context, true),
-                                      child: Text('Elimina', style: TextStyle(color: AppColors.danger)),
+                                      onPressed: () => Navigator.pop(
+                                          context, true),
+                                      child: Text('Elimina',
+                                          style: TextStyle(
+                                              color:
+                                                  AppColors.danger)),
                                     ),
                                   ],
                                 ),
@@ -239,18 +305,21 @@ class _CoursesScreenState extends State<CoursesScreen> {
                             },
                             onDismissed: (_) {
                               provider.deleteCourse(course.id);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('${course.nome} eliminato')),
-                              );
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(
+                                      content: Text(
+                                          '${course.nome} eliminato')));
                             },
                             child: _CourseCard(
                               course: course,
-                              statoColor: AppColors.statoCorso(course.stato),
+                              statoColor:
+                                  AppColors.statoCorso(course.stato),
                               statoLabel: _statoLabel(course.stato),
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => CourseDetailScreen(course: course),
+                                  builder: (_) => CourseDetailScreen(
+                                      course: course),
                                 ),
                               ),
                             ),
@@ -321,12 +390,15 @@ class _CourseCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       course.docente,
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      style: TextStyle(
+                          color: AppColors.textMuted, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _Chip(label: '${course.cfu} CFU', color: AppColors.courses),
+                        _Chip(
+                            label: '${course.cfu} CFU',
+                            color: AppColors.courses),
                         const SizedBox(width: 6),
                         _Chip(label: statoLabel, color: statoColor),
                         if (course.votoOttenuto != null) ...[
@@ -363,10 +435,11 @@ class _Chip extends StatelessWidget {
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
-      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600)),
     );
   }
 }

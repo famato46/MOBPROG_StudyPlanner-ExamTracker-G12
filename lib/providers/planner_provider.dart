@@ -60,7 +60,7 @@ Future<void> addCourse({
     required String semestre,
     String stato = 'da_iniziare',
     int? votoDesiderato,
-    int? votoOttenuto, // <-- 1. AGGIUNTO IL PARAMETRO NELLA FIRMA
+    int? votoOttenuto, // AGGIUNTO
     String? note,
     String? materialeAssociato,
   }) async {
@@ -72,7 +72,7 @@ Future<void> addCourse({
       semestre: semestre,
       stato: stato,
       votoDesiderato: votoDesiderato,
-      votoOttenuto: votoOttenuto, // <-- 2. ASSEGNATO AL COSTRUTTORE DEL MODELLO
+      votoOttenuto: votoOttenuto, // AGGIUNTO
       note: note,
       materialeAssociato: materialeAssociato,
     );
