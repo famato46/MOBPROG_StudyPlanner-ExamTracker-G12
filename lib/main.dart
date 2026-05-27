@@ -45,7 +45,7 @@ class StudyPlannerApp extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
-                    color: AppColors.textMuted.withOpacity(0.15),
+                    color: AppColors.textMuted.withValues(alpha: 0.15),
                   ),
                 ),
               ),

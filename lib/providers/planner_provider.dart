@@ -53,14 +53,15 @@ class PlannerProvider extends ChangeNotifier {
   // =============================================
   // ========== CRUD CORSI =======================
   // =============================================
-Future<void> addCourse({
+
+  Future<void> addCourse({
     required String nome,
     required String docente,
     required int cfu,
     required String semestre,
     String stato = 'da_iniziare',
     int? votoDesiderato,
-    int? votoOttenuto, // AGGIUNTO
+    int? votoOttenuto,
     String? note,
     String? materialeAssociato,
   }) async {
@@ -72,7 +73,7 @@ Future<void> addCourse({
       semestre: semestre,
       stato: stato,
       votoDesiderato: votoDesiderato,
-      votoOttenuto: votoOttenuto, // AGGIUNTO
+      votoOttenuto: votoOttenuto,
       note: note,
       materialeAssociato: materialeAssociato,
     );
@@ -94,7 +95,6 @@ Future<void> addCourse({
   Future<void> deleteCourse(String id) async {
     await _db.deleteCourse(id);
     _courses.removeWhere((c) => c.id == id);
-    // Rimuovi anche esami, sessioni e task collegati
     _exams.removeWhere((e) => e.courseId == id);
     _studySessions.removeWhere((s) => s.courseId == id);
     _tasks.removeWhere((t) => t.courseId == id);
@@ -142,31 +142,32 @@ Future<void> addCourse({
 
   Future<void> updateExam(Exam exam) async {
     await _db.updateExam(exam);
-    int index = _exams.indexWhere((e) => e.id == exam.id);
+    final index = _exams.indexWhere((e) => e.id == exam.id);
     if (index != -1) {
       _exams[index] = exam;
 
-      // 🌟 AUTOMAZIONE: Se l'esame viene completato, aggiorna anche il corso associato!
-      if (exam.stato == 'completato' && exam.voto != null && exam.courseId != null) {
-        // Corretto: rimosso lo spazio interno al nome della variabile
-        final corsoCorrispondente = getCourseById(exam.courseId!);
-        
-        if (corsoCorrispondente != null && corsoCorrispondente.stato != 'superato') {
+      // FIX: rimosso il controllo != null su courseId (è già non-nullable)
+      // e rimosso il ! su exam.voto (già gestito dal controllo != null)
+      if (exam.stato == 'completato' && exam.voto != null) {
+        final corsoCorrispondente = getCourseById(exam.courseId);
+
+        if (corsoCorrispondente != null &&
+            corsoCorrispondente.stato != 'superato') {
           final corsoAggiornato = corsoCorrispondente.copyWith(
             stato: 'superato',
-            votoOttenuto: exam.voto!.toInt(), // Converte il voto per il corso
+            votoOttenuto: exam.voto, // FIX: tolto il .toInt() e il !
           );
           await updateCourse(corsoAggiornato);
         }
       }
-      
+
       notifyListeners();
     }
   }
+
   Future<void> deleteExam(String id) async {
     await _db.deleteExam(id);
     _exams.removeWhere((e) => e.id == id);
-    // Rimuovi sessioni e task collegati
     _studySessions.removeWhere((s) => s.examId == id);
     _tasks.removeWhere((t) => t.examId == id);
     notifyListeners();
@@ -204,7 +205,7 @@ Future<void> addCourse({
       courseId: courseId,
       examId: examId,
       data: data,
-      durataPianificata: durataPianificata, // 👈 Controlla che sia scritto così!
+      durataPianificata: durataPianificata,
       durataEffettiva: durataEffettiva,
       completata: completata,
       tipo: tipo,
@@ -217,12 +218,13 @@ Future<void> addCourse({
 
   Future<void> updateStudySession(StudySession session) async {
     await _db.updateStudySession(session);
-    int index = _studySessions.indexWhere((s) => s.id == session.id);
+    final index = _studySessions.indexWhere((s) => s.id == session.id);
     if (index != -1) {
       _studySessions[index] = session;
       notifyListeners();
     }
   }
+
   Future<void> deleteStudySession(String id) async {
     await _db.deleteStudySession(id);
     _studySessions.removeWhere((s) => s.id == id);
@@ -230,35 +232,28 @@ Future<void> addCourse({
   }
 
   // ========== FUNZIONE SPECIALE POMODORO =======
-  
-  /// Salva la sessione di studio derivata dal Timer Pomodoro 
-  /// e aggiorna il tempo effettivo della Task nel database
+
   Future<void> savePomodoroSession({
     required String titolo,
     String? courseId,
     String? examId,
-    required String taskId, // IMPORTANTE: L'ID della Task che stavamo studiando
+    required String taskId,
     required int durataEffettiva,
     String tipo = 'pomodoro',
   }) async {
-    // 1. Crea l'oggetto sessione
     final newSession = StudySession(
       id: _uuid.v4(),
       titolo: titolo,
       courseId: courseId,
       examId: examId,
       data: DateTime.now(),
-      durataPianificata: durataEffettiva, // Nel pomodoro coincidono
+      durataPianificata: durataEffettiva,
       durataEffettiva: durataEffettiva,
-      completata: true, // Il timer ha finito
+      completata: true,
       tipo: tipo,
     );
 
-    // 2. Chiama la TRANSAZIONE SQL nel DatabaseHelper
     await _db.saveSessionAndUpdateTaskTime(newSession, taskId);
-
-    // 3. Ricarica i dati dal DB per aggiornare tutta l'app 
-    // (così la task mostrerà subito i minuti aggiornati!)
     await loadData();
   }
 
@@ -275,11 +270,12 @@ Future<void> addCourse({
   }
 
   List<StudySession> getStudySessionsByDate(DateTime date) {
-    return _studySessions.where((s) =>
-      s.data.year == date.year &&
-      s.data.month == date.month &&
-      s.data.day == date.day
-    ).toList();
+    return _studySessions
+        .where((s) =>
+            s.data.year == date.year &&
+            s.data.month == date.month &&
+            s.data.day == date.day)
+        .toList();
   }
 
   // =============================================
@@ -319,7 +315,7 @@ Future<void> addCourse({
 
   Future<void> updateTask(Task task) async {
     await _db.updateTask(task);
-    int index = _tasks.indexWhere((t) => t.id == task.id);
+    final index = _tasks.indexWhere((t) => t.id == task.id);
     if (index != -1) {
       _tasks[index] = task;
       notifyListeners();
@@ -360,16 +356,18 @@ Future<void> addCourse({
     return _tasks.where((t) => t.completata).toList();
   }
 
-// =============================================
+  // =============================================
   // ========== STATISTICHE ======================
   // =============================================
 
   int get totalCourses => _courses.length;
-  int get activeCourses => _courses.where((c) => c.stato != 'superato').length;
+  int get activeCourses =>
+      _courses.where((c) => c.stato != 'superato').length;
   int get passedCourses => _courses.where((c) => c.isSuperato).length;
 
   int get totalExams => _exams.length;
-  int get upcomingExams => _exams.where((e) => !e.isPassato && e.stato == 'programmato').length;
+  int get upcomingExams =>
+      _exams.where((e) => !e.isPassato && e.stato == 'programmato').length;
   int get completedExams => _exams.where((e) => e.isCompletato).length;
 
   int get totalTasks => _tasks.length;
@@ -377,61 +375,61 @@ Future<void> addCourse({
   int get completedTasksCount => _tasks.where((t) => t.completata).length;
 
   int get totalCfu => _courses.fold(0, (sum, c) => sum + c.cfu);
-  int get earnedCfu => _courses.where((c) => c.isSuperato).fold(0, (sum, c) => sum + c.cfu);
+  int get earnedCfu =>
+      _courses.where((c) => c.isSuperato).fold(0, (sum, c) => sum + c.cfu);
 
-  // Media ponderata dei voti (PROTETTA da divisioni per zero)
   double get weightedAverage {
-    final passedWithGrade = _courses.where((c) => c.stato == 'superato' && c.votoOttenuto != null);
+    final passedWithGrade = _courses
+        .where((c) => c.stato == 'superato' && c.votoOttenuto != null);
     if (passedWithGrade.isEmpty) return 0.0;
 
-    double totalWeighted = passedWithGrade.fold(0.0, (sum, c) => sum + (c.votoOttenuto! * c.cfu));
-    int totalCfuConVoto = passedWithGrade.fold(0, (sum, c) => sum + c.cfu);
+    final totalWeighted = passedWithGrade.fold(
+        0.0, (sum, c) => sum + (c.votoOttenuto! * c.cfu));
+    final totalCfuConVoto =
+        passedWithGrade.fold(0, (sum, c) => sum + c.cfu);
 
     if (totalCfuConVoto == 0) return 0.0;
-    
+
     final media = totalWeighted / totalCfuConVoto;
     return media.isNaN || media.isInfinite ? 0.0 : media;
   }
 
-  // Voto di laurea stimato (Dichiarato UNA SOLA VOLTA)
   double get estimatedGraduationGrade {
     final media = weightedAverage;
     if (media == 0.0) return 0.0;
-    
+
     final votoStima = (media / 30) * 110;
     return votoStima.isNaN || votoStima.isInfinite ? 0.0 : votoStima;
   }
 
-  // Ore di studio totali (completate)
   int get totalStudyHours {
     return _studySessions
-        .where((s) => s.completata && s.durataEffettiva != null)
-        .fold(0, (sum, s) => sum + s.durataEffettiva!) ~/ 60;
+            .where((s) => s.completata && s.durataEffettiva != null)
+            .fold(0, (sum, s) => sum + s.durataEffettiva!) ~/
+        60;
   }
+
   // =============================================
   // ========== SUGGERITORE AUTOMATICO ===========
   // =============================================
 
-  /// Getter intelligente per suggerimenti automatici
-  /// Filtra corsi non superati con esami imminenti
   List<String> get suggerimentiAutomatici {
     final suggerimenti = <String>[];
     final oggi = DateTime.now();
     final scadenzaCritica = oggi.add(const Duration(days: 14));
 
-    // 1. Trova esami imminenti di corsi non superati
     final esamiImminenti = _exams.where((e) {
       final course = getCourseById(e.courseId);
+      // FIX: rimosso il controllo == null ridondante,
+      // getCourseById restituisce già null se non trovato
       if (course == null || course.isSuperato) return false;
       return e.data.isAfter(oggi) &&
-             e.data.isBefore(scadenzaCritica) &&
-             e.stato == 'programmato';
+          e.data.isBefore(scadenzaCritica) &&
+          e.stato == 'programmato';
     }).toList();
 
-    // 2. Ordina per data
     esamiImminenti.sort((a, b) => a.data.compareTo(b.data));
 
-    // 3. Genera suggerimenti
     for (final esame in esamiImminenti.take(3)) {
       final course = getCourseById(esame.courseId);
       if (course == null) continue;
@@ -439,21 +437,22 @@ Future<void> addCourse({
       final giorniMancanti = esame.data.difference(oggi).inDays;
 
       if (giorniMancanti <= 3) {
-        suggerimenti.add('🚨 URGENZA: Fai una simulazione per ${course.nome}!');
+        suggerimenti
+            .add('🚨 URGENZA: Fai una simulazione per ${course.nome}!');
       } else if (giorniMancanti <= 7) {
-        suggerimenti.add('📚 Ripasso intensivo consigliato per ${course.nome}');
+        suggerimenti
+            .add('📚 Ripasso intensivo consigliato per ${course.nome}');
       } else {
         suggerimenti.add('✏️ Inizia gli esercizi per ${course.nome}');
       }
     }
 
-    // 4. Suggerimenti per task in scadenza
-    final taskInScadenza = _tasks.where((t) => t.isInScadenza && !t.completata).toList();
+    final taskInScadenza =
+        _tasks.where((t) => t.isInScadenza && !t.completata).toList();
     for (final task in taskInScadenza.take(2)) {
       suggerimenti.add('⏰ Scadenza vicina: ${task.titolo}');
     }
 
-    // 5. Messaggio base se nessun suggerimento
     if (suggerimenti.isEmpty && _courses.isNotEmpty) {
       suggerimenti.add('✅ Ottimo lavoro! Nessun esame imminente.');
     }
@@ -465,7 +464,6 @@ Future<void> addCourse({
   // ========== UTILITY ==========================
   // =============================================
 
-  /// Reset completo del database (per debug)
   Future<void> resetDatabase() async {
     await _db.deleteDatabase();
     _courses = [];
@@ -475,5 +473,3 @@ Future<void> addCourse({
     notifyListeners();
   }
 }
-
-
