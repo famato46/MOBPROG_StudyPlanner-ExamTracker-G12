@@ -145,10 +145,24 @@ Future<void> addCourse({
     int index = _exams.indexWhere((e) => e.id == exam.id);
     if (index != -1) {
       _exams[index] = exam;
+
+      // 🌟 AUTOMAZIONE: Se l'esame viene completato, aggiorna anche il corso associato!
+      if (exam.stato == 'completato' && exam.voto != null && exam.courseId != null) {
+        // Corretto: rimosso lo spazio interno al nome della variabile
+        final corsoCorrispondente = getCourseById(exam.courseId!);
+        
+        if (corsoCorrispondente != null && corsoCorrispondente.stato != 'superato') {
+          final corsoAggiornato = corsoCorrispondente.copyWith(
+            stato: 'superato',
+            votoOttenuto: exam.voto!.toInt(), // Converte il voto per il corso
+          );
+          await updateCourse(corsoAggiornato);
+        }
+      }
+      
       notifyListeners();
     }
   }
-
   Future<void> deleteExam(String id) async {
     await _db.deleteExam(id);
     _exams.removeWhere((e) => e.id == id);
@@ -347,7 +361,7 @@ Future<void> addCourse({
     return _tasks.where((t) => t.completata).toList();
   }
 
-  // =============================================
+// =============================================
   // ========== STATISTICHE ======================
   // =============================================
 
@@ -366,20 +380,27 @@ Future<void> addCourse({
   int get totalCfu => _courses.fold(0, (sum, c) => sum + c.cfu);
   int get earnedCfu => _courses.where((c) => c.isSuperato).fold(0, (sum, c) => sum + c.cfu);
 
-  // Media ponderata dei voti
+  // Media ponderata dei voti (PROTETTA da divisioni per zero)
   double get weightedAverage {
-    final passedWithGrade = _courses.where((c) => c.isSuperato && c.votoOttenuto != null);
+    final passedWithGrade = _courses.where((c) => c.stato == 'superato' && c.votoOttenuto != null);
     if (passedWithGrade.isEmpty) return 0.0;
 
     double totalWeighted = passedWithGrade.fold(0.0, (sum, c) => sum + (c.votoOttenuto! * c.cfu));
-    int totalCfu = passedWithGrade.fold(0, (sum, c) => sum + c.cfu);
+    int totalCfuConVoto = passedWithGrade.fold(0, (sum, c) => sum + c.cfu);
 
-    return totalCfu > 0 ? totalWeighted / totalCfu : 0.0;
+    if (totalCfuConVoto == 0) return 0.0;
+    
+    final media = totalWeighted / totalCfuConVoto;
+    return media.isNaN || media.isInfinite ? 0.0 : media;
   }
 
-  // Voto di laurea stimato
+  // Voto di laurea stimato (Dichiarato UNA SOLA VOLTA)
   double get estimatedGraduationGrade {
-    return (weightedAverage / 30) * 110;
+    final media = weightedAverage;
+    if (media == 0.0) return 0.0;
+    
+    final votoStima = (media / 30) * 110;
+    return votoStima.isNaN || votoStima.isInfinite ? 0.0 : votoStima;
   }
 
   // Ore di studio totali (completate)
@@ -388,7 +409,6 @@ Future<void> addCourse({
         .where((s) => s.completata && s.durataEffettiva != null)
         .fold(0, (sum, s) => sum + s.durataEffettiva!) ~/ 60;
   }
-
   // =============================================
   // ========== SUGGERITORE AUTOMATICO ===========
   // =============================================

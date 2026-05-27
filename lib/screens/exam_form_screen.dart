@@ -5,7 +5,7 @@ import '../models/exam.dart';
 import '../utils/app_colors.dart';
 
 class ExamFormScreen extends StatefulWidget {
-  final Exam? exam; // null = inserimento, altrimenti modifica
+  final Exam? exam; 
   const ExamFormScreen({super.key, this.exam});
 
   @override
@@ -33,8 +33,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     final e = widget.exam;
     _titoloCtrl = TextEditingController(text: e?.titolo ?? '');
     _noteCtrl = TextEditingController(text: e?.note ?? '');
-    _votoCtrl =
-        TextEditingController(text: e?.voto?.toString() ?? '');
+    _votoCtrl = TextEditingController(text: e?.voto?.toString() ?? '');
     _courseId = e?.courseId;
     _data = e?.data ?? DateTime.now().add(const Duration(days: 7));
     _tipologia = e?.tipologia ?? 'esame';
@@ -64,12 +63,17 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_courseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seleziona un corso')),
+        const SnackBar(content: Text('Seleziona un corso associato prima di salvare.')),
       );
       return;
     }
 
     final provider = context.read<PlannerProvider>();
+
+    // Centralizziamo il parsing del voto per evitare ripetizioni
+    final votoFinale = _stato == 'completato' && _votoCtrl.text.isNotEmpty
+        ? int.tryParse(_votoCtrl.text)
+        : null;
 
     if (_isEditing) {
       final updated = widget.exam!.copyWith(
@@ -79,10 +83,8 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         tipologia: _tipologia,
         priorita: _priorita,
         stato: _stato,
-        voto: _votoCtrl.text.isEmpty
-            ? null
-            : int.tryParse(_votoCtrl.text),
-        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
+        voto: votoFinale,
+        note: _noteCtrl.text.isEmpty ? '' : _noteCtrl.text.trim(),
       );
       await provider.updateExam(updated);
     } else {
@@ -93,10 +95,8 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         tipologia: _tipologia,
         priorita: _priorita,
         stato: _stato,
-        voto: _votoCtrl.text.isEmpty
-            ? null
-            : int.tryParse(_votoCtrl.text),
-        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
+        voto: votoFinale,
+        note: _noteCtrl.text.isEmpty ? '' : _noteCtrl.text.trim(),
       );
     }
 
@@ -114,8 +114,11 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.calendar_today, size: 20,
-              color: isDark ? Colors.white : AppColors.exams),
+          Icon(
+            Icons.calendar_today, 
+            size: 20,
+            color: isDark ? Colors.white : AppColors.exams,
+          ),
           const SizedBox(width: 8),
           Text(
             _isEditing ? 'Modifica Esame' : 'Nuovo Esame',
@@ -129,6 +132,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       ),
     );
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +144,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Salva'),
+            child: const Text('Salva', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -149,7 +153,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-
             // Titolo
             TextFormField(
               controller: _titoloCtrl,
@@ -162,26 +165,32 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Corso associato (obbligatorio per Exam)
+            // Corso associato
             DropdownButtonFormField<String>(
               value: _courseId,
               decoration: const InputDecoration(
                 labelText: 'Corso associato *',
                 border: OutlineInputBorder(),
               ),
-              items: provider.courses
-                  .map((c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Text(c.nome),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _courseId = v),
-              validator: (v) =>
-                  v == null ? 'Seleziona un corso' : null,
+              items: provider.courses.isEmpty
+                  ? const [
+                      DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('Nessun corso disponibile. Crealo prima!'),
+                      )
+                    ]
+                  : provider.courses
+                      .map((c) => DropdownMenuItem<String>(
+                            value: c.id,
+                            child: Text(c.nome),
+                          ))
+                      .toList(),
+              onChanged: provider.courses.isEmpty ? null : (v) => setState(() => _courseId = v),
+              validator: (v) => v == null ? 'Seleziona un corso' : null,
             ),
             const SizedBox(height: 12),
 
-            // Data — bottone che apre il DatePicker
+            // Data
             InkWell(
               onTap: _pickDate,
               child: InputDecorator(
@@ -206,12 +215,9 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
               ),
               items: const [
                 DropdownMenuItem(value: 'esame', child: Text('Esame')),
-                DropdownMenuItem(
-                    value: 'appello', child: Text('Appello')),
-                DropdownMenuItem(
-                    value: 'consegna', child: Text('Consegna')),
-                DropdownMenuItem(
-                    value: 'progetto', child: Text('Progetto')),
+                DropdownMenuItem(value: 'appello', child: Text('Appello')),
+                DropdownMenuItem(value: 'consegna', child: Text('Consegna')),
+                DropdownMenuItem(value: 'progetto', child: Text('Progetto')),
               ],
               onChanged: (v) => setState(() => _tipologia = v!),
             ),
@@ -241,40 +247,47 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                 border: OutlineInputBorder(),
               ),
               items: const [
-                DropdownMenuItem(
-                    value: 'programmato', child: Text('Programmato')),
-                DropdownMenuItem(
-                    value: 'completato', child: Text('Completato')),
-                DropdownMenuItem(
-                    value: 'annullato', child: Text('Annullato')),
+                DropdownMenuItem(value: 'programmato', child: Text('Programmato')),
+                DropdownMenuItem(value: 'completato', child: Text('Completato')),
+                DropdownMenuItem(value: 'annullato', child: Text('Annullato')),
               ],
-              onChanged: (v) => setState(() => _stato = v!),
+              onChanged: (v) {
+                setState(() {
+                  _stato = v!;
+                  // UX Touch: Se l'utente cambia stato e NON è completato, 
+                  // svuotiamo il controller del voto per pulizia.
+                  if (_stato != 'completato') {
+                    _votoCtrl.clear();
+                  }
+                });
+              },
             ),
             const SizedBox(height: 12),
 
-            // Voto (opzionale, visibile solo se completato)
-            if (_stato == 'completato')
-              Column(
-                children: [
-                  TextFormField(
-                    controller: _votoCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Voto ottenuto (opzionale)',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final n = int.tryParse(v);
-                      if (n == null || n < 18 || n > 30) {
-                        return 'Inserisci un voto tra 18 e 30';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                ],
+            // Voto (condizionale con validazione rinforzata)
+            if (_stato == 'completato') ...[
+              TextFormField(
+                controller: _votoCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Voto ottenuto *',
+                  hintText: 'Es. 28 o 30',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.grade, color: Colors.green),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) {
+                    return 'Inserisci il voto per l\'esame completato';
+                  }
+                  final n = int.tryParse(v);
+                  if (n == null || n < 18 || n > 31) {
+                    return 'Inserisci un voto valido (18 - 30 o 31 per la lode)';
+                  }
+                  return null;
+                },
               ),
+              const SizedBox(height: 12),
+            ],
 
             // Note
             TextFormField(
@@ -287,7 +300,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Pulsante salva
+            // Bottone Salva Inferiore
             ElevatedButton(
               onPressed: _save,
               style: ElevatedButton.styleFrom(
@@ -297,7 +310,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
               ),
               child: Text(
                 _isEditing ? 'Salva modifiche' : 'Aggiungi esame',
-                style: const TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],

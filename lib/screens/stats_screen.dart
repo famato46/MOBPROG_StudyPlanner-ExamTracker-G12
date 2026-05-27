@@ -12,28 +12,27 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  // Ephemeral state per il simulatore voto laurea (Slider)
   double _bonusLaurea = 0;
 
-  // ─── Riquadrino titolo AppBar ──────────────────────────────────
+  // ─── AppBar Badge ──────────────────────────────────────────────
   Widget _buildTitleBadge(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bar_chart,
+          Icon(Icons.insights_rounded,
               size: 20, color: isDark ? Colors.white : AppColors.stats),
           const SizedBox(width: 8),
-          Text('Statistiche',
+          Text('Analytics',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 color: isDark ? Colors.white : AppColors.stats,
               )),
         ],
@@ -41,40 +40,146 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // ─── Ore pianificate questa settimana ─────────────────────────
   int _orePianificateSettimana(PlannerProvider provider) {
     final oggi = DateTime.now();
-    final inizioSettimana =
-        oggi.subtract(Duration(days: oggi.weekday - 1));
+    final inizioSettimana = oggi.subtract(Duration(days: oggi.weekday - 1));
     return provider.studySessions
             .where((s) => s.data.isAfter(
                 inizioSettimana.subtract(const Duration(days: 1))))
-            .fold(0, (sum, s) => sum + s.durataPianificata) ~/
-        60;
+            .fold(0, (sum, s) => sum + s.durataPianificata) ~/ 60;
   }
 
-  // ─── Ore effettive questa settimana ───────────────────────────
   int _oreEffettiveSettimana(PlannerProvider provider) {
     final oggi = DateTime.now();
-    final inizioSettimana =
-        oggi.subtract(Duration(days: oggi.weekday - 1));
+    final inizioSettimana = oggi.subtract(Duration(days: oggi.weekday - 1));
     return provider.studySessions
             .where((s) =>
                 s.data.isAfter(
                     inizioSettimana.subtract(const Duration(days: 1))) &&
                 s.durataEffettiva != null)
-            .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0)) ~/
-        60;
+            .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0)) ~/ 60;
   }
 
-  // ─── Grafico a torta: minuti per corso ────────────────────────
+  // ─── 1. KPI GRID ──────────────────────────────────────────────
+  Widget _buildKpiGrid(PlannerProvider provider) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      childAspectRatio: 1.6,
+      children: [
+        _buildKpiCard('Corsi Totali', provider.totalCourses.toString(), Icons.book_outlined, Colors.blue),
+        _buildKpiCard('Esami Superati', provider.passedCourses.toString(), Icons.check_circle_outline_rounded, AppColors.success),
+        _buildKpiCard('Esami Pianificati', provider.upcomingExams.toString(), Icons.calendar_month_outlined, Colors.orange),
+        _buildKpiCard('Task Pendenti', provider.pendingTasks.toString(), Icons.assignment_late_outlined, Colors.redAccent),
+      ],
+    );
+  }
+
+  Widget _buildKpiCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.15), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(label, 
+                  maxLines: 1, 
+                  overflow: TextOverflow.ellipsis, 
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey)),
+              ),
+              Icon(icon, size: 20, color: color),
+            ],
+          ),
+          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
+  // ─── 2. PROGRESSO OBIETTIVI (Indicatori Circolari) ─────────────
+  Widget _buildProgressoObiettivi(PlannerProvider provider) {
+    final orePianificate = _orePianificateSettimana(provider);
+    final oreEffettive = _oreEffettiveSettimana(provider);
+    final percentualeOre = orePianificate > 0 ? (oreEffettive / orePianificate) : 0.0;
+    
+    final cfuTotali = provider.totalCfu > 0 ? provider.totalCfu : 180;
+    final percentualeCfu = provider.earnedCfu / cfuTotali;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _buildCircularIndicator(
+            title: 'CFU Ottenuti',
+            subtitle: '${provider.earnedCfu} / $cfuTotali CFU',
+            value: percentualeCfu.toDouble(),
+            color: Colors.purple,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildCircularIndicator(
+            title: 'Studio Settimana',
+            subtitle: '$oreEffettive h / ${orePianificate}h',
+            value: percentualeOre.toDouble(),
+            color: AppColors.stats,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularIndicator({required String title, required String subtitle, required double value, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+      ),
+      child: Column(
+        children: [
+          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 70,
+            width: 70,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: value.clamp(0.0, 1.0),
+                  strokeWidth: 8,
+                  backgroundColor: color.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                  strokeCap: StrokeCap.round,
+                ),
+                Text('${(value * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  // ─── 3. GRAFICO A TORTA ────────────────────────────────────────
   Widget _buildPieChart(PlannerProvider provider) {
     final List<Color> colors = [
-      AppColors.home,
-      AppColors.courses,
-      AppColors.exams,
-      AppColors.planning,
-      AppColors.stats,
+      Colors.blueAccent, Colors.teal, Colors.orangeAccent, Colors.pinkAccent, Colors.purpleAccent
     ];
 
     final Map<String, int> minutiPerCorso = {};
@@ -82,22 +187,22 @@ class _StatsScreenState extends State<StatsScreen> {
       if (session.courseId != null && session.durataEffettiva != null) {
         final corso = provider.getCourseById(session.courseId!);
         if (corso != null) {
-          minutiPerCorso[corso.nome] =
-              (minutiPerCorso[corso.nome] ?? 0) +
-                  session.durataEffettiva!;
+          minutiPerCorso[corso.nome] = (minutiPerCorso[corso.nome] ?? 0) + session.durataEffettiva!;
         }
       }
     }
 
     if (minutiPerCorso.isEmpty) {
-      return const SizedBox(
-        height: 80,
-        child: Center(
-          child: Text('Nessuna sessione registrata.',
-              style: TextStyle(color: Colors.grey)),
-        ),
-      );
-    }
+  return const SizedBox(
+    height: 100,
+    child: Center(
+      child: Text(
+        'Nessuna sessione registrata. 📚', 
+        style: TextStyle(color: Colors.grey, fontSize: 13)
+      )
+    ),
+  );
+}
 
     final entries = minutiPerCorso.entries.toList();
     final total = entries.fold(0, (sum, e) => sum + e.value);
@@ -105,9 +210,11 @@ class _StatsScreenState extends State<StatsScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 180,
+          height: 160,
           child: PieChart(
             PieChartData(
+              sectionsSpace: 4,
+              centerSpaceRadius: 40,
               sections: entries.asMap().entries.map((entry) {
                 final i = entry.key;
                 final e = entry.value;
@@ -116,22 +223,18 @@ class _StatsScreenState extends State<StatsScreen> {
                   color: colors[i % colors.length],
                   value: e.value.toDouble(),
                   title: '${percent.toStringAsFixed(0)}%',
-                  radius: 60,
-                  titleStyle: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
+                  radius: 50,
+                  titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                 );
               }).toList(),
-              sectionsSpace: 2,
-              centerSpaceRadius: 30,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Wrap(
           spacing: 12,
-          runSpacing: 6,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
           children: entries.asMap().entries.map((entry) {
             final i = entry.key;
             final e = entry.value;
@@ -139,15 +242,11 @@ class _StatsScreenState extends State<StatsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: colors[i % colors.length],
-                    shape: BoxShape.circle,
-                  ),
+                  width: 10, height: 10,
+                  decoration: BoxDecoration(color: colors[i % colors.length], shape: BoxShape.circle),
                 ),
-                const SizedBox(width: 4),
-                Text(e.key, style: const TextStyle(fontSize: 12)),
+                const SizedBox(width: 6),
+                Text('${e.key} (${e.value}m)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
               ],
             );
           }).toList(),
@@ -156,182 +255,251 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // ─── Grafico a barre: sessioni per giorno settimana ───────────
+  // ─── 4. GRAFICO A BARRE ────────────────────────────────────────
   Widget _buildBarChart(PlannerProvider provider) {
-    final oggi = DateTime.now();
-    final giorni = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+  final oggi = DateTime.now();
+  final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
-    final List<double> minutiPerGiorno = List.generate(7, (i) {
-      final giorno =
-          oggi.subtract(Duration(days: oggi.weekday - 1 - i));
-      return provider.studySessions
-          .where((s) =>
-              s.data.year == giorno.year &&
-              s.data.month == giorno.month &&
-              s.data.day == giorno.day &&
-              s.durataEffettiva != null)
-          .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0))
-          .toDouble();
-    });
+  final List<double> minutiPerGiorno = List.generate(7, (i) {
+    final giorno = oggi.subtract(Duration(days: oggi.weekday - 1 - i));
+    return provider.studySessions
+        .where((s) =>
+            s.data.year == giorno.year &&
+            s.data.month == giorno.month &&
+            s.data.day == giorno.day &&
+            s.durataEffettiva != null)
+        .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0))
+        .toDouble();
+  });
 
-    final maxY =
-        minutiPerGiorno.reduce((a, b) => a > b ? a : b);
+  final maxTrovato = minutiPerGiorno.reduce((a, b) => a > b ? a : b);
+  // Se è 0, impostiamo un massimo fittizio a 60 minuti per evitare crash di fl_chart
+  final maxY = maxTrovato == 0 ? 60.0 : maxTrovato * 1.15;
 
-    if (maxY == 0) {
-      return const SizedBox(
-        height: 80,
-        child: Center(
-          child: Text('Nessuna sessione questa settimana.',
-              style: TextStyle(color: Colors.grey)),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 160,
-      child: BarChart(
-        BarChartData(
-          maxY: maxY + 10,
-          barGroups: minutiPerGiorno.asMap().entries.map((entry) {
-            return BarChartGroupData(
-              x: entry.key,
-              barRods: [
-                BarChartRodData(
-                  toY: entry.value,
-                  color: AppColors.stats,
-                  width: 18,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(4),
-                    topRight: Radius.circular(4),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (double value, TitleMeta meta) {
-                  return Text(
-                    giorni[value.toInt()],
-                    style: const TextStyle(fontSize: 12),
-                  );
-                },
-              ),
-            ),
-            leftTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            rightTitles: const AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-          ),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
+  if (maxTrovato == 0) {
+    return const SizedBox(
+      height: 150,
+      child: Center(
+        child: Text(
+          'Nessuna sessione questa settimana. 🛌',
+          style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
       ),
     );
   }
 
-  // ─── Confronto tempo stimato vs effettivo ─────────────────────
+  return SizedBox(
+    height: 180,
+    child: BarChart(
+      BarChartData(
+        maxY: maxY,
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= giorni.length || value.toInt() < 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(giorni[value.toInt()], style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                );
+              },
+            ),
+          ),
+        ),
+        barGroups: minutiPerGiorno.asMap().entries.map((entry) {
+          return BarChartGroupData(
+            x: entry.key,
+            barRods: [
+              BarChartRodData(
+                toY: entry.value,
+                gradient: LinearGradient(
+                  colors: [AppColors.stats, AppColors.stats.withOpacity(0.6)],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+                width: 14,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    ),
+  );
+}
+
+  // ─── 5. TEMPO STIMATO VS EFFETTIVO ─────────────────────────────
   Widget _buildTempoComparison(PlannerProvider provider) {
-    final tasksConTempo = provider.tasks
-        .where((t) =>
-            t.tempoStimato != null && t.tempoEffettivo != null)
-        .toList();
+    final tasksConTempo = provider.tasks.where((t) => t.tempoStimato != null && t.tempoEffettivo != null).toList();
 
     if (tasksConTempo.isEmpty) {
-      return const Text(
-        'Nessuna attività con tempo registrato.',
-        style: TextStyle(color: Colors.grey),
-      );
+      return const Center(child: Text('Nessuna attività con tempo registrato.', style: TextStyle(color: Colors.grey)));
     }
 
-    final totaleStimato =
-        tasksConTempo.fold(0, (sum, t) => sum + t.tempoStimato!);
-    final totaleEffettivo =
-        tasksConTempo.fold(0, (sum, t) => sum + t.tempoEffettivo!);
+    final totaleStimato = tasksConTempo.fold(0, (sum, t) => sum + t.tempoStimato!);
+    final totaleEffettivo = tasksConTempo.fold(0, (sum, t) => sum + t.tempoEffettivo!);
     final differenza = totaleEffettivo - totaleStimato;
 
     return Column(
       children: [
-        _StatRow('Tempo stimato totale', '$totaleStimato min'),
-        _StatRow('Tempo effettivo totale', '$totaleEffettivo min'),
-        const Divider(),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            const Text('Differenza'),
-            Flexible(
-              child: Text(
-                differenza >= 0
-                    ? '+$differenza min (più lento)'
-                    : '$differenza min (più veloce)',
+            _buildMiniTimeStat('Stimato', '$totaleStimato min', Colors.blueGrey),
+            _buildMiniTimeStat('Effettivo', '$totaleEffettivo min', AppColors.stats),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: (differenza > 0 ? AppColors.danger : AppColors.success).withOpacity(0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Scostamento complessivo:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(
+                differenza >= 0 ? '+$differenza min 🐢' : '$differenza min ⚡',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: differenza > 0
-                      ? AppColors.danger
-                      : AppColors.success,
+                  color: differenza > 0 ? AppColors.danger : AppColors.success,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-  // ─── Corsi con più attività aperte ────────────────────────────
+  Widget _buildMiniTimeStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+      ],
+    );
+  }
+// ─── 6. SCADENZE IMMINENTI ─────────────────────────────────────
+Widget _buildScadenzeImminenti(PlannerProvider provider) {
+  // Prendiamo la data di oggi a mezzanotte per un calcolo pulito dei giorni
+  final oraAttuale = DateTime.now();
+  final oggi = DateTime(oraAttuale.year, oraAttuale.month, oraAttuale.day);
+
+  final imminenti = provider.exams.where((e) {
+    // Calcoliamo la data dell'esame a mezzanotte
+    final dataEsame = DateTime(e.data.year, e.data.month, e.data.day);
+    final differenzaGiorni = dataEsame.difference(oggi).inDays;
+    
+    // Filtriamo solo gli esami futuri o odierni entro i prossimi 7 giorni
+    return differenzaGiorni >= 0 && differenzaGiorni <= 7 && e.stato == 'programmato';
+  }).toList()
+    ..sort((a, b) => a.data.compareTo(b.data));
+
+  if (imminenti.isEmpty) {
+    return const SizedBox(
+      height: 80,
+      child: Center(
+        child: Text(
+          'Nessuna scadenza nei prossimi 7 giorni. 🎉',
+          style: TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+      ),
+    );
+  }
+
+  return Column(
+    children: imminenti.map((e) {
+      final corso = provider.getCourseById(e.courseId);
+      
+      // Ricalcoliamo i giorni esatti di calendario
+      final dataEsame = DateTime(e.data.year, e.data.month, e.data.day);
+      final giorni = dataEsame.difference(oggi).inDays;
+
+      // Gestione del testo della scadenza
+      String testoGiorni;
+      if (giorni == 0) {
+        testoGiorni = 'Oggi! 🚨';
+      } else if (giorni == 1) {
+        testoGiorni = 'Domani';
+      } else {
+        testoGiorni = 'In $giorni gg';
+      }
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: AppColors.danger.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.danger.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.alarm_on_rounded, color: AppColors.danger, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(e.titolo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  if (corso != null) 
+                    Text(corso.nome, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
+            ),
+            Text(
+              testoGiorni,
+              style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }).toList(),
+  );
+}
+
+  // ─── 7. CORSI CON PIÙ ATTIVITÀ APERTE ──────────────────────────
   Widget _buildCorsiAttivita(PlannerProvider provider) {
     final Map<String, int> attivitaPerCorso = {};
     for (final task in provider.tasks.where((t) => !t.completata)) {
       if (task.courseId != null) {
         final corso = provider.getCourseById(task.courseId!);
         if (corso != null) {
-          attivitaPerCorso[corso.nome] =
-              (attivitaPerCorso[corso.nome] ?? 0) + 1;
+          attivitaPerCorso[corso.nome] = (attivitaPerCorso[corso.nome] ?? 0) + 1;
         }
       }
     }
 
     if (attivitaPerCorso.isEmpty) {
-      return Text(
-        'Nessuna attività aperta collegata a un corso.',
-        style: TextStyle(color: AppColors.textMuted),
-      );
+      return const Center(child: Text('Nessuna attività aperta collegata a un corso.', style: TextStyle(color: Colors.grey)));
     }
 
-    final entries = attivitaPerCorso.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entries = attivitaPerCorso.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
     return Column(
       children: entries.map((e) {
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(e.key)),
+              Expanded(child: Text(e.key, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.stats.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${e.value} attività',
-                  style: TextStyle(
-                    color: AppColors.stats,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
+                child: Text('${e.value} aperte', style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 11)),
+              )
             ],
           ),
         );
@@ -339,320 +507,134 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // ─── Scadenze imminenti ────────────────────────────────────────
-  Widget _buildScadenzeImminenti(PlannerProvider provider) {
-    final imminenti = provider.exams
-        .where((e) =>
-            e.isImminente && e.stato == 'programmato')
-        .toList()
-      ..sort((a, b) => a.data.compareTo(b.data));
-
-    if (imminenti.isEmpty) {
-      return Text(
-        'Nessuna scadenza nei prossimi 7 giorni. 🎉',
-        style: TextStyle(color: AppColors.textMuted),
-      );
-    }
-
-    return Column(
-      children: imminenti.map((e) {
-        final corso = provider.getCourseById(e.courseId);
-        final giorni =
-            e.data.difference(DateTime.now()).inDays;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Icon(Icons.circle,
-                  size: 10, color: AppColors.danger),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(e.titolo,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14)),
-                    if (corso != null)
-                      Text(corso.nome,
-                          style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 12)),
-                  ],
-                ),
-              ),
-              Text(
-                giorni == 0
-                    ? 'Oggi!'
-                    : giorni == 1
-                        ? 'Domani'
-                        : 'tra $giorni giorni',
-                style: TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // ─── Simulatore voto di laurea con Slider ─────────────────────
+  // ─── 8. SIMULATORE VOTO DI LAUREA ──────────────────────────────
   Widget _buildSimulatore(PlannerProvider provider) {
     final mediaBase = provider.estimatedGraduationGrade;
     final votoFinale = (mediaBase + _bonusLaurea).clamp(0, 110);
     final conLode = votoFinale >= 110;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Media attuale in /110: ${mediaBase.toStringAsFixed(1)}',
-          style:
-              TextStyle(color: AppColors.textMuted, fontSize: 13),
-        ),
-        const SizedBox(height: 12),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Bonus commissione:'),
-            const SizedBox(width: 8),
-            Text(
-              '+${_bonusLaurea.toInt()} punti',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.stats),
-            ),
+            Text('Media di Partenza: ${mediaBase.toStringAsFixed(1)}/110', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text('Bonus Tesi: +${_bonusLaurea.toInt()} pt', style: TextStyle(color: AppColors.stats, fontWeight: FontWeight.bold, fontSize: 12)),
           ],
         ),
         Slider(
           value: _bonusLaurea,
-          min: 0,
-          max: 10,
-          divisions: 10,
+          min: 0, max: 10, divisions: 10,
           activeColor: AppColors.stats,
-          label: '+${_bonusLaurea.toInt()}',
           onChanged: (val) => setState(() => _bonusLaurea = val),
         ),
-        const SizedBox(height: 8),
-        Center(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: conLode 
+                ? [Colors.amber.shade700, Colors.amber.shade400]
+                : [AppColors.stats, AppColors.stats.withOpacity(0.8)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Column(
             children: [
+              const Text('PROIEZIONE VOTO FINALE', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              const SizedBox(height: 4),
               Text(
-                conLode
-                    ? '${votoFinale.toInt()}/110 con Lode 🎓'
-                    : '${votoFinale.toStringAsFixed(1)}/110',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: conLode
-                      ? AppColors.success
-                      : AppColors.stats,
-                ),
+                conLode ? '110 / 110 con Lode 🎓' : '${votoFinale.toStringAsFixed(1)} / 110',
+                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
               ),
-              if (conLode)
-                Text(
-                  'Congratulazioni! Lode possibile 🎉',
-                  style:
-                      TextStyle(color: AppColors.success),
-                ),
             ],
           ),
-        ),
+        )
       ],
     );
   }
 
+  // ─── BUILD MAIN SCREEN ─────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: _buildTitleBadge(context)),
+      appBar: AppBar(
+        title: _buildTitleBadge(context),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-
-              // ─── 1. RIEPILOGO GENERALE ───────────────────────
-              _SectionTitle(
-                  title: 'Riepilogo Generale',
-                  icon: Icons.dashboard_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _StatRow('Corsi totali',
-                          provider.totalCourses.toString()),
-                      _StatRow('Corsi superati',
-                          provider.passedCourses.toString()),
-                      _StatRow('Esami programmati',
-                          provider.upcomingExams.toString()),
-                      _StatRow('Esami completati',
-                          provider.completedExams.toString()),
-                      const Divider(),
-                      _StatRow('Attività completate',
-                          provider.completedTasksCount.toString()),
-                      _StatRow('Attività da completare',
-                          provider.pendingTasks.toString()),
-                      const Divider(),
-                      _StatRow('CFU ottenuti',
-                          '${provider.earnedCfu} / ${provider.totalCfu}'),
-                      _StatRow('Ore di studio totali',
-                          '${provider.totalStudyHours} h'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 2. SCADENZE IMMINENTI ───────────────────────
-              _SectionTitle(
-                  title: 'Scadenze imminenti',
-                  icon: Icons.notification_important_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildScadenzeImminenti(provider),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 3. STUDIO QUESTA SETTIMANA ──────────────────
-              _SectionTitle(
-                  title: 'Studio questa settimana',
-                  icon: Icons.timer_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _StatRow('Ore pianificate',
-                          '${_orePianificateSettimana(provider)} h'),
-                      _StatRow('Ore effettive',
-                          '${_oreEffettiveSettimana(provider)} h'),
-                      const SizedBox(height: 12),
-                      _ProgressBar(
-                        label: 'Completamento settimana',
-                        value: _oreEffettiveSettimana(provider) /
-                            (_orePianificateSettimana(provider) > 0
-                                ? _orePianificateSettimana(provider)
-                                : 1),
-                        color: AppColors.stats,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 4. VOTI ─────────────────────────────────────
-              _SectionTitle(
-                  title: 'Voti',
-                  icon: Icons.school_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _StatRow(
-                          'Media ponderata',
-                          provider.weightedAverage > 0
-                              ? provider.weightedAverage
-                                  .toStringAsFixed(2)
-                              : 'N/D'),
-                      _StatRow(
-                          'Voto laurea stimato',
-                          provider.estimatedGraduationGrade > 0
-                              ? provider.estimatedGraduationGrade
-                                  .toStringAsFixed(1)
-                              : 'N/D'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 5. GRAFICO A TORTA ───────────────────────────
-              _SectionTitle(
-                  title: 'Tempo di studio per corso',
-                  icon: Icons.pie_chart_outline),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildPieChart(provider),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 6. GRAFICO A BARRE ───────────────────────────
-              _SectionTitle(
-                  title: 'Andamento settimanale sessioni',
-                  icon: Icons.bar_chart),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildBarChart(provider),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 7. TEMPO STIMATO VS EFFETTIVO ───────────────
-              _SectionTitle(
-                  title: 'Tempo stimato vs effettivo',
-                  icon: Icons.compare_arrows),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildTempoComparison(provider),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 8. CORSI CON PIÙ ATTIVITÀ APERTE ────────────
-              _SectionTitle(
-                  title: 'Corsi con più attività aperte',
-                  icon: Icons.assignment_late_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildCorsiAttivita(provider),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ─── 9. SIMULATORE VOTO DI LAUREA ─────────────────
-              _SectionTitle(
-                  title: 'Simulatore voto di laurea',
-                  icon: Icons.calculate_outlined),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _buildSimulatore(provider),
-                ),
-              ),
+              _SectionTitle(title: 'Riepilogo Generale', icon: Icons.grid_view_rounded),
+              const SizedBox(height: 12),
+              _buildKpiGrid(provider),
               const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Obiettivi & Progresso', icon: Icons.track_changes_rounded),
+              const SizedBox(height: 12),
+              _buildProgressoObiettivi(provider),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Tempo di Studio per Corso', icon: Icons.pie_chart_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildPieChart(provider)),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Andamento Settimanale', icon: Icons.bar_chart_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildBarChart(provider)),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Scadenze Imminenti', icon: Icons.notification_important_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildScadenzeImminenti(provider)),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Stima Tempi (Task)', icon: Icons.hourglass_bottom_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildTempoComparison(provider)),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Focus Attività per Corso', icon: Icons.assignment_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildCorsiAttivita(provider)),
+              const SizedBox(height: 24),
+
+              _SectionTitle(title: 'Simulatore Laurea', icon: Icons.gavel_rounded),
+              const SizedBox(height: 12),
+              _buildDashboardCard(_buildSimulatore(provider)),
+              const SizedBox(height: 32),
             ],
           );
         },
       ),
     );
   }
-}
 
-// ─── Widget condivisi ─────────────────────────────────────────────
+  Widget _buildDashboardCard(Widget child) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: child,
+    );
+  }
+}
 
 class _SectionTitle extends StatelessWidget {
   final String title;
@@ -663,73 +645,15 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.stats),
-        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: AppColors.stats.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 18, color: AppColors.stats),
+        ),
+        const SizedBox(width: 10),
         Text(
           title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: AppColors.stats,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatRow(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: Text(label)),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.stats,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
-  final String label;
-  final double value;
-  final Color color;
-  const _ProgressBar(
-      {required this.label,
-      required this.value,
-      required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: TextStyle(
-                fontSize: 12, color: AppColors.textMuted)),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: value.clamp(0.0, 1.0),
-            minHeight: 8,
-            backgroundColor: color.withOpacity(0.15),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 0.3),
         ),
       ],
     );
