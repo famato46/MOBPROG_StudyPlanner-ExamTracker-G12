@@ -204,7 +204,7 @@ Future<void> addCourse({
       courseId: courseId,
       examId: examId,
       data: data,
-      durataPianificata: durataPianificata,
+      durataPianificata: durataPianificata, // 👈 Controlla che sia scritto così!
       durataEffettiva: durataEffettiva,
       completata: completata,
       tipo: tipo,
@@ -223,7 +223,6 @@ Future<void> addCourse({
       notifyListeners();
     }
   }
-
   Future<void> deleteStudySession(String id) async {
     await _db.deleteStudySession(id);
     _studySessions.removeWhere((s) => s.id == id);

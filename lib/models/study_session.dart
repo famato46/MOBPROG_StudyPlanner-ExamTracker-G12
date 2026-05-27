@@ -18,7 +18,7 @@ class StudySession {
     required this.durataPianificata,
     this.durataEffettiva,
     required this.completata,
-    required this.tipo,
+    required this.tipo
   });
 
   // Conversione da Map (dal database)
@@ -32,7 +32,7 @@ class StudySession {
       durataPianificata: map['durataPianificata'] as int,
       durataEffettiva: map['durataEffettiva'] as int?,
       completata: (map['completata'] as int) == 1,
-      tipo: map['tipo'] as String,
+      tipo: map['tipo'] as String
     );
   }
 
@@ -47,11 +47,11 @@ class StudySession {
       'durataPianificata': durataPianificata,
       'durataEffettiva': durataEffettiva,
       'completata': completata ? 1 : 0,
-      'tipo': tipo,
+      'tipo': tipo
     };
   }
 
-  // Metodo copyWith
+  // Metodo copyWith aggiornato
   StudySession copyWith({
     String? id,
     String? titolo,
@@ -61,7 +61,7 @@ class StudySession {
     int? durataPianificata,
     int? durataEffettiva,
     bool? completata,
-    String? tipo,
+    String? tipo
   }) {
     return StudySession(
       id: id ?? this.id,
@@ -72,7 +72,7 @@ class StudySession {
       durataPianificata: durataPianificata ?? this.durataPianificata,
       durataEffettiva: durataEffettiva ?? this.durataEffettiva,
       completata: completata ?? this.completata,
-      tipo: tipo ?? this.tipo,
+      tipo: tipo ?? this.tipo
     );
   }
 
@@ -85,7 +85,7 @@ class StudySession {
   }
   
   // Helper per ottenere la differenza tra pianificato ed effettivo
-  int? get differenzaTempo {
+  int? get diferenciaTempo {
     if (durataEffettiva == null) return null;
     return durataEffettiva! - durataPianificata;
   }
