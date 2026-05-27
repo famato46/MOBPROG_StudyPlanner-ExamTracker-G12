@@ -44,17 +44,23 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Theme.of(context).colorScheme.surface, 
+        backgroundColor: Theme.of(context).colorScheme.surface,
         selectedItemColor: _sectionColors[_currentIndex],
-        unselectedItemColor: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.grey[500] // grigio chiaro per la dark mode
-            : AppColors.textMuted, // grigio normale per la light mode
+        unselectedItemColor:
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[500]
+                : AppColors.textMuted,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Corsi'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Esami'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_note), label: 'Pianifica'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Stats'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.book), label: 'Corsi'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today), label: 'Esami'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.event_note), label: 'Pianifica'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),
     );

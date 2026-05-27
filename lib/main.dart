@@ -24,17 +24,10 @@ class StudyPlannerApp extends StatelessWidget {
           return MaterialApp(
             title: 'UniPath - Study Planner',
             debugShowCheckedModeBanner: false,
-            
-            // 👇 CORREZIONE: Blocca lo stiramento dei widget durante lo scroll con il mouse 👇
-            scrollBehavior: const MaterialScrollBehavior().copyWith(
-              physics: const ClampingScrollPhysics(),
-            ),
-            
-            // Tema chiaro
             theme: ThemeData(
               brightness: Brightness.light,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: AppColors.home, // lavanda come colore base
+                seedColor: AppColors.home,
                 brightness: Brightness.light,
                 surface: AppColors.surface,
               ),
@@ -57,8 +50,6 @@ class StudyPlannerApp extends StatelessWidget {
                 ),
               ),
             ),
-            
-            // Tema scuro
             darkTheme: ThemeData(
               brightness: Brightness.dark,
               colorScheme: ColorScheme.fromSeed(
@@ -79,10 +70,18 @@ class StudyPlannerApp extends StatelessWidget {
                 ),
               ),
             ),
-            
-            // Selezione tema dinamica
-            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            
+            themeMode: themeProvider.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
+            // Qui forziamo la larghezza massima dell'intera app
+            builder: (context, child) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 430),
+                  child: child!,
+                ),
+              );
+            },
             home: const SplashScreen(),
           );
         },
