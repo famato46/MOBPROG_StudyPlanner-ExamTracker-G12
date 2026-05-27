@@ -20,7 +20,6 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
-  // Riquadrino titolo AppBar — stesso pattern delle altre schermate
   Widget _buildTitleBadge(BuildContext context, String nome) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -62,9 +61,7 @@ class CourseDetailScreen extends StatelessWidget {
         final tasks = provider.getTasksByCourse(updatedCourse.id);
 
         return Scaffold(
-          // FIX: rimosso backgroundColor fisso — ora segue il tema
           appBar: AppBar(
-            // FIX: rimossi backgroundColor e foregroundColor fissi
             title: _buildTitleBadge(context, updatedCourse.nome),
             actions: [
               IconButton(
@@ -72,8 +69,8 @@ class CourseDetailScreen extends StatelessWidget {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CourseFormScreen(
-                        courseToEdit: updatedCourse),
+                    builder: (_) =>
+                        CourseFormScreen(courseToEdit: updatedCourse),
                   ),
                 ),
               ),
@@ -100,8 +97,12 @@ class CourseDetailScreen extends StatelessWidget {
                       ],
                     ),
                   );
-                  if (confirm == true && context.mounted) {
+                  // FIX: controllo mounted dopo await
+                  if (!context.mounted) return;
+                  if (confirm == true) {
                     await provider.deleteCourse(updatedCourse.id);
+                    // FIX: secondo controllo mounted dopo il secondo await
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   }
                 },
@@ -111,7 +112,6 @@ class CourseDetailScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // FIX: rimosso color: AppColors.surface fisso dalla Card
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
@@ -124,7 +124,8 @@ class CourseDetailScreen extends StatelessWidget {
                       _InfoRow('Docente', updatedCourse.docente),
                       _InfoRow('CFU', updatedCourse.cfu.toString()),
                       _InfoRow('Semestre', updatedCourse.semestre),
-                      _InfoRow('Stato', _formatStato(updatedCourse.stato)),
+                      _InfoRow('Stato',
+                          _formatStato(updatedCourse.stato)),
                       if (updatedCourse.votoOttenuto != null)
                         _InfoRow('Voto ottenuto',
                             '${updatedCourse.votoOttenuto}/30'),
@@ -143,21 +144,19 @@ class CourseDetailScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // FIX: rimosso color: AppColors.coursesDark fisso — usa tema
               Text('Esami (${exams.length})',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               if (exams.isEmpty)
                 Text('Nessun esame collegato.',
-                    style: TextStyle(color: AppColors.textMuted))
+                    style:
+                        TextStyle(color: AppColors.textMuted))
               else
                 ...exams.map((e) => Card(
-                      // FIX: rimosso color fisso
                       child: ListTile(
-                        leading:
-                            Icon(Icons.event, color: AppColors.exams),
+                        leading: Icon(Icons.event,
+                            color: AppColors.exams),
                         title: Text(e.titolo),
                         subtitle: Text(
                             '${e.tipologia} · ${e.data.day}/${e.data.month}/${e.data.year}'),
@@ -169,8 +168,6 @@ class CourseDetailScreen extends StatelessWidget {
                       ),
                     )),
               const SizedBox(height: 20),
-
-              // FIX: rimosso color: AppColors.coursesDark fisso
               Text('Attività (${tasks.length})',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
@@ -180,7 +177,6 @@ class CourseDetailScreen extends StatelessWidget {
                     style: TextStyle(color: AppColors.textMuted))
               else
                 ...tasks.map((t) => Card(
-                      // FIX: rimosso color fisso
                       child: CheckboxListTile(
                         title: Text(
                           t.titolo,

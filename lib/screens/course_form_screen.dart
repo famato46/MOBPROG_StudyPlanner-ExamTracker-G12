@@ -5,7 +5,6 @@ import '../models/course.dart';
 import '../utils/app_colors.dart';
 
 class CourseFormScreen extends StatefulWidget {
-  // CORREZIONE: Rinominato in courseToEdit per uniformità con CoursesScreen
   final Course? courseToEdit;
   const CourseFormScreen({super.key, this.courseToEdit});
 
@@ -22,7 +21,6 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   late final TextEditingController _noteCtrl;
   late final TextEditingController _materialeCtrl;
   late final TextEditingController _votoDesideratoCtrl;
-  // AGGIUNTA: Controller per il voto effettivamente registrato all'esame
   late final TextEditingController _votoOttenutoCtrl;
 
   String _semestre = 'Primo semestre 2024/25';
@@ -36,11 +34,15 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     final c = widget.courseToEdit;
     _nomeCtrl = TextEditingController(text: c?.nome ?? '');
     _docenteCtrl = TextEditingController(text: c?.docente ?? '');
-    _cfuCtrl = TextEditingController(text: c?.cfu.toString() ?? '');
+    _cfuCtrl =
+        TextEditingController(text: c?.cfu.toString() ?? '');
     _noteCtrl = TextEditingController(text: c?.note ?? '');
-    _materialeCtrl = TextEditingController(text: c?.materialeAssociato ?? '');
-    _votoDesideratoCtrl = TextEditingController(text: c?.votoDesiderato?.toString() ?? '');
-    _votoOttenutoCtrl = TextEditingController(text: c?.votoOttenuto?.toString() ?? '');
+    _materialeCtrl =
+        TextEditingController(text: c?.materialeAssociato ?? '');
+    _votoDesideratoCtrl = TextEditingController(
+        text: c?.votoDesiderato?.toString() ?? '');
+    _votoOttenutoCtrl = TextEditingController(
+        text: c?.votoOttenuto?.toString() ?? '');
     _semestre = c?.semestre ?? 'Primo semestre 2024/25';
     _stato = c?.stato ?? 'da_iniziare';
   }
@@ -53,7 +55,7 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     _noteCtrl.dispose();
     _materialeCtrl.dispose();
     _votoDesideratoCtrl.dispose();
-    _votoOttenutoCtrl.dispose(); // Ricordiamoci di fare il dispose
+    _votoOttenutoCtrl.dispose();
     super.dispose();
   }
 
@@ -61,12 +63,13 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     final provider = context.read<PlannerProvider>();
 
-    // Parsing sicuro dei voti
-    final vDesiderato = _votoDesideratoCtrl.text.isEmpty ? null : int.tryParse(_votoDesideratoCtrl.text);
-    // Il voto ottenuto ha senso solo se il corso è stato superato
-    final vOttenuto = (_stato == 'superato' && _votoOttenutoCtrl.text.isNotEmpty) 
-        ? int.tryParse(_votoOttenutoCtrl.text) 
-        : null;
+    final vDesiderato = _votoDesideratoCtrl.text.isEmpty
+        ? null
+        : int.tryParse(_votoDesideratoCtrl.text);
+    final vOttenuto =
+        (_stato == 'superato' && _votoOttenutoCtrl.text.isNotEmpty)
+            ? int.tryParse(_votoOttenutoCtrl.text)
+            : null;
 
     if (_isEditing) {
       final updated = widget.courseToEdit!.copyWith(
@@ -76,9 +79,11 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
         semestre: _semestre,
         stato: _stato,
         votoDesiderato: vDesiderato,
-        votoOttenuto: vOttenuto, // AGGIUNTO
+        votoOttenuto: vOttenuto,
         note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-        materialeAssociato: _materialeCtrl.text.isEmpty ? null : _materialeCtrl.text.trim(),
+        materialeAssociato: _materialeCtrl.text.isEmpty
+            ? null
+            : _materialeCtrl.text.trim(),
       );
       await provider.updateCourse(updated);
     } else {
@@ -89,9 +94,11 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
         semestre: _semestre,
         stato: _stato,
         votoDesiderato: vDesiderato,
-        votoOttenuto: vOttenuto, // AGGIUNTO (se inserito direttamente come superato)
+        votoOttenuto: vOttenuto,
         note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-        materialeAssociato: _materialeCtrl.text.isEmpty ? null : _materialeCtrl.text.trim(),
+        materialeAssociato: _materialeCtrl.text.isEmpty
+            ? null
+            : _materialeCtrl.text.trim(),
       );
     }
 
@@ -101,15 +108,12 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.coursesLight,
       appBar: AppBar(
         title: Text(_isEditing ? 'Modifica Corso' : 'Nuovo Corso'),
-        backgroundColor: AppColors.coursesLight,
-        foregroundColor: AppColors.coursesDark,
         actions: [
           TextButton(
             onPressed: _save,
-            child: Text('Salva', style: TextStyle(color: AppColors.coursesDark, fontWeight: FontWeight.bold)),
+            child: const Text('Salva'),
           ),
         ],
       ),
@@ -121,13 +125,15 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
             _buildField(
               controller: _nomeCtrl,
               label: 'Nome del corso *',
-              validator: (v) => v == null || v.isEmpty ? 'Campo obbligatorio' : null,
+              validator: (v) =>
+                  v == null || v.isEmpty ? 'Campo obbligatorio' : null,
             ),
             const SizedBox(height: 12),
             _buildField(
               controller: _docenteCtrl,
               label: 'Docente *',
-              validator: (v) => v == null || v.isEmpty ? 'Campo obbligatorio' : null,
+              validator: (v) =>
+                  v == null || v.isEmpty ? 'Campo obbligatorio' : null,
             ),
             const SizedBox(height: 12),
             _buildField(
@@ -141,43 +147,57 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
               },
             ),
             const SizedBox(height: 12),
+
+            // FIX: value → initialValue
             DropdownButtonFormField<String>(
-              value: _semestre,
+              initialValue: _semestre,
               decoration: const InputDecoration(
                 labelText: 'Semestre',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: AppColors.surface,
               ),
               items: const [
-                DropdownMenuItem(value: 'Primo semestre 2024/25', child: Text('Primo semestre 2024/25')),
-                DropdownMenuItem(value: 'Secondo semestre 2024/25', child: Text('Secondo semestre 2024/25')),
-                DropdownMenuItem(value: 'Primo semestre 2025/26', child: Text('Primo semestre 2025/26')),
-                DropdownMenuItem(value: 'Secondo semestre 2025/26', child: Text('Secondo semestre 2025/26')),
+                DropdownMenuItem(
+                    value: 'Primo semestre 2024/25',
+                    child: Text('Primo semestre 2024/25')),
+                DropdownMenuItem(
+                    value: 'Secondo semestre 2024/25',
+                    child: Text('Secondo semestre 2024/25')),
+                DropdownMenuItem(
+                    value: 'Primo semestre 2025/26',
+                    child: Text('Primo semestre 2025/26')),
+                DropdownMenuItem(
+                    value: 'Secondo semestre 2025/26',
+                    child: Text('Secondo semestre 2025/26')),
               ],
               onChanged: (v) => setState(() => _semestre = v!),
             ),
             const SizedBox(height: 12),
+
+            // FIX: value → initialValue
             DropdownButtonFormField<String>(
-              value: _stato,
+              initialValue: _stato,
               decoration: const InputDecoration(
                 labelText: 'Stato',
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: AppColors.surface,
               ),
               items: const [
-                DropdownMenuItem(value: 'da_iniziare', child: Text('Da iniziare')),
-                DropdownMenuItem(value: 'in_corso', child: Text('In corso')),
-                DropdownMenuItem(value: 'da_ripassare', child: Text('Da ripassare')),
-                DropdownMenuItem(value: 'completato', child: Text('Completato')),
-                DropdownMenuItem(value: 'superato', child: Text('Superato')),
+                DropdownMenuItem(
+                    value: 'da_iniziare', child: Text('Da iniziare')),
+                DropdownMenuItem(
+                    value: 'in_corso', child: Text('In corso')),
+                DropdownMenuItem(
+                    value: 'da_ripassare', child: Text('Da ripassare')),
+                DropdownMenuItem(
+                    value: 'completato', child: Text('Completato')),
+                DropdownMenuItem(
+                    value: 'superato', child: Text('Superato')),
               ],
               onChanged: (v) => setState(() => _stato = v!),
             ),
             const SizedBox(height: 12),
-            
-            // Layout dinamico per i voti
+
             Row(
               children: [
                 Expanded(
@@ -188,23 +208,31 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                     validator: (v) {
                       if (v == null || v.isEmpty) return null;
                       final n = int.tryParse(v);
-                      if (n == null || n < 18 || n > 30) return 'Voto tra 18 e 30';
+                      if (n == null || n < 18 || n > 30) {
+                        return 'Voto tra 18 e 30';
+                      }
                       return null;
                     },
                   ),
                 ),
-                // Mostra il campo Voto Ottenuto solo se lo stato è impostato su 'superato'
                 if (_stato == 'superato') ...[
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildField(
                       controller: _votoOttenutoCtrl,
-                      label: 'Voto ottenuto *',
+                      label: 'Voto ottenuto',
                       keyboardType: TextInputType.number,
                       validator: (v) {
-                        if (_stato == 'superato' && (v == null || v.isEmpty)) return 'Inserisci il voto';
-                        final n = int.tryParse(v!);
-                        if (n == null || n < 18 || n > 31) return 'Voto tra 18 e 30L'; // 31 può rappresentare il 30 e lode
+                        if (_stato == 'superato' &&
+                            (v == null || v.isEmpty)) {
+                          return 'Inserisci il voto';
+                        }
+                        if (v != null && v.isNotEmpty) {
+                          final n = int.tryParse(v);
+                          if (n == null || n < 18 || n > 30) {
+                            return 'Voto tra 18 e 30';
+                          }
+                        }
                         return null;
                       },
                     ),
@@ -230,11 +258,13 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                 backgroundColor: AppColors.courses,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
                 _isEditing ? 'Salva modifiche' : 'Aggiungi corso',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -258,7 +288,6 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
       decoration: InputDecoration(
         labelText: label,
         filled: true,
-        fillColor: AppColors.surface,
         border: const OutlineInputBorder(),
       ),
     );
