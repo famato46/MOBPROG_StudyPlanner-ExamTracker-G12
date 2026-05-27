@@ -53,14 +53,14 @@ class PlannerProvider extends ChangeNotifier {
   // =============================================
   // ========== CRUD CORSI =======================
   // =============================================
-
-  Future<void> addCourse({
+Future<void> addCourse({
     required String nome,
     required String docente,
     required int cfu,
     required String semestre,
     String stato = 'da_iniziare',
     int? votoDesiderato,
+    int? votoOttenuto, // <-- 1. AGGIUNTO IL PARAMETRO NELLA FIRMA
     String? note,
     String? materialeAssociato,
   }) async {
@@ -72,6 +72,7 @@ class PlannerProvider extends ChangeNotifier {
       semestre: semestre,
       stato: stato,
       votoDesiderato: votoDesiderato,
+      votoOttenuto: votoOttenuto, // <-- 2. ASSEGNATO AL COSTRUTTORE DEL MODELLO
       note: note,
       materialeAssociato: materialeAssociato,
     );

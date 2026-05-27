@@ -25,7 +25,12 @@ class StudyPlannerApp extends StatelessWidget {
             title: 'UniPath - Study Planner',
             debugShowCheckedModeBanner: false,
             
-           // Tema chiaro
+            // 👇 CORREZIONE: Blocca lo stiramento dei widget durante lo scroll con il mouse 👇
+            scrollBehavior: const MaterialScrollBehavior().copyWith(
+              physics: const ClampingScrollPhysics(),
+            ),
+            
+            // Tema chiaro
             theme: ThemeData(
               brightness: Brightness.light,
               colorScheme: ColorScheme.fromSeed(

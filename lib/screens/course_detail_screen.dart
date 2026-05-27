@@ -9,6 +9,18 @@ class CourseDetailScreen extends StatelessWidget {
   final Course course;
   const CourseDetailScreen({super.key, required this.course});
 
+  // Helper per convertire le stringhe del database in etichette leggibili
+  String _formatStato(String stato) {
+    switch (stato) {
+      case 'da_iniziare': return 'Da iniziare';
+      case 'in_corso': return 'In corso';
+      case 'da_ripassare': return 'Da ripassare';
+      case 'completato': return 'Completato';
+      case 'superato': return 'Superato';
+      default: return stato;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<PlannerProvider>(
@@ -30,7 +42,8 @@ class CourseDetailScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) =>
-                        CourseFormScreen(course: updatedCourse),
+                        // CORREZIONE: Aggiornato il parametro in courseToEdit
+                        CourseFormScreen(courseToEdit: updatedCourse),
                   ),
                 ),
               ),
@@ -67,6 +80,8 @@ class CourseDetailScreen extends StatelessWidget {
             children: [
               Card(
                 color: AppColors.surface,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -75,24 +90,21 @@ class CourseDetailScreen extends StatelessWidget {
                       _InfoRow('Docente', updatedCourse.docente),
                       _InfoRow('CFU', updatedCourse.cfu.toString()),
                       _InfoRow('Semestre', updatedCourse.semestre),
-                      _InfoRow('Stato', updatedCourse.stato),
+                      // CORREZIONE: Formattato lo stato in modo che sia leggibile
+                      _InfoRow('Stato', _formatStato(updatedCourse.stato)),
                       if (updatedCourse.votoOttenuto != null)
-                        _InfoRow('Voto', '${updatedCourse.votoOttenuto}/30'),
+                        _InfoRow('Voto ottenuto', '${updatedCourse.votoOttenuto}/30'),
                       if (updatedCourse.votoDesiderato != null)
-                        _InfoRow('Voto desiderato',
-                            '${updatedCourse.votoDesiderato}/30'),
-                      if (updatedCourse.note != null &&
-                          updatedCourse.note!.isNotEmpty)
+                        _InfoRow('Voto mirato', '${updatedCourse.votoDesiderato}/30'),
+                      if (updatedCourse.note != null && updatedCourse.note!.isNotEmpty)
                         _InfoRow('Note', updatedCourse.note!),
-                      if (updatedCourse.materialeAssociato != null &&
-                          updatedCourse.materialeAssociato!.isNotEmpty)
-                        _InfoRow(
-                            'Materiale', updatedCourse.materialeAssociato!),
+                      if (updatedCourse.materialeAssociato != null && updatedCourse.materialeAssociato!.isNotEmpty)
+                        _InfoRow('Materiale', updatedCourse.materialeAssociato!),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text('Esami (${exams.length})',
                   style: TextStyle(
                       fontSize: 18,
@@ -117,7 +129,7 @@ class CourseDetailScreen extends StatelessWidget {
                                     : AppColors.warning)),
                       ),
                     )),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Text('Attività (${tasks.length})',
                   style: TextStyle(
                       fontSize: 18,
@@ -162,7 +174,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -173,7 +185,7 @@ class _InfoRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: AppColors.textMuted)),
           ),
-          Expanded(child: Text(value)),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 15))),
         ],
       ),
     );
