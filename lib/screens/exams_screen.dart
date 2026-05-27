@@ -136,8 +136,9 @@ class _ExamsScreenState extends State<ExamsScreen> {
               ),
             );
           },
-          onDismissed: (_) {
-            provider.deleteExam(exam.id);
+          onDismissed: (_) async {
+            await provider.deleteExam(exam.id);
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('${exam.titolo} eliminato')),
             );

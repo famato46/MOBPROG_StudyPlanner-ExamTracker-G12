@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/exam.dart';
 import '../providers/planner_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/app_colors.dart';
 
+/// HomeScreen — Dashboard Apple-style.
+///
+/// Layout:
+///  1. Large title "Dashboard" + sottotitolo + avatar profilo
+///  2. Grid 2x2 di stat card pastello (Corsi, Esami, Attività, CFU)
+///  3. Card prossimo esame con countdown
+///  4. Lista suggerimenti automatici (dal Provider)
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Sfondo panna/beige chiarissimo per il tema chiaro (come da mockup)
-    final bgColor = isDark ? Theme.of(context).colorScheme.surface : const Color(0xFFF6F5F2);
+    final bgColor = isDark
+        ? Theme.of(context).colorScheme.surface
+        : AppColors.background;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -22,196 +30,39 @@ class HomeScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // ------------------------------------------------------------------
-          // LOGICA DINAMICA: PROSSIMO ESAME IN ARRIVO
-          // ------------------------------------------------------------------
-          dynamic prossimoEsame;
-          int giorniMancantiEsame = 0;
-          String dataEsameFormattata = '';
-
-          if (provider.exams.isNotEmpty) {
-            final adesso = DateTime.now();
-            final esamiFuturi = provider.exams
-                .where((e) => e.data.isAfter(adesso) || DateUtils.isSameDay(e.data, adesso))
-                .toList();
-                
-            if (esamiFuturi.isNotEmpty) {
-              esamiFuturi.sort((a, b) => a.data.compareTo(b.data));
-              prossimoEsame = esamiFuturi.first; 
-              
-              final dataEsameSenzaOre = DateTime(prossimoEsame.data.year, prossimoEsame.data.month, prossimoEsame.data.day);
-              final oggiSenzaOre = DateTime(adesso.year, adesso.month, adesso.day);
-              giorniMancantiEsame = dataEsameSenzaOre.difference(oggiSenzaOre).inDays;
-
-              dataEsameFormattata = "${prossimoEsame.data.day.toString().padLeft(2, '0')}/${prossimoEsame.data.month.toString().padLeft(2, '0')}/${prossimoEsame.data.year}";
-            }
-          }
-
-          // Filtro anti-duplicati per i suggerimenti automatici
-          final suggerimentiUnici = provider.suggerimentiAutomatici.toSet().toList();
+          // ── Calcolo dati dinamici per il prossimo esame ────────
+          final prossimoEsame = _findProssimoEsame(provider);
+          final suggerimentiUnici =
+              provider.suggerimentiAutomatici.toSet().toList();
 
           return SafeArea(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               children: [
-                
-                // 1. HEADER FISSO: TITOLO E BENTORNATO
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Dashboard',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bentornato Studente',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: isDark ? Colors.white70 : Colors.black54,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Switch del Tema
-                    Consumer<ThemeProvider>(
-                      builder: (context, themeProvider, child) {
-                        return IconButton(
-                          icon: Icon(
-                            themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                            color: isDark ? Colors.white70 : Colors.black54,
-                          ),
-                          onPressed: () => themeProvider.toggleTheme(),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                _HeaderSection(isDark: isDark),
                 const SizedBox(height: 28),
-
-                // 2. GRIGLIA STATISTICHE CON PALETTE COERENTI RICHIESTE
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1.35, 
-                  children: [
-                    // CORSI -> VERDE
-                    _PastelStatCard(
-                      title: 'Corsi',
-                      value: provider.activeCourses.toString(),
-                      icon: Icons.menu_book_rounded,
-                      color: isDark ? const Color(0xFF1E3A24) : const Color(0xFFE2F5E8),
-                      textColor: isDark ? Colors.white : const Color(0xFF2E7D32),
-                      iconColor: isDark ? Colors.green[300]! : const Color(0xFF2E7D32),
-                    ),
-                    // ESAMI -> PALETTE DELLA FOTO (ROSA/ROSSO)
-                    _PastelStatCard(
-                      title: 'Esami',
-                      value: provider.upcomingExams.toString(),
-                      icon: Icons.calendar_month_rounded,
-                      color: isDark ? const Color(0xFF4A3232) : const Color(0xFFFFEAEA),
-                      textColor: isDark ? Colors.white : const Color(0xFFD96383),
-                      iconColor: isDark ? Colors.red[300]! : const Color(0xFFD96383),
-                    ),
-                    // ATTIVITÀ -> GIALLO SCHERMATA PIANIFICA
-                    _PastelStatCard(
-                      title: 'Attività',
-                      value: provider.pendingTasks.toString(),
-                      icon: Icons.check_circle_outline_rounded,
-                      color: isDark ? const Color(0xFF3E351A) : const Color(0xFFFFF9C4),
-                      textColor: isDark ? Colors.white : const Color(0xFFFBC02D),
-                      iconColor: isDark ? Colors.amber[300]! : const Color(0xFFFBC02D),
-                    ),
-                    // CFU -> BLU COME ESAME ORA
-                    _PastelStatCard(
-                      title: 'CFU',
-                      value: '${provider.earnedCfu}/${provider.totalCfu}',
-                      icon: Icons.school_rounded,
-                      color: isDark ? const Color(0xFF1D2D44) : const Color(0xFFE4F0FF),
-                      textColor: isDark ? Colors.white : const Color(0xFF1976D2),
-                      iconColor: isDark ? Colors.blue[300]! : const Color(0xFF1976D2),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // 3. SEZIONE: COUNTDOWN PROSSIMO ESAME (Usa la palette esami della foto)
+                _StatGrid(provider: provider, isDark: isDark),
+                const SizedBox(height: 28),
                 if (prossimoEsame != null) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.timer_outlined, size: 20, color: isDark ? Colors.white70 : Colors.black87),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Prossimo obiettivo d\'esame',
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.w700, 
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _NextExamCard(
+                  _SectionLabel(
+                    icon: Icons.timer_outlined,
+                    label: "Prossimo obiettivo d'esame",
                     isDark: isDark,
-                    examName: prossimoEsame.titolo, 
-                    daysLeft: giorniMancantiEsame, 
-                    dateString: dataEsameFormattata, 
-                  ),
-                  const SizedBox(height: 32),
-                ],
-
-                // 4. SEZIONE: SUGGERIMENTI (PULITI SENZA DUPLICATI)
-                if (suggerimentiUnici.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.lightbulb_outline, size: 20, color: isDark ? Colors.white70 : Colors.black87),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Suggerimenti',
-                        style: TextStyle(
-                          fontSize: 16, 
-                          fontWeight: FontWeight.w700, 
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: 12),
-                  ...suggerimentiUnici.map((suggerimento) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(Icons.arrow_forward_rounded, size: 18, color: isDark ? Colors.white54 : Colors.black54),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            suggerimento, 
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: isDark ? Colors.white70 : Colors.black87,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Icon(Icons.chevron_right_rounded, size: 20, color: isDark ? Colors.white38 : Colors.black26),
-                      ],
-                    ),
-                  )),
-                  const SizedBox(height: 32),
+                  _NextExamCard(exam: prossimoEsame, isDark: isDark),
+                  const SizedBox(height: 28),
+                ],
+                if (suggerimentiUnici.isNotEmpty) ...[
+                  _SectionLabel(
+                    icon: Icons.lightbulb_outline_rounded,
+                    label: 'Suggerimenti per te',
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 12),
+                  ...suggerimentiUnici.map(
+                    (s) => _SuggestionTile(text: s, isDark: isDark),
+                  ),
                 ],
               ],
             ),
@@ -220,69 +71,275 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// Trova il prossimo esame in ordine cronologico (oggi o futuro,
+  /// stato 'programmato').
+  Exam? _findProssimoEsame(PlannerProvider provider) {
+    if (provider.exams.isEmpty) return null;
+    final oggi = DateTime.now();
+    final futuri = provider.exams
+        .where((e) =>
+            e.stato == 'programmato' &&
+            (e.data.isAfter(oggi) || DateUtils.isSameDay(e.data, oggi)))
+        .toList()
+      ..sort((a, b) => a.data.compareTo(b.data));
+    return futuri.isEmpty ? null : futuri.first;
+  }
 }
 
-// -----------------------------------------------------------------------------
-// WIDGET PERSONALIZZATI COMPONENTI
-// -----------------------------------------------------------------------------
-
-class _PastelStatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color textColor;
-  final Color iconColor;
-
-  const _PastelStatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.textColor,
-    required this.iconColor,
-  });
+// ═══════════════════════════════════════════════════════════════
+// HEADER: Large title iOS-style + Avatar
+// ═══════════════════════════════════════════════════════════════
+class _HeaderSection extends StatelessWidget {
+  final bool isDark;
+  const _HeaderSection({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+    final primaryColor =
+        isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryColor =
+        isDark ? Colors.white70 : AppColors.textSecondary;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, size: 20, color: iconColor),
-              const SizedBox(width: 8),
               Text(
-                title,
+                'Dashboard',
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: textColor.withOpacity(0.9),
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.2,
+                  height: 1.05,
+                  color: primaryColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Bentornato, Studente!',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: secondaryColor,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
           ),
-          Text(
-            value,
+        ),
+        Consumer<ThemeProvider>(
+          builder: (context, themeProvider, _) {
+            return GestureDetector(
+              onTap: () => themeProvider.toggleTheme(),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : AppColors.surface,
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : AppColors.border,
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  themeProvider.isDarkMode
+                      ? Icons.light_mode_rounded
+                      : Icons.dark_mode_rounded,
+                  size: 20,
+                  color: secondaryColor,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRIGLIA 2x2 STAT CARDS PASTELLO
+// ═══════════════════════════════════════════════════════════════
+class _StatGrid extends StatelessWidget {
+  final PlannerProvider provider;
+  final bool isDark;
+
+  const _StatGrid({required this.provider, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 14,
+      crossAxisSpacing: 14,
+      childAspectRatio: 1.45,
+      children: [
+        _GlowStatCard(
+          title: 'Corsi',
+          value: provider.activeCourses.toString(),
+          icon: Icons.menu_book_rounded,
+          pastel: AppColors.pastelRed,
+          isDark: isDark,
+        ),
+        _GlowStatCard(
+          title: 'Esami',
+          value: provider.upcomingExams.toString(),
+          icon: Icons.calendar_month_rounded,
+          pastel: AppColors.pastelBlue,
+          isDark: isDark,
+        ),
+        _GlowStatCard(
+          title: 'Attività',
+          value: provider.pendingTasks.toString(),
+          icon: Icons.check_circle_outline_rounded,
+          pastel: AppColors.pastelGreen,
+          isDark: isDark,
+        ),
+        _GlowStatCard(
+          title: 'CFU',
+          value: '${provider.earnedCfu}/${provider.totalCfu}',
+          icon: Icons.school_rounded,
+          pastel: AppColors.pastelYellow,
+          isDark: isDark,
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CARD STATISTICA CON HALO PASTELLO
+// ═══════════════════════════════════════════════════════════════
+class _GlowStatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color pastel;
+  final bool isDark;
+
+  const _GlowStatCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.pastel,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor =
+        isDark ? Colors.white : AppColors.textPrimary;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: pastel.withValues(alpha: isDark ? 0.18 : 0.45),
+            blurRadius: 24,
+            spreadRadius: -4,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              pastel.withValues(alpha: isDark ? 0.85 : 1.0),
+              Color.lerp(pastel, Colors.white, isDark ? 0.0 : 0.18)!,
+              pastel.withValues(alpha: isDark ? 0.85 : 1.0),
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: textColor),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+            _ValueText(value: value, color: textColor),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Mostra il valore. Se contiene una "/" (es. "24/180"), il dopo-slash
+/// viene reso più piccolo per non rubare attenzione.
+class _ValueText extends StatelessWidget {
+  final String value;
+  final Color color;
+  const _ValueText({required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final slashIndex = value.indexOf('/');
+    if (slashIndex == -1) {
+      return Text(
+        value,
+        style: TextStyle(
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
+          color: color,
+          letterSpacing: -1.5,
+          height: 1.0,
+        ),
+      );
+    }
+    final main = value.substring(0, slashIndex);
+    final rest = value.substring(slashIndex);
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: main,
             style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: textColor,
-              letterSpacing: -1,
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -1.5,
+              height: 1.0,
+              fontFamilyFallback: const ['Inter', 'SF Pro'],
+            ),
+          ),
+          TextSpan(
+            text: rest,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color.withValues(alpha: 0.7),
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -291,98 +348,220 @@ class _PastelStatCard extends StatelessWidget {
   }
 }
 
-class _NextExamCard extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════
+// SECTION LABEL (icona + titolo)
+// ═══════════════════════════════════════════════════════════════
+class _SectionLabel extends StatelessWidget {
+  final IconData icon;
+  final String label;
   final bool isDark;
-  final String examName;
-  final int daysLeft;
-  final String dateString;
 
-  const _NextExamCard({
+  const _SectionLabel({
+    required this.icon,
+    required this.label,
     required this.isDark,
-    required this.examName,
-    required this.daysLeft,
-    required this.dateString,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color =
+        isDark ? Colors.white : AppColors.textPrimary;
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CARD PROSSIMO ESAME
+// ═══════════════════════════════════════════════════════════════
+class _NextExamCard extends StatelessWidget {
+  final Exam exam;
+  final bool isDark;
+
+  const _NextExamCard({required this.exam, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final adesso = DateTime.now();
+    final dataSenzaOre =
+        DateTime(exam.data.year, exam.data.month, exam.data.day);
+    final oggiSenzaOre =
+        DateTime(adesso.year, adesso.month, adesso.day);
+    final giorni = dataSenzaOre.difference(oggiSenzaOre).inDays;
+    final dataFormattata =
+        "${exam.data.day.toString().padLeft(2, '0')}/${exam.data.month.toString().padLeft(2, '0')}/${exam.data.year}";
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Theme.of(context).colorScheme.surfaceContainer : Colors.white,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: isDark ? [] : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppColors.border,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Row(
         children: [
+          // Cerchio countdown
           Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF4A3232) : const Color(0xFFFFEAEA),
+            width: 60,
+            height: 60,
+            decoration: const BoxDecoration(
+              color: AppColors.pastelRed,
               shape: BoxShape.circle,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  daysLeft.toString(),
-                  style: TextStyle(
+                  giorni.toString(),
+                  style: const TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.red[200] : const Color(0xFFD96383),
-                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.0,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 Text(
-                  daysLeft == 1 ? 'giorno' : 'giorni',
-                  style: TextStyle(
-                    fontSize: 11,
+                  giorni == 1 ? 'giorno' : 'giorni',
+                  style: const TextStyle(
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.red[200]?.withOpacity(0.8) : const Color(0xFFD96383).withOpacity(0.8),
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  examName,
+                  exam.titolo,
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.black87,
-                    letterSpacing: -0.5,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? Colors.white
+                        : AppColors.textPrimary,
+                    letterSpacing: -0.3,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: isDark ? Colors.white54 : Colors.black45),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 13,
+                      color: AppColors.pastelRedDeep,
+                    ),
                     const SizedBox(width: 6),
                     Text(
-                      dateString,
+                      dataFormattata,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white54 : Colors.black45,
+                        color: isDark
+                            ? Colors.white60
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUGGESTION TILE
+// ═══════════════════════════════════════════════════════════════
+class _SuggestionTile extends StatelessWidget {
+  final String text;
+  final bool isDark;
+
+  const _SuggestionTile({required this.text, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    // Detect urgency from emoji prefix
+    final isUrgent = text.startsWith('!!');
+    final color = isUrgent
+        ? AppColors.pastelRedDeep
+        : AppColors.pastelLavenderDeep;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppColors.border,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isDark
+                    ? Colors.white
+                    : AppColors.textPrimary,
+                letterSpacing: -0.2,
+                height: 1.35,
+              ),
             ),
           ),
         ],

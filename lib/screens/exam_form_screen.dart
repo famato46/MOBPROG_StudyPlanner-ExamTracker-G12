@@ -167,7 +167,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
             // Corso associato
             DropdownButtonFormField<String>(
-              value: _courseId,
+              initialValue: _courseId,
               decoration: const InputDecoration(
                 labelText: 'Corso associato *',
                 border: OutlineInputBorder(),
@@ -208,7 +208,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
             // Tipologia
             DropdownButtonFormField<String>(
-              value: _tipologia,
+              initialValue: _tipologia,
               decoration: const InputDecoration(
                 labelText: 'Tipologia',
                 border: OutlineInputBorder(),
@@ -225,7 +225,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
             // Priorità
             DropdownButtonFormField<String>(
-              value: _priorita,
+              initialValue: _priorita,
               decoration: const InputDecoration(
                 labelText: 'Priorità',
                 border: OutlineInputBorder(),
@@ -241,7 +241,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
             // Stato
             DropdownButtonFormField<String>(
-              value: _stato,
+              initialValue: _stato,
               decoration: const InputDecoration(
                 labelText: 'Stato',
                 border: OutlineInputBorder(),

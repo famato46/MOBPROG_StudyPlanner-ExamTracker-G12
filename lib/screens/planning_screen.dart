@@ -52,7 +52,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
   void _startPomodoro() {
     if (_selectedTaskForPomodoro == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ Seleziona un obiettivo prima di avviare il timer!')),
+        const SnackBar(content: Text('Seleziona un obiettivo prima di avviare il timer!')),
       );
       return;
     }
@@ -98,7 +98,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('🍅 Ottimo lavoro!'),
+        title: const Text('Ottimo lavoro!'),
         content: const Text('I tuoi 25 minuti di focus sono stati registrati con successo.'),
         actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Avanti'))],
       ),
@@ -220,7 +220,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
   Widget _buildTabOggi(List<StudySession> sessioni, List<Task> task, PlannerProvider provider) {
     if (sessioni.isEmpty && task.isEmpty) {
       return const Center(
-        child: Text('🎉 Libero! Nessuna attività prevista per oggi.', style: TextStyle(color: Colors.grey)),
+        child: Text('Libero! Nessuna attività prevista per oggi.', style: TextStyle(color: Colors.grey)),
       );
     }
 
@@ -284,7 +284,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
           children: [
             Expanded(child: Text(s.titolo, style: TextStyle(decoration: s.completata ? TextDecoration.lineThrough : null))),
             const SizedBox(width: 8),
-            // Rimosso il badge priorità non esistente per le sessioni ❌
+            // Rimosso il badge priorità non esistente per le sessioni 
           ],
         ),
         subtitle: Text('$dataString${provider.getCourseById(s.courseId ?? '')?.nome ?? "Generico"} • ${s.tipo}'),
@@ -549,7 +549,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
     String tipoStudio = isModifica ? sessioneEsistente.tipo : 'Studio';
 
     if (provider.courses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚠️ Inserisci prima un Corso nell\'apposita schermata!')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inserisci prima un Corso nell\'apposita schermata!')));
       return;
     }
 
@@ -612,7 +612,7 @@ class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProvid
                   if (ctx.mounted) Navigator.of(ctx).pop();
                   
                 } catch (e) {
-                  debugPrint('❌ Errore specifico alla riga 607: $e');
+                  debugPrint('Errore specifico alla riga 607: $e');
                 }
               },
               child: Text(isModifica ? 'Aggiorna' : 'Salva'),

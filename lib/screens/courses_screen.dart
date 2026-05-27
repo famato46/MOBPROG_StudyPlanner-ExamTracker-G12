@@ -6,6 +6,7 @@ import '../utils/app_colors.dart';
 import 'course_detail_screen.dart';
 import 'course_form_screen.dart';
 
+/// CoursesScreen — Lista corsi Apple-style.
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
 
@@ -16,7 +17,7 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   String _searchQuery = '';
   String _filterStato = 'tutti';
-  String _filterSemestre = 'tutti_sem'; // AGGIUNTO
+  String _filterSemestre = 'tutti_sem';
   String _sortBy = 'nome';
 
   final TextEditingController _searchController = TextEditingController();
@@ -29,12 +30,13 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   List<Course> _filteredCourses(List<Course> courses) {
     var filtered = courses.where((c) {
-      final matchSearch =
-          c.nome.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              c.docente.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchStato = _filterStato == 'tutti' || c.stato == _filterStato;
+      final q = _searchQuery.toLowerCase();
+      final matchSearch = c.nome.toLowerCase().contains(q) ||
+          c.docente.toLowerCase().contains(q);
+      final matchStato =
+          _filterStato == 'tutti' || c.stato == _filterStato;
       final matchSemestre = _filterSemestre == 'tutti_sem' ||
-          c.semestre == _filterSemestre; // AGGIUNTO
+          c.semestre == _filterSemestre;
       return matchSearch && matchStato && matchSemestre;
     }).toList();
 
@@ -72,45 +74,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Theme.of(context).colorScheme.surface
+        : AppColors.background;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.book,
-                  size: 20,
-                  color: isDark ? Colors.white : AppColors.courses),
-              const SizedBox(width: 8),
-              Text(
-                'Corsi',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.courses,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            onSelected: (val) => setState(() => _sortBy = val),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'nome', child: Text('Ordina per nome')),
-              PopupMenuItem(value: 'cfu', child: Text('Ordina per CFU')),
-              PopupMenuItem(value: 'stato', child: Text('Ordina per stato')),
-            ],
-          ),
-        ],
-      ),
+      backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -119,202 +88,85 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
           final courses = _filteredCourses(provider.courses);
 
-          return Column(
-            children: [
-              // Barra di ricerca
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: TextField(
-                  controller: _searchController,
-                  style: TextStyle(
-                      color: isDark ? Colors.white : Colors.black87),
-                  decoration: InputDecoration(
-                    hintText: 'Cerca per nome o docente...',
-                    hintStyle: TextStyle(
-                        color: isDark
-                            ? Colors.grey[400]
-                            : AppColors.textMuted),
-                    prefixIcon: Icon(Icons.search,
-                        color: isDark
-                            ? Colors.white70
-                            : AppColors.courses),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear,
-                                color: isDark
-                                    ? Colors.white70
-                                    : Colors.black54),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                          color: AppColors.courses.withOpacity(0.5),
-                          width: 1.5),
-                    ),
-                    filled: true,
-                    fillColor:
-                        Theme.of(context).colorScheme.surfaceContainer,
-                  ),
-                  onChanged: (val) => setState(() => _searchQuery = val),
+          return SafeArea(
+            child: Column(
+              children: [
+                _CoursesHeader(
+                  total: provider.courses.length,
+                  visible: courses.length,
+                  sortBy: _sortBy,
+                  onSortChanged: (v) => setState(() => _sortBy = v),
+                  isDark: isDark,
                 ),
-              ),
-
-              // Filtro stato
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
-                child: Row(
-                  children: [
+                _SearchBar(
+                  controller: _searchController,
+                  hasQuery: _searchQuery.isNotEmpty,
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  onClear: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 4),
+                _FilterRow(
+                  options: const [
                     ('tutti', 'Tutti'),
                     ('da_iniziare', 'Da iniziare'),
                     ('in_corso', 'In corso'),
                     ('da_ripassare', 'Da ripassare'),
                     ('completato', 'Completato'),
                     ('superato', 'Superato'),
-                  ].map((entry) {
-                    final selected = _filterStato == entry.$1;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(entry.$2),
-                        selected: selected,
-                        selectedColor:
-                            AppColors.courses.withOpacity(0.2),
-                        checkmarkColor: AppColors.coursesDark,
-                        onSelected: (_) =>
-                            setState(() => _filterStato = entry.$1),
-                      ),
-                    );
-                  }).toList(),
+                  ],
+                  current: _filterStato,
+                  onSelected: (v) => setState(() => _filterStato = v),
+                  isDark: isDark,
                 ),
-              ),
-
-              // Filtro semestre — AGGIUNTO
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(
-                    left: 12, right: 12, bottom: 8),
-                child: Row(
-                  children: [
+                // GAP più ampio tra le due righe di filtri
+                const SizedBox(height: 12),
+                _FilterRow(
+                  options: const [
                     ('tutti_sem', 'Tutti i semestri'),
                     ('Primo semestre 2024/25', '1° sem 24/25'),
                     ('Secondo semestre 2024/25', '2° sem 24/25'),
                     ('Primo semestre 2025/26', '1° sem 25/26'),
                     ('Secondo semestre 2025/26', '2° sem 25/26'),
-                  ].map((entry) {
-                    final selected = _filterSemestre == entry.$1;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(entry.$2),
-                        selected: selected,
-                        selectedColor:
-                            AppColors.courses.withOpacity(0.2),
-                        checkmarkColor: AppColors.coursesDark,
-                        onSelected: (_) => setState(
-                            () => _filterSemestre = entry.$1),
-                      ),
-                    );
-                  }).toList(),
+                  ],
+                  current: _filterSemestre,
+                  onSelected: (v) => setState(() => _filterSemestre = v),
+                  isDark: isDark,
                 ),
-              ),
-
-              // Lista corsi
-              Expanded(
-                child: courses.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.school_outlined,
-                                size: 64, color: AppColors.courses),
-                            const SizedBox(height: 16),
-                            Text(
-                              provider.courses.isEmpty
-                                  ? 'Nessun corso aggiunto.\nPremi + per iniziare!'
-                                  : 'Nessun corso trovato.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  color: AppColors.coursesDark),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(
-                            16, 0, 16, 80),
-                        itemCount: courses.length,
-                        itemBuilder: (context, index) {
-                          final course = courses[index];
-                          return Dismissible(
-                            key: ValueKey(course.id),
-                            direction: DismissDirection.endToStart,
-                            background: Container(
-                              alignment: Alignment.centerRight,
-                              padding:
-                                  const EdgeInsets.only(right: 20),
-                              margin: const EdgeInsets.symmetric(
-                                  vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.danger,
-                                borderRadius:
-                                    BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.delete,
-                                  color: Colors.white),
-                            ),
-                            confirmDismiss: (_) async {
-                              return await showDialog<bool>(
-                                context: context,
-                                builder: (_) => AlertDialog(
-                                  title:
-                                      const Text('Elimina corso'),
-                                  content: Text(
-                                      'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(
-                                          context, false),
-                                      child: const Text('Annulla'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(
-                                          context, true),
-                                      child: Text('Elimina',
-                                          style: TextStyle(
-                                              color:
-                                                  AppColors.danger)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            onDismissed: (_) {
-                              provider.deleteCourse(course.id);
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(
-                                      content: Text(
-                                          '${course.nome} eliminato')));
-                            },
-                            child: _CourseCard(
+                const SizedBox(height: 16),
+                Expanded(
+                  child: courses.isEmpty
+                      ? _EmptyState(
+                          hasAnyCourse: provider.courses.isNotEmpty,
+                          isDark: isDark,
+                        )
+                      : ListView.builder(
+                          padding:
+                              const EdgeInsets.fromLTRB(20, 4, 20, 100),
+                          itemCount: courses.length,
+                          itemBuilder: (context, index) {
+                            final course = courses[index];
+                            return _DismissibleCourse(
                               course: course,
                               statoColor:
                                   AppColors.statoCorso(course.stato),
                               statoLabel: _statoLabel(course.stato),
+                              onConfirmDelete: () =>
+                                  _confirmDelete(context, course),
+                              onDelete: () async {
+                                await provider.deleteCourse(course.id);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        '${course.nome} eliminato'),
+                                  ),
+                                );
+                              },
                               onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -322,22 +174,385 @@ class _CoursesScreenState extends State<CoursesScreen> {
                                       course: course),
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
+                              isDark: isDark,
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.courses,
+      floatingActionButton: _SectionFab(
+        color: AppColors.pastelRed,
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CourseFormScreen()),
         ),
-        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context, Course course) {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Elimina corso'),
+        content: Text(
+            'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Elimina',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoursesHeader extends StatelessWidget {
+  final int total;
+  final int visible;
+  final String sortBy;
+  final ValueChanged<String> onSortChanged;
+  final bool isDark;
+
+  const _CoursesHeader({
+    required this.total,
+    required this.visible,
+    required this.sortBy,
+    required this.onSortChanged,
+    required this.isDark,
+  });
+
+  String _sortLabel(String s) {
+    switch (s) {
+      case 'nome':
+        return 'Nome';
+      case 'cfu':
+        return 'CFU';
+      case 'stato':
+        return 'Stato';
+      default:
+        return s;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryColor =
+        isDark ? Colors.white70 : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Corsi',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.2,
+                    height: 1.05,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  visible == total
+                      ? '$total ${total == 1 ? "corso" : "corsi"}'
+                      : '$visible di $total visibili',
+                  style:
+                      TextStyle(fontSize: 14, color: secondaryColor),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+            color:
+                isDark ? const Color(0xFF2A2A2C) : AppColors.surface,
+            position: PopupMenuPosition.under,
+            onSelected: onSortChanged,
+            itemBuilder: (_) => [
+              _sortItem('nome', 'Nome A-Z', Icons.sort_by_alpha),
+              _sortItem('cfu', 'CFU (alti prima)', Icons.school_outlined),
+              _sortItem('stato', 'Stato', Icons.filter_list_rounded),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.border,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sort_rounded,
+                      size: 16, color: secondaryColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    _sortLabel(sortBy),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _sortItem(
+      String value, String label, IconData icon) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final bool hasQuery;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final bool isDark;
+
+  const _SearchBar({
+    required this.controller,
+    required this.hasQuery,
+    required this.onChanged,
+    required this.onClear,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fillColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.05);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: TextStyle(
+          fontSize: 15,
+          color: isDark ? Colors.white : AppColors.textPrimary,
+        ),
+        cursorColor: AppColors.pastelRedDeep,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          hintText: 'Cerca per nome o docente',
+          hintStyle: TextStyle(
+              fontSize: 15, color: AppColors.textMuted),
+          prefixIcon: Icon(Icons.search_rounded,
+              color: AppColors.textMuted, size: 20),
+          suffixIcon: hasQuery
+              ? IconButton(
+                  icon: Icon(Icons.cancel_rounded,
+                      color: AppColors.textMuted, size: 18),
+                  onPressed: onClear,
+                )
+              : null,
+          filled: true,
+          fillColor: fillColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterRow extends StatelessWidget {
+  final List<(String, String)> options;
+  final String current;
+  final ValueChanged<String> onSelected;
+  final bool isDark;
+
+  const _FilterRow({
+    required this.options,
+    required this.current,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: options.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (value, label) = options[i];
+          final selected = current == value;
+          return _FilterPill(
+            label: label,
+            selected: selected,
+            onTap: () => onSelected(value),
+            isDark: isDark,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected
+        ? AppColors.pastelRed
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.surface);
+    final fg = selected
+        ? Colors.white
+        : (isDark ? Colors.white70 : AppColors.textSecondary);
+    final border = selected
+        ? AppColors.pastelRed
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.1)
+            : AppColors.border);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: border),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: fg,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DismissibleCourse extends StatelessWidget {
+  final Course course;
+  final Color statoColor;
+  final String statoLabel;
+  final Future<bool?> Function() onConfirmDelete;
+  final Future<void> Function() onDelete;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _DismissibleCourse({
+    required this.course,
+    required this.statoColor,
+    required this.statoLabel,
+    required this.onConfirmDelete,
+    required this.onDelete,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey(course.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.danger,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(Icons.delete_rounded, color: Colors.white),
+      ),
+      confirmDismiss: (_) async => await onConfirmDelete() ?? false,
+      onDismissed: (_) => onDelete(),
+      child: _CourseCard(
+        course: course,
+        statoColor: statoColor,
+        statoLabel: statoLabel,
+        onTap: onTap,
+        isDark: isDark,
       ),
     );
   }
@@ -348,73 +563,113 @@ class _CourseCard extends StatelessWidget {
   final Color statoColor;
   final String statoLabel;
   final VoidCallback onTap;
+  final bool isDark;
 
   const _CourseCard({
     required this.course,
     required this.statoColor,
     required this.statoLabel,
     required this.onTap,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: statoColor,
-                  borderRadius: BorderRadius.circular(4),
+    final primaryColor =
+        isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryColor =
+        isDark ? Colors.white60 : AppColors.textSecondary;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppColors.border,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      course.nome,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: statoColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        course.nome,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: primaryColor,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      course.docente,
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 13),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _Chip(
+                      const SizedBox(height: 2),
+                      Text(
+                        course.docente,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: secondaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          _Badge(
                             label: '${course.cfu} CFU',
-                            color: AppColors.courses),
-                        const SizedBox(width: 6),
-                        _Chip(label: statoLabel, color: statoColor),
-                        if (course.votoOttenuto != null) ...[
-                          const SizedBox(width: 6),
-                          _Chip(
-                            label: '${course.votoOttenuto}/30',
-                            color: AppColors.success,
+                            color: AppColors.pastelRedDeep,
                           ),
+                          _Badge(label: statoLabel, color: statoColor),
+                          if (course.votoOttenuto != null)
+                            _Badge(
+                              label: '${course.votoOttenuto}/30',
+                              color: AppColors.success,
+                            ),
                         ],
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: AppColors.textMuted),
-            ],
+                Icon(Icons.chevron_right_rounded,
+                    color: isDark ? Colors.white38 : Colors.black26),
+              ],
+            ),
           ),
         ),
       ),
@@ -422,24 +677,118 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
+class _Badge extends StatelessWidget {
   final String label;
   final Color color;
-  const _Chip({required this.label, required this.color});
+  const _Badge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w600)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.1,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final bool hasAnyCourse;
+  final bool isDark;
+
+  const _EmptyState({
+    required this.hasAnyCourse,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.pastelRedLight,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.school_rounded,
+              size: 36,
+              color: AppColors.pastelRedDeep,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            hasAnyCourse
+                ? 'Nessun corso trovato'
+                : 'Nessun corso aggiunto',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hasAnyCourse
+                ? 'Prova a cambiare i filtri'
+                : 'Premi + per aggiungere il primo',
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark
+                  ? Colors.white60
+                  : AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionFab extends StatelessWidget {
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _SectionFab({required this.color, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.55),
+            blurRadius: 18,
+            spreadRadius: -2,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: const CircleBorder(),
+        onPressed: onPressed,
+        child: const Icon(Icons.add_rounded, size: 28),
+      ),
     );
   }
 }

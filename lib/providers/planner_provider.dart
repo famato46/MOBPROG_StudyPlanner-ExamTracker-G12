@@ -438,23 +438,23 @@ class PlannerProvider extends ChangeNotifier {
 
       if (giorniMancanti <= 3) {
         suggerimenti
-            .add('🚨 URGENZA: Fai una simulazione per ${course.nome}!');
+            .add('!! URGENZA: Fai una simulazione per ${course.nome}!');
       } else if (giorniMancanti <= 7) {
         suggerimenti
-            .add('📚 Ripasso intensivo consigliato per ${course.nome}');
+            .add('Ripasso intensivo consigliato per ${course.nome}');
       } else {
-        suggerimenti.add('✏️ Inizia gli esercizi per ${course.nome}');
+        suggerimenti.add('Inizia gli esercizi per ${course.nome}');
       }
     }
 
     final taskInScadenza =
         _tasks.where((t) => t.isInScadenza && !t.completata).toList();
     for (final task in taskInScadenza.take(2)) {
-      suggerimenti.add('⏰ Scadenza vicina: ${task.titolo}');
+      suggerimenti.add('Scadenza vicina: ${task.titolo}');
     }
 
     if (suggerimenti.isEmpty && _courses.isNotEmpty) {
-      suggerimenti.add('✅ Ottimo lavoro! Nessun esame imminente.');
+      suggerimenti.add('Ottimo lavoro! Nessun esame imminente.');
     }
 
     return suggerimenti;

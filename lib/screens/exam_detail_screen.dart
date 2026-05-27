@@ -88,8 +88,10 @@ class ExamDetailScreen extends StatelessWidget {
                       ],
                     ),
                   );
-                  if (confirm == true && context.mounted) {
+                  if (!context.mounted) return;
+                  if (confirm == true) {
                     await provider.deleteExam(updatedExam.id);
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   }
                 },
@@ -129,7 +131,7 @@ class ExamDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20, vertical: 10),
                   decoration: BoxDecoration(
-                    color: colore.withOpacity(0.15),
+                    color: colore.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: colore),
                   ),

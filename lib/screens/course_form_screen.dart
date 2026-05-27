@@ -4,6 +4,10 @@ import '../providers/planner_provider.dart';
 import '../models/course.dart';
 import '../utils/app_colors.dart';
 
+/// CourseFormScreen — Form Apple-style.
+///
+/// Layout iOS Settings: gruppi grigi arrotondati, righe con label
+/// a sx e input/picker a dx, divider sottili.
 class CourseFormScreen extends StatefulWidget {
   final Course? courseToEdit;
   const CourseFormScreen({super.key, this.courseToEdit});
@@ -28,14 +32,28 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
 
   bool get _isEditing => widget.courseToEdit != null;
 
+  static const List<String> _semestri = [
+    'Primo semestre 2024/25',
+    'Secondo semestre 2024/25',
+    'Primo semestre 2025/26',
+    'Secondo semestre 2025/26',
+  ];
+
+  static const List<(String, String)> _stati = [
+    ('da_iniziare', 'Da iniziare'),
+    ('in_corso', 'In corso'),
+    ('da_ripassare', 'Da ripassare'),
+    ('completato', 'Completato'),
+    ('superato', 'Superato'),
+  ];
+
   @override
   void initState() {
     super.initState();
     final c = widget.courseToEdit;
     _nomeCtrl = TextEditingController(text: c?.nome ?? '');
     _docenteCtrl = TextEditingController(text: c?.docente ?? '');
-    _cfuCtrl =
-        TextEditingController(text: c?.cfu.toString() ?? '');
+    _cfuCtrl = TextEditingController(text: c?.cfu.toString() ?? '');
     _noteCtrl = TextEditingController(text: c?.note ?? '');
     _materialeCtrl =
         TextEditingController(text: c?.materialeAssociato ?? '');
@@ -102,169 +120,225 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
       );
     }
 
-    if (mounted) Navigator.pop(context);
+    if (!mounted) return;
+    Navigator.pop(context);
   }
+
+  String _statoLabel(String s) =>
+      _stati.firstWhere((e) => e.$1 == s, orElse: () => (s, s)).$2;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark
+        ? const Color(0xFF000000)
+        : AppColors.groupedBackground;
+
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Modifica Corso' : 'Nuovo Corso'),
+        backgroundColor: bgColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        leading: TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.iosBlue,
+            padding: const EdgeInsets.only(left: 16),
+          ),
+          child: const Text(
+            'Annulla',
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+        leadingWidth: 88,
+        title: Text(
+          _isEditing ? 'Modifica Corso' : 'Nuovo Corso',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('Salva'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.iosBlue,
+              padding: const EdgeInsets.only(right: 16),
+            ),
+            child: const Text(
+              'Salva',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            _buildField(
-              controller: _nomeCtrl,
-              label: 'Nome del corso *',
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Campo obbligatorio' : null,
-            ),
-            const SizedBox(height: 12),
-            _buildField(
-              controller: _docenteCtrl,
-              label: 'Docente *',
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Campo obbligatorio' : null,
-            ),
-            const SizedBox(height: 12),
-            _buildField(
-              controller: _cfuCtrl,
-              label: 'CFU *',
-              keyboardType: TextInputType.number,
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Campo obbligatorio';
-                if (int.tryParse(v) == null) return 'Inserisci un numero';
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // FIX: value → initialValue
-            DropdownButtonFormField<String>(
-              initialValue: _semestre,
-              decoration: const InputDecoration(
-                labelText: 'Semestre',
-                border: OutlineInputBorder(),
-                filled: true,
-              ),
-              items: const [
-                DropdownMenuItem(
-                    value: 'Primo semestre 2024/25',
-                    child: Text('Primo semestre 2024/25')),
-                DropdownMenuItem(
-                    value: 'Secondo semestre 2024/25',
-                    child: Text('Secondo semestre 2024/25')),
-                DropdownMenuItem(
-                    value: 'Primo semestre 2025/26',
-                    child: Text('Primo semestre 2025/26')),
-                DropdownMenuItem(
-                    value: 'Secondo semestre 2025/26',
-                    child: Text('Secondo semestre 2025/26')),
-              ],
-              onChanged: (v) => setState(() => _semestre = v!),
-            ),
-            const SizedBox(height: 12),
-
-            // FIX: value → initialValue
-            DropdownButtonFormField<String>(
-              initialValue: _stato,
-              decoration: const InputDecoration(
-                labelText: 'Stato',
-                border: OutlineInputBorder(),
-                filled: true,
-              ),
-              items: const [
-                DropdownMenuItem(
-                    value: 'da_iniziare', child: Text('Da iniziare')),
-                DropdownMenuItem(
-                    value: 'in_corso', child: Text('In corso')),
-                DropdownMenuItem(
-                    value: 'da_ripassare', child: Text('Da ripassare')),
-                DropdownMenuItem(
-                    value: 'completato', child: Text('Completato')),
-                DropdownMenuItem(
-                    value: 'superato', child: Text('Superato')),
-              ],
-              onChanged: (v) => setState(() => _stato = v!),
-            ),
-            const SizedBox(height: 12),
-
-            Row(
+            // ─── GRUPPO DATI PRINCIPALI ─────────────────────
+            _GroupHeader(label: 'Dati corso'),
+            _SettingsGroup(
+              isDark: isDark,
               children: [
-                Expanded(
-                  child: _buildField(
-                    controller: _votoDesideratoCtrl,
-                    label: 'Voto desiderato',
+                _TextFieldRow(
+                  label: 'Nome',
+                  controller: _nomeCtrl,
+                  hint: 'es. Analisi 1',
+                  required: true,
+                  isDark: isDark,
+                ),
+                _TextFieldRow(
+                  label: 'Docente',
+                  controller: _docenteCtrl,
+                  hint: 'es. Mario Rossi',
+                  required: true,
+                  isDark: isDark,
+                ),
+                _TextFieldRow(
+                  label: 'CFU',
+                  controller: _cfuCtrl,
+                  hint: '9',
+                  keyboardType: TextInputType.number,
+                  required: true,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return 'Campo obbligatorio';
+                    }
+                    if (int.tryParse(v) == null) return 'Numero non valido';
+                    return null;
+                  },
+                  isDark: isDark,
+                ),
+              ],
+            ),
+
+            // ─── GRUPPO STATO E PERIODO ─────────────────────
+            const SizedBox(height: 24),
+            _GroupHeader(label: 'Stato e periodo'),
+            _SettingsGroup(
+              isDark: isDark,
+              children: [
+                _PickerRow(
+                  label: 'Semestre',
+                  value: _semestre,
+                  onTap: () => _showSemestrePicker(context, isDark),
+                  isDark: isDark,
+                ),
+                _PickerRow(
+                  label: 'Stato',
+                  value: _statoLabel(_stato),
+                  valueColor: AppColors.statoCorso(_stato),
+                  onTap: () => _showStatoPicker(context, isDark),
+                  isDark: isDark,
+                ),
+              ],
+            ),
+
+            // ─── GRUPPO VOTI ────────────────────────────────
+            const SizedBox(height: 24),
+            _GroupHeader(label: 'Voti'),
+            _SettingsGroup(
+              isDark: isDark,
+              children: [
+                _TextFieldRow(
+                  label: 'Voto desiderato',
+                  controller: _votoDesideratoCtrl,
+                  hint: 'opzionale',
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return null;
+                    final n = int.tryParse(v);
+                    if (n == null || n < 18 || n > 30) {
+                      return 'Voto tra 18 e 30';
+                    }
+                    return null;
+                  },
+                  isDark: isDark,
+                ),
+                if (_stato == 'superato')
+                  _TextFieldRow(
+                    label: 'Voto ottenuto',
+                    controller: _votoOttenutoCtrl,
+                    hint: '18-30',
                     keyboardType: TextInputType.number,
+                    required: true,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final n = int.tryParse(v);
-                      if (n == null || n < 18 || n > 30) {
-                        return 'Voto tra 18 e 30';
+                      if (_stato == 'superato' &&
+                          (v == null || v.isEmpty)) {
+                        return 'Inserisci il voto';
+                      }
+                      if (v != null && v.isNotEmpty) {
+                        final n = int.tryParse(v);
+                        if (n == null || n < 18 || n > 30) {
+                          return 'Voto tra 18 e 30';
+                        }
                       }
                       return null;
                     },
+                    isDark: isDark,
                   ),
-                ),
-                if (_stato == 'superato') ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildField(
-                      controller: _votoOttenutoCtrl,
-                      label: 'Voto ottenuto',
-                      keyboardType: TextInputType.number,
-                      validator: (v) {
-                        if (_stato == 'superato' &&
-                            (v == null || v.isEmpty)) {
-                          return 'Inserisci il voto';
-                        }
-                        if (v != null && v.isNotEmpty) {
-                          final n = int.tryParse(v);
-                          if (n == null || n < 18 || n > 30) {
-                            return 'Voto tra 18 e 30';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
               ],
             ),
-            const SizedBox(height: 12),
-            _buildField(
-              controller: _materialeCtrl,
-              label: 'Materiale/riferimenti (opzionale)',
-            ),
-            const SizedBox(height: 12),
-            _buildField(
-              controller: _noteCtrl,
-              label: 'Note (opzionale)',
-              maxLines: 3,
-            ),
+
+            // ─── GRUPPO RISORSE ─────────────────────────────
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _save,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.courses,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(
-                _isEditing ? 'Salva modifiche' : 'Aggiungi corso',
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold),
+            _GroupHeader(label: 'Risorse'),
+            _SettingsGroup(
+              isDark: isDark,
+              children: [
+                _TextFieldRow(
+                  label: 'Materiale',
+                  controller: _materialeCtrl,
+                  hint: 'libri, link, ecc.',
+                  isDark: isDark,
+                ),
+                _TextAreaRow(
+                  label: 'Note',
+                  controller: _noteCtrl,
+                  hint: 'aggiungi una nota',
+                  isDark: isDark,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // ─── CTA PRINCIPALE: pill rosa pastello ────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.pastelRed,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    _isEditing
+                        ? 'Salva modifiche'
+                        : 'Aggiungi corso',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -273,22 +347,425 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     );
   }
 
-  Widget _buildField({
-    required TextEditingController controller,
-    required String label,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        border: const OutlineInputBorder(),
+  // ─── BOTTOM SHEET PICKER iOS-style ─────────────────────────
+  void _showSemestrePicker(BuildContext context, bool isDark) {
+    _showIosPicker<String>(
+      context: context,
+      isDark: isDark,
+      title: 'Semestre',
+      options: _semestri.map((s) => (s, s)).toList(),
+      current: _semestre,
+      onSelected: (v) => setState(() => _semestre = v),
+    );
+  }
+
+  void _showStatoPicker(BuildContext context, bool isDark) {
+    _showIosPicker<String>(
+      context: context,
+      isDark: isDark,
+      title: 'Stato',
+      options: _stati,
+      current: _stato,
+      onSelected: (v) => setState(() => _stato = v),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IOS-STYLE BOTTOM SHEET PICKER
+// ═══════════════════════════════════════════════════════════════
+void _showIosPicker<T>({
+  required BuildContext context,
+  required bool isDark,
+  required String title,
+  required List<(T, String)> options,
+  required T current,
+  required ValueChanged<T> onSelected,
+}) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1C1C1E)
+            : AppColors.groupedSurface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(20),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textMuted.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? Colors.white
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            ...options.map((opt) {
+              final (value, label) = opt;
+              final selected = value == current;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    onSelected(value);
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        if (selected)
+                          Icon(
+                            Icons.check_rounded,
+                            color: AppColors.iosBlue,
+                            size: 22,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GROUP HEADER (uppercase label sopra ogni gruppo)
+// ═══════════════════════════════════════════════════════════════
+class _GroupHeader extends StatelessWidget {
+  final String label;
+  const _GroupHeader({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 8, 16, 8),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textSecondary,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS GROUP (card bianca arrotondata con divider tra righe)
+// ═══════════════════════════════════════════════════════════════
+class _SettingsGroup extends StatelessWidget {
+  final List<Widget> children;
+  final bool isDark;
+
+  const _SettingsGroup({
+    required this.children,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1C1C1E)
+            : AppColors.groupedSurface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: _withDividers(children, isDark),
+      ),
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
+    if (rows.length <= 1) return rows;
+    final result = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      result.add(rows[i]);
+      if (i < rows.length - 1) {
+        result.add(Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Divider(
+            height: 1,
+            thickness: 0.5,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : AppColors.groupedDivider,
+          ),
+        ));
+      }
+    }
+    return result;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT FIELD ROW (label sx, input dx allineato a destra)
+// ═══════════════════════════════════════════════════════════════
+class _TextFieldRow extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String? hint;
+  final TextInputType keyboardType;
+  final bool required;
+  final String? Function(String?)? validator;
+  final bool isDark;
+
+  const _TextFieldRow({
+    required this.label,
+    required this.controller,
+    this.hint,
+    this.keyboardType = TextInputType.text,
+    this.required = false,
+    this.validator,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      constraints: const BoxConstraints(minHeight: 44),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              keyboardType: keyboardType,
+              textAlign: TextAlign.end,
+              cursorColor: AppColors.iosBlue,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textMuted,
+                ),
+                isDense: true,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 12),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                errorStyle: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.danger,
+                  height: 0.8,
+                ),
+              ),
+              validator: validator ??
+                  (required
+                      ? (v) => (v == null || v.isEmpty)
+                          ? 'Campo obbligatorio'
+                          : null
+                      : null),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT AREA ROW (per Note: label sopra, area multiline sotto)
+// ═══════════════════════════════════════════════════════════════
+class _TextAreaRow extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String? hint;
+  final bool isDark;
+
+  const _TextAreaRow({
+    required this.label,
+    required this.controller,
+    this.hint,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextFormField(
+            controller: controller,
+            maxLines: 3,
+            minLines: 2,
+            cursorColor: AppColors.iosBlue,
+            style: TextStyle(
+              fontSize: 15,
+              color: isDark
+                  ? Colors.white60
+                  : AppColors.textSecondary,
+              letterSpacing: -0.2,
+              height: 1.4,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                fontSize: 15,
+                color: AppColors.textMuted,
+              ),
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PICKER ROW (label sx, valore + chevron dx, tap apre bottom sheet)
+// ═══════════════════════════════════════════════════════════════
+class _PickerRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _PickerRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 12),
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDark
+                        ? Colors.white
+                        : AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: valueColor ??
+                        (isDark
+                            ? Colors.white60
+                            : AppColors.textSecondary),
+                    letterSpacing: -0.3,
+                    fontWeight: valueColor != null
+                        ? FontWeight.w600
+                        : FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

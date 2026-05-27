@@ -1,55 +1,88 @@
 import 'package:flutter/material.dart';
 
-/// Palette centralizzata di UniPath.
-/// Un colore pastello per sezione, su base neutra calda.
-/// Tutte le schermate leggono i colori da qui per garantire coerenza.
+/// UniPath — Design System
 class AppColors {
-  AppColors._(); // Costruttore privato: la classe è solo un contenitore di costanti
+  AppColors._();
 
-  // ─── Base neutra ──────────────────────────────────────────────
-  static const Color background = Color(0xFFFBFBF9); // sfondo app (bianco caldo)
-  static const Color surface = Color(0xFFFFFFFF);    // card
-  static const Color textPrimary = Color(0xFF2C2C2A); // testo principale (non nero)
-  static const Color textMuted = Color(0xFF888780);   // testo secondario
+  // ─── Base neutra (Apple-like) ─────────────────────────────────
+  static const Color background = Color(0xFFF5F4F0);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color textPrimary = Color(0xFF1C1C1E);
+  static const Color textSecondary = Color(0xFF6B6B70);
+  static const Color textMuted = Color(0xFF9B9B9F);
+  static const Color border = Color(0xFFE5E5E1);
 
-  // ─── Colori per sezione ───────────────────────────────────────
-  // Ogni sezione ha: tinta piena (per icone/accenti) e tinta chiara (per sfondi)
+  // ─── Background grouped (iOS Settings style) ─────────────────
+  /// Sfondo gruppi nei form/dettagli (tipo Settings iOS, leggermente
+  /// più scuro del background generale).
+  static const Color groupedBackground = Color(0xFFF2F2F7);
 
-  // Home — Lavanda
-  static const Color home = Color(0xFF7F77DD);
-  static const Color homeLight = Color(0xFFEEEDFE);
-  static const Color homeDark = Color(0xFF3C3489);
+  /// Sfondo singolo gruppo (card grigio molto chiaro).
+  static const Color groupedSurface = Color(0xFFFFFFFF);
 
-  // Corsi — Menta
-  static const Color courses = Color(0xFF1D9E75);
-  static const Color coursesLight = Color(0xFFE1F5EE);
-  static const Color coursesDark = Color(0xFF085041);
+  /// Separatore tra righe dentro un gruppo.
+  static const Color groupedDivider = Color(0xFFE5E5EA);
 
-  // Esami — Rosa
-  static const Color exams = Color(0xFFD4537E);
-  static const Color examsLight = Color(0xFFFBEAF0);
-  static const Color examsDark = Color(0xFF72243E);
+  // ─── 4 Pastelli ufficiali della Dashboard ────────────────────
+  static const Color pastelRed = Color(0xFFFF8B9C);
+  static const Color pastelRedDeep = Color(0xFFD14A60);
+  static const Color pastelRedLight = Color(0xFFFFE5EA);
 
-  // Pianifica — Ambra
-  static const Color planning = Color(0xFFEF9F27);
-  static const Color planningLight = Color(0xFFFAEEDA);
-  static const Color planningDark = Color(0xFF633806);
+  static const Color pastelBlue = Color(0xFF8CCCFD);
+  static const Color pastelBlueDeep = Color(0xFF2980C7);
+  static const Color pastelBlueLight = Color(0xFFE3F2FE);
 
-  // Stats — Azzurro
-  static const Color stats = Color(0xFF378ADD);
-  static const Color statsLight = Color(0xFFE6F1FB);
-  static const Color statsDark = Color(0xFF0C447C);
+  static const Color pastelGreen = Color(0xFF90E891);
+  static const Color pastelGreenDeep = Color(0xFF2F9E54);
+  static const Color pastelGreenLight = Color(0xFFE5F8E6);
 
-  // ─── Colori semantici (stati, priorità) ──────────────────────
-  static const Color success = Color(0xFF1D9E75); // verde (superato/completato)
-  static const Color warning = Color(0xFFEF9F27); // ambra (da ripassare)
-  static const Color danger = Color(0xFFE24B4A);  // rosso (urgente/scaduto)
-  static const Color info = Color(0xFF378ADD);    // azzurro (in corso)
+  static const Color pastelYellow = Color(0xFFFFEE8E);
+  static const Color pastelYellowDeep = Color(0xFFB58F00);
+  static const Color pastelYellowLight = Color(0xFFFFF8DC);
 
-  // ─── Colore dei riquadrini header (titoli sezione) ───────────
-  // Cambia QUI per cambiare il colore di TUTTI i riquadrini dell'app
-  static const Color headerBg = Color(0xFFF1EFE8);   // sfondo riquadro (grigio neutro chiaro)
-  static const Color headerText = Color(0xFF444441);  // testo + icona (grigio scuro)
+  static const Color pastelLavender = Color(0xFFB8B0E8);
+  static const Color pastelLavenderDeep = Color(0xFF6C5BC9);
+  static const Color pastelLavenderLight = Color(0xFFEEEDFE);
+
+  // ─── Alias semantici per sezione ──────────────────────────────
+  static const Color home = pastelLavender;
+  static const Color homeDeep = pastelLavenderDeep;
+  static const Color homeLight = pastelLavenderLight;
+
+  static const Color courses = pastelRed;
+  static const Color coursesDeep = pastelRedDeep;
+  static const Color coursesDark = pastelRedDeep;
+  static const Color coursesLight = pastelRedLight;
+
+  static const Color exams = pastelBlue;
+  static const Color examsDeep = pastelBlueDeep;
+  static const Color examsDark = pastelBlueDeep;
+  static const Color examsLight = pastelBlueLight;
+
+  static const Color planning = pastelGreen;
+  static const Color planningDeep = pastelGreenDeep;
+  static const Color planningDark = pastelGreenDeep;
+  static const Color planningLight = pastelGreenLight;
+
+  static const Color stats = pastelYellow;
+  static const Color statsDeep = pastelYellowDeep;
+  static const Color statsDark = pastelYellowDeep;
+  static const Color statsLight = pastelYellowLight;
+
+  // ─── Colori sistema iOS ───────────────────────────────────────
+  /// Blu di sistema iOS — usato per la tab bar selezionata e per i
+  /// link/CTA testuali tipici di iOS (es. "Salva").
+  static const Color iosBlue = Color(0xFF007AFF);
+
+  // ─── Colori semantici ─────────────────────────────────────────
+  static const Color success = Color(0xFF34C759);
+  static const Color warning = Color(0xFFFF9500);
+  static const Color danger = Color(0xFFFF3B30);
+  static const Color info = Color(0xFF007AFF);
+
+  // ─── Header riquadrati ────────────────────────────────────────
+  static const Color headerBg = Color(0xFFF1EFE8);
+  static const Color headerText = Color(0xFF444441);
 
   // ─── Helper: colore per priorità ──────────────────────────────
   static Color priorita(String p) {

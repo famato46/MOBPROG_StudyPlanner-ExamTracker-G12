@@ -6,6 +6,14 @@ import 'exams_screen.dart';
 import 'planning_screen.dart';
 import 'stats_screen.dart';
 
+/// MainScreen — Container con BottomNavigationBar stile Apple.
+///
+/// Pattern del prof: `_currentIndex` + `setState` per cambiare tab,
+/// le 5 schermate sono pre-istanziate in un array così il loro stato
+/// non viene distrutto cambiando tab.
+///
+/// Stile: tutte le icone selezionate diventano blu iOS standard
+/// (#007AFF), non più colore-per-sezione, per coerenza con iOS.
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -16,6 +24,10 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  // Pre-istanziamo tutte le schermate in modo che lo state locale
+  // (ricerca corsi, filtri esami, timer pomodoro) non venga distrutto
+  // al cambio di tab. È il pattern usato dal prof negli snippet
+  // Flashcard/Pomodoro.
   final List<Widget> _screens = const [
     HomeScreen(),
     CoursesScreen(),
@@ -24,44 +36,83 @@ class _MainScreenState extends State<MainScreen> {
     StatsScreen(),
   ];
 
-  final List<Color> _sectionColors = const [
-    AppColors.home,
-    AppColors.courses,
-    AppColors.exams,
-    AppColors.planning,
-    AppColors.stats,
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        selectedItemColor: _sectionColors[_currentIndex],
-        unselectedItemColor:
-            Theme.of(context).brightness == Brightness.dark
+      // IndexedStack mantiene tutte le tab in memoria → no rebuild
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF1C1C1E)
+              : AppColors.surface,
+          border: Border(
+            top: BorderSide(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : AppColors.border,
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) => setState(() => _currentIndex = index),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            // Stile Apple: blu iOS standard quando selezionato
+            selectedItemColor: AppColors.iosBlue,
+            unselectedItemColor: isDark
                 ? Colors.grey[500]
                 : AppColors.textMuted,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.book), label: 'Corsi'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today), label: 'Esami'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.event_note), label: 'Pianifica'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart), label: 'Stats'),
-        ],
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.1,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.1,
+            ),
+            iconSize: 24,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home_rounded),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.book_outlined),
+                activeIcon: Icon(Icons.book_rounded),
+                label: 'Corsi',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_today_outlined),
+                activeIcon: Icon(Icons.calendar_today_rounded),
+                label: 'Esami',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.event_note_outlined),
+                activeIcon: Icon(Icons.event_note_rounded),
+                label: 'Pianifica',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart_outlined),
+                activeIcon: Icon(Icons.bar_chart_rounded),
+                label: 'Stats',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
