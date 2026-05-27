@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
 
-// 1. Modello Dati Essenziale richiesto dalla traccia
-class AttivitaStudio {
-  String id, titolo, corso, tipo, priorita;
+// Modelli distinti per rispettare la traccia alla lettera
+class SessioneStudio {
+  String id, titolo, corso, tipo;
   DateTime data;
+  bool completato;
+  SessioneStudio({required this.id, required this.titolo, required this.corso, required this.tipo, required this.data, this.completato = false});
+}
+
+class ObiettivoStudio {
+  String id, titolo, descrizione, corso, priorita, note;
   double stimato, effettivo;
   bool completato;
-
-  AttivitaStudio({
-    required this.id, required this.titolo, required this.corso, 
-    required this.tipo, required this.priorita, required this.data,
-    this.stimato = 2.0, this.effettivo = 0.0, this.completato = false,
-  });
+  ObiettivoStudio({required this.id, required this.titolo, this.descrizione = '', required this.corso, required this.priorita, this.stimato = 0.0, this.effettivo = 0.0, this.note = '', this.completato = false});
 }
 
 class PlanningScreen extends StatefulWidget {
@@ -21,19 +22,27 @@ class PlanningScreen extends StatefulWidget {
   State<PlanningScreen> createState() => _PlanningScreenState();
 }
 
-class _PlanningScreenState extends State<PlanningScreen> {
-  DateTime _giornoSelezionato = DateTime.now();
-  
-  // Dati minimi per la demo d'esame
-  final List<AttivitaStudio> _attivita = [
-    AttivitaStudio(id: '1', titolo: 'Ripasso Teoremi', corso: 'Analisi 1', tipo: 'Ripasso', priorita: 'Alta', data: DateTime.now()),
-    AttivitaStudio(id: '2', titolo: 'Esercizi SQL', corso: 'Basi di Dati', tipo: 'Esercitazione', priorita: 'Media', data: DateTime.now()),
+class _PlanningScreenState extends State<PlanningScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  DateTime _giorno = DateTime.now();
+
+  final List<SessioneStudio> _sessioni = [
+    SessioneStudio(id: '1', titolo: 'Ripasso Funzioni', corso: 'Analisi 1', tipo: 'Ripasso', data: DateTime.now()),
   ];
+  final List<ObiettivoStudio> _obiettivi = [
+    ObiettivoStudio(id: '1', titolo: 'Finire Lab SQL', descrizione: 'Tutte le query', corso: 'Basi di Dati', priorita: 'Alta', stimato: 6.0),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final listafiltrata = _attivita.where((a) => a.data.day == _giornoSelezionato.day).toList();
+    final sessioniFiltrate = _sessioni.where((s) => s.data.day == _giorno.day).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -46,104 +55,124 @@ class _PlanningScreenState extends State<PlanningScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.event_note, 
-                size: 20, 
-                color: isDark ? Colors.white : AppColors.planning,
-              ),
+              Icon(Icons.event_note, size: 20, color: isDark ? Colors.white : AppColors.planning),
               const SizedBox(width: 8),
               Text(
-                'Pianificazione Studio',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.planning,
-                ),
+                'Pianificazione & Obiettivi', // Modificato qui
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.planning),
               ),
             ],
           ),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.planning,
+          labelColor: isDark ? Colors.white : AppColors.planning,
+          tabs: const [Tab(text: 'Pianificazione'), Tab(text: 'Obiettivi')],
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          const SizedBox(height: 10),
-          // Selettore Giornaliero Compatto (Oggi / Domani) per la logica di pianificazione
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // VISTA 1: PIANIFICAZIONE
+          Column(
             children: [
-              ChoiceChip(label: const Text('Oggi'), selected: _giornoSelezionato.day == DateTime.now().day, onSelected: (_) => setState(() => _giornoSelezionato = DateTime.now())),
-              const SizedBox(width: 10),
-              ChoiceChip(label: const Text('Domani'), selected: _giornoSelezionato.day == DateTime.now().add(const Duration(days: 1)).day, onSelected: (_) => setState(() => _giornoSelezionato = DateTime.now().add(const Duration(days: 1)))),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ChoiceChip(label: const Text('Oggi'), selected: _giorno.day == DateTime.now().day, onSelected: (_) => setState(() => _giorno = DateTime.now())),
+                    const SizedBox(width: 10),
+                    ChoiceChip(label: const Text('Domani'), selected: _giorno.day == DateTime.now().add(const Duration(days: 1)).day, onSelected: (_) => setState(() => _giorno = DateTime.now().add(const Duration(days: 1)))),
+                  ],
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: sessioniFiltrate.isEmpty
+                    ? const Center(child: Text('Nessuna sessione pianificata.'))
+                    : ListView.builder(
+                        itemCount: sessioniFiltrate.length,
+                        itemBuilder: (ctx, i) {
+                          final item = sessioniFiltrate[i];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            child: ListTile(
+                              leading: Checkbox(value: item.completato, activeColor: AppColors.planning, onChanged: (v) => setState(() => item.completato = v!)),
+                              title: Text(item.titolo, style: TextStyle(decoration: item.completato ? TextDecoration.lineThrough : null)),
+                              subtitle: Text('${item.corso} • Tipo: ${item.tipo}'),
+                              trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => setState(() => _sessioni.remove(item))),
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
-          const Divider(),
-          // Lista delle Attività (Visualizzazione e Gestione Stato)
-          Expanded(
-            child: listafiltrata.isEmpty 
-              ? const Center(child: Text('Nessuna attività pianificata.'))
+          // VISTA 2: OBIETTIVI
+          _obiettivi.isEmpty
+              ? const Center(child: Text('Nessun obiettivo inserito.'))
               : ListView.builder(
-                  itemCount: listafiltrata.length,
-                  itemBuilder: (context, idx) {
-                    final item = listafiltrata[idx];
+                  itemCount: _obiettivi.length,
+                  itemBuilder: (ctx, i) {
+                    final item = _obiettivi[i];
                     return Card(
                       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: ListTile(
                         leading: Checkbox(value: item.completato, activeColor: AppColors.planning, onChanged: (v) => setState(() => item.completato = v!)),
-                        title: Text(item.titolo, style: TextStyle(decoration: item.completato ? TextDecoration.lineThrough : null)),
-                        subtitle: Text('${item.corso} • ${item.tipo} • Prio: ${item.priorita} • ${item.effettivo}h/${item.stimato}h'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(icon: const Icon(Icons.edit, color: Colors.blue, size: 20), onPressed: () => _apriDialog(item: item)),
-                            IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => setState(() => _attivita.remove(item))),
-                          ],
-                        ),
+                        title: Text(item.titolo, style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${item.corso} • Prio: ${item.priorita}\nOre: ${item.effettivo}h / ${item.stimato}h\nNote: ${item.note}'),
+                        trailing: IconButton(icon: const Icon(Icons.delete, color: Colors.red, size: 20), onPressed: () => setState(() => _obiettivi.remove(item))),
                       ),
                     );
                   },
                 ),
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.planning,
-        onPressed: () => _apriDialog(),
+        onPressed: _aggiungiElemento,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  // Dialogo unico, leggero e compatto per Aggiungere e Modificare (CRUD)
-  void _apriDialog({AttivitaStudio? item}) {
-    final isModifica = item != null;
-    final tController = TextEditingController(text: isModifica ? item.titolo : '');
-    final cController = TextEditingController(text: isModifica ? item.corso : '');
-    String tipo = isModifica ? item.tipo : 'Studio';
-    String prio = isModifica ? item.priorita : 'Media';
+  void _aggiungiElemento() {
+    final tC = TextEditingController();
+    final cC = TextEditingController();
+    String extra = _tabController.index == 0 ? 'Studio' : 'Media';
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isModifica ? 'Modifica Attività' : 'Nuova Attività'),
+        title: Text(_tabController.index == 0 ? 'Pianifica Sessione' : 'Nuovo Obiettivo'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: tController, decoration: const InputDecoration(labelText: 'Titolo')),
-            TextField(controller: cController, decoration: const InputDecoration(labelText: 'Corso')),
-            DropdownButtonFormField<String>(value: tipo, items: ['Studio', 'Ripasso', 'Esercitazione', 'Lettura'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => tipo = v!),
-            DropdownButtonFormField<String>(value: prio, items: ['Bassa', 'Media', 'Alta'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v) => prio = v!),
+            TextField(controller: tC, decoration: const InputDecoration(labelText: 'Titolo *')),
+            TextField(controller: cC, decoration: const InputDecoration(labelText: 'Corso *')),
+            DropdownButtonFormField<String>(
+              value: extra,
+              decoration: InputDecoration(labelText: _tabController.index == 0 ? 'Tipo' : 'Priorità'),
+              items: (_tabController.index == 0 
+                      ? ['Studio', 'Ripasso', 'Esercitazioni', 'Preparazione esame', 'Lettura di materiale', 'Completamento consegne']
+                      : ['Bassa', 'Media', 'Alta'])
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+              onChanged: (v) => extra = v!,
+            ),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annulla')),
           ElevatedButton(
             onPressed: () {
-              if (tController.text.isEmpty) return;
+              if (tC.text.isEmpty || cC.text.isEmpty) return;
               setState(() {
-                if (isModifica) {
-                  item.titolo = tController.text; item.corso = cController.text; item.tipo = tipo; item.priorita = prio;
+                if (_tabController.index == 0) {
+                  _sessioni.add(SessioneStudio(id: DateTime.now().toString(), titolo: tC.text, corso: cC.text, tipo: extra, data: _giorno));
                 } else {
-                  _attivita.add(AttivitaStudio(id: DateTime.now().toString(), titolo: tController.text, corso: cController.text, tipo: tipo, priorita: prio, data: _giornoSelezionato));
+                  _obiettivi.add(ObiettivoStudio(id: DateTime.now().toString(), titolo: tC.text, corso: cC.text, priorita: extra));
                 }
               });
               Navigator.pop(ctx);
