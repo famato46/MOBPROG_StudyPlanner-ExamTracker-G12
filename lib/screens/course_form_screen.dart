@@ -58,11 +58,41 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     _materialeCtrl =
         TextEditingController(text: c?.materialeAssociato ?? '');
     _votoDesideratoCtrl = TextEditingController(
-        text: c?.votoDesiderato?.toString() ?? '');
+        text: _formatVoto(c?.votoDesiderato));
     _votoOttenutoCtrl = TextEditingController(
-        text: c?.votoOttenuto?.toString() ?? '');
+        text: _formatVoto(c?.votoOttenuto));
     _semestre = c?.semestre ?? 'Primo semestre 2024/25';
     _stato = c?.stato ?? 'da_iniziare';
+  }
+
+  // ─── HELPER VOTO (supporto 30L) ────────────────────────────────
+  // Internamente memorizziamo i voti come int: 18..30 + 31 per la lode.
+  // In UI usiamo "30L" quando il valore è 31, per coerenza con la
+  // convenzione universitaria italiana. Questi due helper centralizzano
+  // la conversione bidirezionale stringa<->int.
+
+  /// Parsa la stringa inserita dall'utente in un voto numerico.
+  /// Accetta sia "30L" / "30l" / "30 L" / "30 e lode" sia "31".
+  /// Restituisce null se non parsabile.
+  int? _parseVoto(String input) {
+    final cleaned = input.trim().toLowerCase();
+    if (cleaned.isEmpty) return null;
+    // Lode esplicita
+    if (cleaned == '30l' ||
+        cleaned == '30 l' ||
+        cleaned == '30 e lode' ||
+        cleaned == '30elode') {
+      return 31;
+    }
+    return int.tryParse(cleaned);
+  }
+
+  /// Formatta un voto numerico in stringa visualizzabile.
+  /// 31 -> "30L", null -> "", altrimenti il numero.
+  String _formatVoto(int? voto) {
+    if (voto == null) return '';
+    if (voto >= 31) return '30L';
+    return voto.toString();
   }
 
   @override
@@ -81,12 +111,13 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     final provider = context.read<PlannerProvider>();
 
+    // Parsing centralizzato che supporta sia "30L" che "31"
     final vDesiderato = _votoDesideratoCtrl.text.isEmpty
         ? null
-        : int.tryParse(_votoDesideratoCtrl.text);
+        : _parseVoto(_votoDesideratoCtrl.text);
     final vOttenuto =
         (_stato == 'superato' && _votoOttenutoCtrl.text.isNotEmpty)
-            ? int.tryParse(_votoOttenutoCtrl.text)
+            ? _parseVoto(_votoOttenutoCtrl.text)
             : null;
 
     if (_isEditing) {
@@ -252,13 +283,16 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                 _TextFieldRow(
                   label: 'Voto desiderato',
                   controller: _votoDesideratoCtrl,
-                  hint: 'opzionale',
-                  keyboardType: TextInputType.number,
+                  // FIX 30L: ora accettiamo anche "30L" (oltre a "31" che è
+                  // la rappresentazione interna). Il validator normalizza
+                  // entrambe le forme e accetta range 18-30 più la lode.
+                  hint: '18-30 o 30L',
+                  keyboardType: TextInputType.text,
                   validator: (v) {
                     if (v == null || v.isEmpty) return null;
-                    final n = int.tryParse(v);
-                    if (n == null || n < 18 || n > 30) {
-                      return 'Voto tra 18 e 30';
+                    final n = _parseVoto(v);
+                    if (n == null || n < 18 || n > 31) {
+                      return 'Voto tra 18 e 30 (o 30L)';
                     }
                     return null;
                   },
@@ -268,8 +302,8 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                   _TextFieldRow(
                     label: 'Voto ottenuto',
                     controller: _votoOttenutoCtrl,
-                    hint: '18-30',
-                    keyboardType: TextInputType.number,
+                    hint: '18-30 o 30L',
+                    keyboardType: TextInputType.text,
                     required: true,
                     validator: (v) {
                       if (_stato == 'superato' &&
@@ -277,9 +311,9 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                         return 'Inserisci il voto';
                       }
                       if (v != null && v.isNotEmpty) {
-                        final n = int.tryParse(v);
-                        if (n == null || n < 18 || n > 30) {
-                          return 'Voto tra 18 e 30';
+                        final n = _parseVoto(v);
+                        if (n == null || n < 18 || n > 31) {
+                          return 'Voto tra 18 e 30 (o 30L)';
                         }
                       }
                       return null;

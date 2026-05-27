@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/planner_provider.dart';
+import '../providers/theme_provider.dart';
 import '../utils/app_colors.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -12,7 +13,16 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
-  double _bonusLaurea = 0;
+  // ═══════════════════════════════════════════════════════════════════
+  // EPHEMERAL STATE — Simulatore voto di laurea
+  // ═══════════════════════════════════════════════════════════════════
+  // Questi valori vivono SOLO in questo widget. Non vanno nel database
+  // perché rappresentano un'ipotesi che l'utente sta esplorando in
+  // tempo reale muovendo gli slider. È l'esempio canonico (citato nella
+  // scaletta del prof) della separazione App State (corsi/esami reali
+  // dal Provider) vs Ephemeral State (slider locale a 60fps).
+  double _votoIpotetico = 24;
+  int _cfuIpotetici = 6;
 
   // ─── AppBar Badge ──────────────────────────────────────────────
   Widget _buildTitleBadge(BuildContext context) {
@@ -67,10 +77,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ─── 1. KPI GRID ──────────────────────────────────────────────
-  // Copre: corsi totali, esami superati/programmati/da sostenere,
-  //        attività completate/da completare
   Widget _buildKpiGrid(PlannerProvider provider) {
-    // Esami passati non completati = "da sostenere" (già scaduti)
     final esamiDaSostenere = provider.exams
         .where((e) =>
             e.isPassato &&
@@ -80,7 +87,6 @@ class _StatsScreenState extends State<StatsScreen> {
 
     return Column(
       children: [
-        // Riga 1: corsi e attività
         Row(
           children: [
             Expanded(
@@ -103,7 +109,6 @@ class _StatsScreenState extends State<StatsScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        // Riga 2: esami
         Row(
           children: [
             Expanded(
@@ -126,7 +131,6 @@ class _StatsScreenState extends State<StatsScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        // Riga 3: attività + esami da sostenere
         Row(
           children: [
             Expanded(
@@ -166,9 +170,9 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +204,6 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ─── 2. PROGRESSO OBIETTIVI ────────────────────────────────────
-  // Copre: progresso rispetto a un obiettivo (CFU + studio settimana)
   Widget _buildProgressoObiettivi(PlannerProvider provider) {
     final orePianificate = _orePianificateSettimana(provider);
     final oreEffettive = _oreEffettiveSettimana(provider);
@@ -243,7 +246,7 @@ class _StatsScreenState extends State<StatsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -262,7 +265,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 CircularProgressIndicator(
                   value: value.clamp(0.0, 1.0),
                   strokeWidth: 8,
-                  backgroundColor: color.withOpacity(0.1),
+                  backgroundColor: color.withValues(alpha: 0.1),
                   valueColor: AlwaysStoppedAnimation<Color>(color),
                   strokeCap: StrokeCap.round,
                 ),
@@ -284,7 +287,6 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ─── 3. GRAFICO A TORTA ────────────────────────────────────────
-  // Copre: distribuzione del tempo di studio per corso
   Widget _buildPieChart(PlannerProvider provider) {
     final List<Color> colors = [
       Colors.blueAccent,
@@ -376,7 +378,6 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   // ─── 4. GRAFICO A BARRE ────────────────────────────────────────
-  // Copre: andamento dello studio nel tempo (settimana corrente)
   Widget _buildBarChart(PlannerProvider provider) {
     final oggi = DateTime.now();
     final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -452,7 +453,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   gradient: LinearGradient(
                     colors: [
                       AppColors.stats,
-                      AppColors.stats.withOpacity(0.6)
+                      AppColors.stats.withValues(alpha: 0.6)
                     ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
@@ -509,7 +510,7 @@ class _StatsScreenState extends State<StatsScreen> {
             color: (differenza > 0
                     ? AppColors.danger
                     : AppColors.success)
-                .withOpacity(0.08),
+                .withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -598,10 +599,10 @@ class _StatsScreenState extends State<StatsScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.danger.withOpacity(0.05),
+            color: AppColors.danger.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: AppColors.danger.withOpacity(0.1)),
+                color: AppColors.danger.withValues(alpha: 0.1)),
           ),
           child: Row(
             children: [
@@ -675,7 +676,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.12),
+                  color: Colors.orange.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text('${e.value} aperte',
@@ -691,74 +692,249 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  // ─── 8. SIMULATORE VOTO DI LAUREA ──────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════
+  // 8. SIMULATORE VOTO DI LAUREA — RISCRITTO COMPLETAMENTE
+  // ═══════════════════════════════════════════════════════════════════
+  //
+  // Cosa fa: permette allo studente di rispondere alla domanda
+  //   "se al prossimo esame da X CFU prendo voto Y, come cambia
+  //    il mio voto di laurea attuale?"
+  //
+  // Implementa fedelmente la specifica della traccia (pag. 22-24):
+  //
+  //   • App State (Provider):
+  //       - corsi superati reali con voto e CFU
+  //       - media ponderata reale
+  //       - voto di laurea attuale = media * 110/30
+  //
+  //   • Ephemeral State (setState locale):
+  //       - _votoIpotetico (18-31, dove 31 = lode)
+  //       - _cfuIpotetici (3-15)
+  //
+  //   • Calcolo: ricalcola la media ponderata aggiungendo il voto
+  //     ipotetico con i suoi CFU, poi proietta su 110.
+  //
+  // Mostra in tempo reale il NUOVO voto di laurea, evidenziando
+  // la differenza (+/-) rispetto a quello attuale. La lode (31)
+  // viene mostrata come "30L".
   Widget _buildSimulatore(PlannerProvider provider) {
-    final mediaBase = provider.estimatedGraduationGrade;
-    final votoFinale = (mediaBase + _bonusLaurea).clamp(0, 110);
-    final conLode = votoFinale >= 110;
+    // ─── App State (dati reali dal Provider) ──────────────
+    final corsiSuperati = provider.courses
+        .where((c) => c.stato == 'superato' && c.votoOttenuto != null)
+        .toList();
 
+    final cfuRealiTotali =
+        corsiSuperati.fold(0, (sum, c) => sum + c.cfu);
+    // Per la media trattiamo la lode (31) come 30, perché ufficialmente
+    // la lode non si somma alla media aritmetica.
+    final sommaPonderataReale = corsiSuperati.fold<double>(
+        0,
+        (sum, c) => sum +
+            ((c.votoOttenuto! > 30 ? 30 : c.votoOttenuto!) * c.cfu));
+    final mediaReale =
+        cfuRealiTotali > 0 ? sommaPonderataReale / cfuRealiTotali : 0.0;
+    final votoLaureaAttuale = mediaReale * (110 / 30);
+
+    // ─── Ephemeral State (slider locali) ──────────────────
+    final votoIpoteticoNormalizzato =
+        _votoIpotetico > 30 ? 30.0 : _votoIpotetico;
+
+    final cfuSimulati = cfuRealiTotali + _cfuIpotetici;
+    final sommaPonderataSimulata = sommaPonderataReale +
+        (votoIpoteticoNormalizzato * _cfuIpotetici);
+    final mediaSimulata =
+        cfuSimulati > 0 ? sommaPonderataSimulata / cfuSimulati : 0.0;
+    final votoLaureaSimulato = mediaSimulata * (110 / 30);
+
+    final differenza = votoLaureaSimulato - votoLaureaAttuale;
+    final isLode = _votoIpotetico >= 31;
+
+    // ─── UI ───────────────────────────────────────────────
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Box situazione attuale (App State puro)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.textMuted.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'SITUAZIONE ATTUALE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textMuted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                corsiSuperati.isEmpty
+                    ? 'Nessun esame superato ancora'
+                    : '${corsiSuperati.length} esami · $cfuRealiTotali CFU · Media ${mediaReale.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              if (corsiSuperati.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  'Voto di laurea proiettato: ${votoLaureaAttuale.toStringAsFixed(1)}/110',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Titolo simulazione
+        Text(
+          'SE AL PROSSIMO ESAME...',
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: AppColors.stats,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ─── Slider VOTO ──────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Flexible(
+            const Text('Voto:',
+                style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w500)),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.stats.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Text(
-                'Media di Partenza: ${mediaBase.toStringAsFixed(1)}/110',
-                style:
-                    const TextStyle(color: Colors.grey, fontSize: 12),
+                isLode ? '30L' : '${_votoIpotetico.toInt()}/30',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.statsDeep),
               ),
             ),
-            Text('Bonus Tesi: +${_bonusLaurea.toInt()} pt',
-                style: TextStyle(
-                    color: AppColors.stats,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
           ],
         ),
         Slider(
-          value: _bonusLaurea,
-          min: 0,
-          max: 10,
-          divisions: 10,
+          value: _votoIpotetico,
+          min: 18,
+          max: 31, // 31 = lode
+          divisions: 13,
           activeColor: AppColors.stats,
-          onChanged: (val) => setState(() => _bonusLaurea = val),
+          label: isLode ? '30L' : _votoIpotetico.toInt().toString(),
+          // ═══════════════════════════════════════════════════════
+          // SOLO setState — NON tocca il Provider.
+          // Questa è la separazione esatta richiesta dalla scaletta:
+          // App State (corsi nel DB) resta invariato a ogni frame,
+          // mentre il rebuild parte solo da questo widget.
+          // ═══════════════════════════════════════════════════════
+          onChanged: (v) => setState(() => _votoIpotetico = v),
         ),
+        const SizedBox(height: 8),
+
+        // ─── Slider CFU ───────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Da CFU:',
+                style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w500)),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.stats.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$_cfuIpotetici CFU',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.statsDeep),
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: _cfuIpotetici.toDouble(),
+          min: 3,
+          max: 15,
+          divisions: 12,
+          activeColor: AppColors.stats,
+          label: '$_cfuIpotetici CFU',
+          onChanged: (v) => setState(() => _cfuIpotetici = v.toInt()),
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Risultato simulato (numerone in tempo reale) ─
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: conLode
-                  ? [
-                      Colors.amber.shade700,
-                      Colors.amber.shade400
-                    ]
+              colors: isLode && votoLaureaSimulato >= 110
+                  ? [Colors.amber.shade700, Colors.amber.shade400]
                   : [
                       AppColors.stats,
-                      AppColors.stats.withOpacity(0.8)
+                      AppColors.stats.withValues(alpha: 0.7)
                     ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             children: [
-              const Text('PROIEZIONE VOTO FINALE',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2)),
-              const SizedBox(height: 4),
-              Text(
-                conLode
-                    ? '110 / 110 con Lode 🎓'
-                    : '${votoFinale.toStringAsFixed(1)} / 110',
-                style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white),
+              const Text(
+                'NUOVO VOTO DI LAUREA',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                votoLaureaSimulato >= 110
+                    ? '110 / 110${isLode ? ' L' : ''} 🎓'
+                    : '${votoLaureaSimulato.toStringAsFixed(1)} / 110',
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              if (corsiSuperati.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  differenza >= 0
+                      ? '+${differenza.toStringAsFixed(2)} rispetto a ora'
+                      : '${differenza.toStringAsFixed(2)} rispetto a ora',
+                  style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600),
+                ),
+              ],
             ],
           ),
         ),
@@ -769,12 +945,38 @@ class _StatsScreenState extends State<StatsScreen> {
   // ─── BUILD ─────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark
+        ? Theme.of(context).colorScheme.surface
+        : AppColors.background;
+
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: _buildTitleBadge(context),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          // Toggle Dark Mode visibile — copre il problema 7
+          // (scaletta sezione E. Dark Mode → IconButton in AppBar).
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, _) => IconButton(
+              tooltip: themeProvider.isDarkMode
+                  ? 'Tema chiaro'
+                  : 'Tema scuro',
+              icon: Icon(
+                themeProvider.isDarkMode
+                    ? Icons.light_mode_rounded
+                    : Icons.dark_mode_rounded,
+                color: themeProvider.isDarkMode
+                    ? Colors.amber
+                    : AppColors.textSecondary,
+              ),
+              onPressed: () => themeProvider.toggleTheme(),
+            ),
+          ),
+        ],
       ),
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
@@ -832,8 +1034,8 @@ class _StatsScreenState extends State<StatsScreen> {
               const SizedBox(height: 24),
 
               _SectionTitle(
-                  title: 'Simulatore Laurea',
-                  icon: Icons.gavel_rounded),
+                  title: 'Simulatore Voto di Laurea',
+                  icon: Icons.school_rounded),
               const SizedBox(height: 12),
               _buildDashboardCard(_buildSimulatore(provider)),
               const SizedBox(height: 32),
@@ -853,12 +1055,12 @@ class _StatsScreenState extends State<StatsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
       ),
       child: child,
     );
@@ -879,7 +1081,7 @@ class _SectionTitle extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.stats.withOpacity(0.1),
+            color: AppColors.stats.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: AppColors.stats),

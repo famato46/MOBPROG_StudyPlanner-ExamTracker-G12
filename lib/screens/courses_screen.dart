@@ -658,7 +658,11 @@ class _CourseCard extends StatelessWidget {
                           _Badge(label: statoLabel, color: statoColor),
                           if (course.votoOttenuto != null)
                             _Badge(
-                              label: '${course.votoOttenuto}/30',
+                              // Convenzione interna: 31 = 30 e lode.
+                              // Visualizziamo "30L" invece di "31/30".
+                              label: course.votoOttenuto! >= 31
+                                  ? '30L'
+                                  : '${course.votoOttenuto}/30',
                               color: AppColors.success,
                             ),
                         ],

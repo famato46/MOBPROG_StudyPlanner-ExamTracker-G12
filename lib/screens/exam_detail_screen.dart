@@ -1,65 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../models/exam.dart';
 import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'exam_form_screen.dart';
 
+/// ExamDetailScreen — Stile Apple moderno, minimalista.
+///
+/// Layout a 5 blocchi (coerente con CourseDetailScreen):
+///  1. AppBar minimal con titolo + matita + cestino
+///  2. HERO card pastello BLU con titolo, corso, tipologia e chip
+///     di stato (Programmato / Completato / Imminente / Passato)
+///  3. Mini-grid info (Data, Voto se completato)
+///  4. Card Note (se presenti)
+///  5. Sezione "Sessioni di studio" collegate, stile lista card.
 class ExamDetailScreen extends StatelessWidget {
   final Exam exam;
   const ExamDetailScreen({super.key, required this.exam});
 
-  Widget _buildTitleBadge(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.calendar_today,
-              size: 20, color: isDark ? Colors.white : AppColors.exams),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              exam.titolo,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : AppColors.exams,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatTipologia(String t) {
+    switch (t) {
+      case 'esame':
+        return 'Esame';
+      case 'appello':
+        return 'Appello';
+      case 'consegna':
+        return 'Consegna';
+      case 'progetto':
+        return 'Progetto';
+      default:
+        return t;
+    }
+  }
+
+  String _formatPriorita(String p) {
+    switch (p) {
+      case 'alta':
+        return 'Alta';
+      case 'media':
+        return 'Media';
+      case 'bassa':
+        return 'Bassa';
+      default:
+        return p;
+    }
+  }
+
+  String _formatVoto(int? voto) {
+    if (voto == null) return '-';
+    if (voto >= 31) return '30L';
+    return voto.toString();
+  }
+
+  // Etichetta di stato visibile (usa anche imminente/passato calcolati)
+  String _etichettaStato(Exam e) {
+    if (e.stato == 'completato') return 'Completato';
+    if (e.stato == 'annullato') return 'Annullato';
+    if (e.isImminente) return 'Imminente';
+    if (e.isPassato) return 'Passato';
+    return 'Programmato';
+  }
+
+  Color _coloreStato(Exam e) {
+    if (e.stato == 'completato') return AppColors.success;
+    if (e.stato == 'annullato') return AppColors.textMuted;
+    if (e.isImminente) return AppColors.danger;
+    if (e.isPassato) return AppColors.textMuted;
+    return AppColors.examsDeep;
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor =
+        isDark ? const Color(0xFF000000) : AppColors.background;
+
     return Consumer<PlannerProvider>(
       builder: (context, provider, child) {
         final updatedExam = provider.getExamById(exam.id) ?? exam;
         final corso = provider.getCourseById(updatedExam.courseId);
-
-        final colore = updatedExam.isCompletato
-            ? AppColors.success
-            : updatedExam.isImminente
-                ? AppColors.danger
-                : updatedExam.isPassato
-                    ? AppColors.textMuted
-                    : AppColors.exams;
+        final sessioni = provider.studySessions
+            .where((s) => s.examId == updatedExam.id)
+            .toList();
 
         return Scaffold(
+          backgroundColor: bgColor,
           appBar: AppBar(
-            title: _buildTitleBadge(context),
+            backgroundColor: bgColor,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, size: 32),
+              color: AppColors.iosBlue,
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              updatedExam.titolo,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit_outlined, size: 22),
+                color: AppColors.iosBlue,
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -68,159 +118,625 @@ class ExamDetailScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.delete, color: AppColors.danger),
-                onPressed: () async {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Elimina esame'),
-                      content: Text('Eliminare "${updatedExam.titolo}"?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Annulla'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text('Elimina',
-                              style: TextStyle(color: AppColors.danger)),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (!context.mounted) return;
-                  if (confirm == true) {
-                    await provider.deleteExam(updatedExam.id);
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                  }
-                },
+                icon: const Icon(Icons.delete_outline, size: 22),
+                color: AppColors.danger,
+                onPressed: () =>
+                    _handleDelete(context, provider, updatedExam),
               ),
+              const SizedBox(width: 4),
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              // Card info principali
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _InfoRow('Corso', corso?.nome ?? 'Corso non trovato'),
-                      _InfoRow('Data',
-                          '${updatedExam.data.day}/${updatedExam.data.month}/${updatedExam.data.year}'),
-                      _InfoRow('Tipologia', updatedExam.tipologia),
-                      _InfoRow('Priorità', updatedExam.priorita),
-                      _InfoRow('Stato', updatedExam.stato),
-                      if (updatedExam.voto != null)
-                        _InfoRow('Voto', '${updatedExam.voto}/30'),
-                      if (updatedExam.note != null &&
-                          updatedExam.note!.isNotEmpty)
-                        _InfoRow('Note', updatedExam.note!),
-                    ],
-                  ),
-                ),
+              // ─── 1. HERO CARD BLU PASTELLO ────────────────────
+              _HeroCard(
+                exam: updatedExam,
+                corso: corso?.nome ?? 'Corso non trovato',
+                tipologia: _formatTipologia(updatedExam.tipologia),
+                priorita: _formatPriorita(updatedExam.priorita),
+                statoLabel: _etichettaStato(updatedExam),
+                statoColor: _coloreStato(updatedExam),
+                isDark: isDark,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
 
-              // Badge stato visivo
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: colore.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: colore),
-                  ),
-                  child: Text(
-                    updatedExam.isCompletato
-                        ? '✓ Completato'
-                        : updatedExam.isImminente
-                            ? '⚠ Imminente — meno di 7 giorni!'
-                            : updatedExam.isPassato
-                                ? 'Passato'
-                                : 'Programmato',
-                    style: TextStyle(
-                      color: colore,
-                      fontWeight: FontWeight.bold,
+              // ─── 2. MINI-GRID (Data, Priorità, Voto) ──────────
+              Row(
+                children: [
+                  Expanded(
+                    child: _MiniInfoCard(
+                      label: 'DATA',
+                      value: DateFormat('dd MMM yyyy', 'it_IT')
+                          .format(updatedExam.data),
+                      isDark: isDark,
                     ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _MiniInfoCard(
+                      label: updatedExam.stato == 'completato'
+                          ? 'VOTO'
+                          : 'PRIORITÀ',
+                      value: updatedExam.stato == 'completato'
+                          ? (updatedExam.voto != null
+                              ? '${_formatVoto(updatedExam.voto)} / 30'
+                              : '—')
+                          : _formatPriorita(updatedExam.priorita),
+                      valueColor: updatedExam.stato == 'completato'
+                          ? AppColors.success
+                          : AppColors.priorita(updatedExam.priorita),
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
 
-              // Sessioni di studio collegate
-              Text(
-                'Sessioni di studio collegate',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textMuted),
+              // ─── 3. NOTE (se presenti) ────────────────────────
+              if (updatedExam.note != null &&
+                  updatedExam.note!.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _NoteCard(note: updatedExam.note!, isDark: isDark),
+              ],
+
+              // ─── 4. SESSIONI DI STUDIO COLLEGATE ──────────────
+              const SizedBox(height: 24),
+              _SectionTitle(
+                title: 'Sessioni di studio',
+                count: sessioni.length,
+                isDark: isDark,
               ),
               const SizedBox(height: 8),
-              Builder(
-                builder: (context) {
-                  final sessioni = provider.studySessions
-                      .where((s) => s.examId == updatedExam.id)
-                      .toList();
-
-                  if (sessioni.isEmpty) {
-                    return Text(
-                      'Nessuna sessione collegata.',
-                      style: TextStyle(color: AppColors.textMuted),
-                    );
-                  }
-
-                  return Column(
-                    children: sessioni
-                        .map((s) => Card(
-                              child: ListTile(
-                                leading: Icon(Icons.timer,
-                                    color: AppColors.planning),
-                                title: Text(s.titolo),
-                                subtitle: Text(
-                                    '${s.durataPianificata} min · ${s.tipo}'),
-                                trailing: s.completata
-                                    ? Icon(Icons.check_circle,
-                                        color: AppColors.success)
-                                    : null,
-                              ),
-                            ))
-                        .toList(),
-                  );
-                },
-              ),
+              if (sessioni.isEmpty)
+                _EmptyCard(
+                    text: 'Nessuna sessione collegata',
+                    isDark: isDark)
+              else
+                _ItemsContainer(
+                  isDark: isDark,
+                  children: sessioni
+                      .map((s) => _SessionRow(
+                            titolo: s.titolo,
+                            durata: s.durataPianificata,
+                            tipo: s.tipo,
+                            completata: s.completata,
+                            isDark: isDark,
+                          ))
+                      .toList(),
+                ),
             ],
           ),
         );
       },
     );
   }
+
+  Future<void> _handleDelete(
+    BuildContext context,
+    PlannerProvider provider,
+    Exam exam,
+  ) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Elimina esame'),
+        content: Text('Eliminare "${exam.titolo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Elimina',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (confirm == true) {
+      await provider.deleteExam(exam.id);
+      if (!context.mounted) return;
+      Navigator.pop(context);
+    }
+  }
 }
 
-class _InfoRow extends StatelessWidget {
+// ═══════════════════════════════════════════════════════════════
+// HERO CARD: card grande pastello BLU
+// ═══════════════════════════════════════════════════════════════
+class _HeroCard extends StatelessWidget {
+  final Exam exam;
+  final String corso;
+  final String tipologia;
+  final String priorita;
+  final String statoLabel;
+  final Color statoColor;
+  final bool isDark;
+
+  const _HeroCard({
+    required this.exam,
+    required this.corso,
+    required this.tipologia,
+    required this.priorita,
+    required this.statoLabel,
+    required this.statoColor,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Countdown giorni (positivo = futuro, negativo = passato)
+    final adesso = DateTime.now();
+    final dataSoloGiorno =
+        DateTime(exam.data.year, exam.data.month, exam.data.day);
+    final oggiSoloGiorno =
+        DateTime(adesso.year, adesso.month, adesso.day);
+    final giorni = dataSoloGiorno.difference(oggiSoloGiorno).inDays;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.pastelBlueDeep.withValues(alpha: 0.18)
+            : AppColors.pastelBlueLight,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tipologia.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: AppColors.pastelBlueDeep,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      exam.titolo,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.pastelBlueDeep,
+                        letterSpacing: -0.5,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      corso,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.pastelBlueDeep
+                                .withValues(alpha: 0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              // Countdown (rettangolo bianco trasparente)
+              // Mostra:
+              //  - "Oggi" se 0
+              //  - "X gg" se positivo
+              //  - "-X gg" se passato
+              //  - "✓" se completato
+              _CountdownBadge(
+                giorni: giorni,
+                completato: exam.stato == 'completato',
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Chips di stato + priorità
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _StatoChip(label: statoLabel, color: statoColor),
+              _StatoChip(
+                label: 'Priorità $priorita',
+                color: AppColors.priorita(exam.priorita),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Badge "tra N giorni" in alto a destra dell'hero card
+class _CountdownBadge extends StatelessWidget {
+  final int giorni;
+  final bool completato;
+  const _CountdownBadge({required this.giorni, required this.completato});
+
+  @override
+  Widget build(BuildContext context) {
+    String big;
+    String small;
+    if (completato) {
+      big = '✓';
+      small = 'fatto';
+    } else if (giorni == 0) {
+      big = 'OGGI';
+      small = '';
+    } else if (giorni > 0) {
+      big = giorni.toString();
+      small = giorni == 1 ? 'giorno' : 'giorni';
+    } else {
+      big = giorni.abs().toString();
+      small = 'gg fa';
+    }
+
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Text(
+            big,
+            style: TextStyle(
+              fontSize: big == 'OGGI' || big == '✓' ? 18 : 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.pastelBlueDeep,
+              height: 1.0,
+              letterSpacing: -0.5,
+            ),
+          ),
+          if (small.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              small,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.pastelBlueDeep,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Chip piccolino bianco
+class _StatoChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatoChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: -0.1,
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MINI INFO CARD
+// ═══════════════════════════════════════════════════════════════
+class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
-  const _InfoRow(this.label, this.value);
+  final Color? valueColor;
+  final bool isDark;
+
+  const _MiniInfoCard({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: valueColor ??
+                  (isDark ? Colors.white : AppColors.textPrimary),
+              letterSpacing: -0.2,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NOTE CARD
+// ═══════════════════════════════════════════════════════════════
+class _NoteCard extends StatelessWidget {
+  final String note;
+  final bool isDark;
+
+  const _NoteCard({required this.note, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'NOTE',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION TITLE
+// ═══════════════════════════════════════════════════════════════
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final int count;
+  final bool isDark;
+
+  const _SectionTitle({
+    required this.title,
+    required this.count,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(label,
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMuted)),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
           ),
-          Expanded(child: Text(value)),
+          const SizedBox(width: 8),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTAINER LISTA
+// ═══════════════════════════════════════════════════════════════
+class _ItemsContainer extends StatelessWidget {
+  final List<Widget> children;
+  final bool isDark;
+
+  const _ItemsContainer({required this.children, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(children: _withDividers(children, isDark)),
+    );
+  }
+
+  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
+    if (rows.length <= 1) return rows;
+    final result = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      result.add(rows[i]);
+      if (i < rows.length - 1) {
+        result.add(Padding(
+          padding: const EdgeInsets.only(left: 14),
+          child: Divider(
+            height: 1,
+            thickness: 0.5,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : AppColors.groupedDivider,
+          ),
+        ));
+      }
+    }
+    return result;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EMPTY CARD
+// ═══════════════════════════════════════════════════════════════
+class _EmptyCard extends StatelessWidget {
+  final String text;
+  final bool isDark;
+  const _EmptyCard({required this.text, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION ROW (riga sessione di studio)
+// ═══════════════════════════════════════════════════════════════
+class _SessionRow extends StatelessWidget {
+  final String titolo;
+  final int durata;
+  final String tipo;
+  final bool completata;
+  final bool isDark;
+
+  const _SessionRow({
+    required this.titolo,
+    required this.durata,
+    required this.tipo,
+    required this.completata,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.pastelGreenLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.timer_outlined,
+              size: 16,
+              color: AppColors.pastelGreenDeep,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titolo,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$durata min · $tipo',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? Colors.white60
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (completata)
+            Icon(Icons.check_circle_rounded,
+                size: 20, color: AppColors.success),
         ],
       ),
     );

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../utils/app_colors.dart';
 import 'main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,8 +15,8 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigaVersoHome();
   }
 
-  _navigaVersoHome() async {
-    await Future.delayed(const Duration(milliseconds: 2500), () {});
+  Future<void> _navigaVersoHome() async {
+    await Future.delayed(const Duration(milliseconds: 2500));
     if (!mounted) return;
 
     Navigator.pushReplacement(
@@ -28,35 +27,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    // Splash minimal: solo logo + nome.
+    // Sfondo bianco PURO, forzato indipendentemente dal tema corrente,
+    // per matchare lo sfondo bianco del PNG dell'icona UniPath.
+    return const Scaffold(
+      backgroundColor: Color(0xFFFFFFFF),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/icon/UniPath_ICON.png',
+            Image(
+              image: AssetImage('assets/icon/UniPath_ICON.png'),
               width: 130,
               height: 130,
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'UniPath',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
+                color: Color(0xFF1C1C1E),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Study Planner & Exam Tracker',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 40),
-            CircularProgressIndicator(
-              color: AppColors.home,
             ),
           ],
         ),

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
+import '../models/task.dart';
 import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'course_form_screen.dart';
+import 'task_form_screen.dart';
 
-/// CourseDetailScreen — Stile iOS Settings.
+/// CourseDetailScreen — Stile Apple moderno, minimalista.
 ///
-/// Layout:
-///  - AppBar minimal con nome corso + matita modifica + cestino delete
-///  - Gruppo "Informazioni" con righe label/valore separate da divider
-///  - Gruppo "Esami" e "Attività" con stesso pattern Settings-like
+/// Layout a 5 blocchi:
+///  1. AppBar minimal con nome corso + matita + cestino
+///  2. HERO card pastello rosa con nome, docente, badge CFU e chips di stato/voto
+///  3. Mini-grid info (Semestre, Voto) in card bianche compatte
+///  4. Card Note/Materiale (solo se presenti)
+///  5. Sezioni "Esami" e "Attività" con piccolo "+ Aggiungi" inline
+///     accanto al titolo (no FAB).
 class CourseDetailScreen extends StatelessWidget {
   final Course course;
   const CourseDetailScreen({super.key, required this.course});
@@ -47,12 +52,28 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
+  /// Converte un voto numerico interno in stringa display.
+  /// Convenzione: 31 = 30L.
+  String _formatVoto(int? voto) {
+    if (voto == null) return '-';
+    if (voto >= 31) return '30L';
+    return voto.toString();
+  }
+
+  // Mostra "1° sem 24/25" invece di "Primo semestre 2024/25" per
+  // farlo stare nella card compatta senza troncamento.
+  String _shortSemestre(String s) {
+    return s
+        .replaceAll('Primo semestre', '1° sem')
+        .replaceAll('Secondo semestre', '2° sem')
+        .replaceAll('20', '');
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? const Color(0xFF000000)
-        : AppColors.groupedBackground;
+    final bgColor =
+        isDark ? const Color(0xFF000000) : AppColors.background;
 
     return Consumer<PlannerProvider>(
       builder: (context, provider, child) {
@@ -69,10 +90,7 @@ class CourseDetailScreen extends StatelessWidget {
             scrolledUnderElevation: 0,
             centerTitle: true,
             leading: IconButton(
-              icon: const Icon(
-                Icons.chevron_left_rounded,
-                size: 32,
-              ),
+              icon: const Icon(Icons.chevron_left_rounded, size: 32),
               color: AppColors.iosBlue,
               onPressed: () => Navigator.pop(context),
             ),
@@ -108,129 +126,162 @@ class CourseDetailScreen extends StatelessWidget {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.only(top: 8, bottom: 32),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              // ─── GRUPPO INFORMAZIONI ────────────────────────
-              _GroupHeader(label: 'Informazioni'),
-              _SettingsGroup(
+              // ─── 1. HERO CARD ROSA PASTELLO ──────────────────
+              _HeroCard(
+                course: updatedCourse,
+                statoLabel: _formatStato(updatedCourse.stato),
+                votoOttenuto: _formatVoto(updatedCourse.votoOttenuto),
+                votoDesiderato: _formatVoto(updatedCourse.votoDesiderato),
                 isDark: isDark,
+              ),
+              const SizedBox(height: 14),
+
+              // ─── 2. MINI-GRID INFO (2 colonne) ──────────────
+              Row(
                 children: [
-                  _SettingsRow(
-                    label: 'Docente',
-                    value: updatedCourse.docente,
-                    isDark: isDark,
-                  ),
-                  _SettingsRow(
-                    label: 'CFU',
-                    value: updatedCourse.cfu.toString(),
-                    isDark: isDark,
-                  ),
-                  _SettingsRow(
-                    label: 'Semestre',
-                    value: updatedCourse.semestre,
-                    isDark: isDark,
-                  ),
-                  _SettingsRow(
-                    label: 'Stato',
-                    value: _formatStato(updatedCourse.stato),
-                    valueColor:
-                        AppColors.statoCorso(updatedCourse.stato),
-                    isDark: isDark,
-                  ),
-                  if (updatedCourse.votoOttenuto != null)
-                    _SettingsRow(
-                      label: 'Voto ottenuto',
-                      value: '${updatedCourse.votoOttenuto}/30',
-                      valueColor: AppColors.success,
+                  Expanded(
+                    child: _MiniInfoCard(
+                      label: 'SEMESTRE',
+                      value: _shortSemestre(updatedCourse.semestre),
                       isDark: isDark,
                     ),
-                  if (updatedCourse.votoDesiderato != null)
-                    _SettingsRow(
-                      label: 'Voto mirato',
-                      value: '${updatedCourse.votoDesiderato}/30',
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _MiniInfoCard(
+                      label: 'VOTO',
+                      value: updatedCourse.votoOttenuto != null
+                          ? '${_formatVoto(updatedCourse.votoOttenuto)} / 30'
+                          : '—',
+                      valueColor: updatedCourse.votoOttenuto != null
+                          ? AppColors.success
+                          : null,
                       isDark: isDark,
                     ),
+                  ),
                 ],
               ),
 
-              // ─── GRUPPO NOTE / MATERIALE (se presenti) ───────
+              // ─── 3. NOTE / MATERIALE (se presenti) ──────────
               if ((updatedCourse.note?.isNotEmpty ?? false) ||
                   (updatedCourse.materialeAssociato?.isNotEmpty ??
                       false)) ...[
-                const SizedBox(height: 24),
-                _GroupHeader(label: 'Risorse'),
-                _SettingsGroup(
+                const SizedBox(height: 14),
+                _NoteCard(
+                  note: updatedCourse.note,
+                  materiale: updatedCourse.materialeAssociato,
                   isDark: isDark,
-                  children: [
-                    if (updatedCourse.materialeAssociato?.isNotEmpty ??
-                        false)
-                      _SettingsMultilineRow(
-                        label: 'Materiale',
-                        value: updatedCourse.materialeAssociato!,
-                        isDark: isDark,
-                      ),
-                    if (updatedCourse.note?.isNotEmpty ?? false)
-                      _SettingsMultilineRow(
-                        label: 'Note',
-                        value: updatedCourse.note!,
-                        isDark: isDark,
-                      ),
-                  ],
                 ),
               ],
 
-              // ─── GRUPPO ESAMI COLLEGATI ──────────────────────
+              // ─── 4. SEZIONE ESAMI ──────────────────────────
               const SizedBox(height: 24),
-              _GroupHeader(label: 'Esami (${exams.length})'),
+              _SectionTitle(
+                title: 'Esami',
+                count: exams.length,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
               if (exams.isEmpty)
-                _EmptyGroupRow(
-                  text: 'Nessun esame collegato',
-                  isDark: isDark,
-                )
+                _EmptyCard(text: 'Nessun esame collegato', isDark: isDark)
               else
-                _SettingsGroup(
+                _ItemsContainer(
                   isDark: isDark,
                   children: exams
-                      .map(
-                        (e) => _ExamRow(
-                          titolo: e.titolo,
-                          tipologia: _formatTipologia(e.tipologia),
-                          data: e.data,
-                          isCompletato: e.isCompletato,
-                          isDark: isDark,
-                        ),
-                      )
+                      .map((e) => _ExamRow(
+                            titolo: e.titolo,
+                            tipologia: _formatTipologia(e.tipologia),
+                            data: e.data,
+                            isCompletato: e.isCompletato,
+                            isDark: isDark,
+                          ))
                       .toList(),
                 ),
 
-              // ─── GRUPPO ATTIVITÀ ─────────────────────────────
+              // ─── 5. SEZIONE ATTIVITÀ con "+ Aggiungi" inline ─
               const SizedBox(height: 24),
-              _GroupHeader(label: 'Attività (${tasks.length})'),
+              _SectionTitle(
+                title: 'Attività',
+                count: tasks.length,
+                isDark: isDark,
+                // "+ Aggiungi" come trailing della section title.
+                // Sostituisce il FAB ingombrante in fondo alla schermata,
+                // mantenendo comunque la possibilità di creare task
+                // collegate al corso direttamente dal dettaglio (CRUD
+                // Task completo, requisito traccia).
+                trailing: _AddInlineButton(
+                  label: 'Aggiungi',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TaskFormScreen(
+                        defaultCourseId: updatedCourse.id,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               if (tasks.isEmpty)
-                _EmptyGroupRow(
-                  text: 'Nessuna attività collegata',
-                  isDark: isDark,
-                )
+                _EmptyCard(
+                    text: 'Nessuna attività collegata', isDark: isDark)
               else
-                _SettingsGroup(
+                _ItemsContainer(
                   isDark: isDark,
                   children: tasks
-                      .map(
-                        (t) => _TaskRow(
-                          titolo: t.titolo,
-                          priorita: t.priorita,
-                          completata: t.completata,
-                          onToggle: () =>
-                              provider.toggleTaskCompletion(t.id),
-                          isDark: isDark,
-                        ),
-                      )
+                      .map((t) => _TaskRow(
+                            task: t,
+                            onToggle: () =>
+                                provider.toggleTaskCompletion(t.id),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TaskFormScreen(
+                                  taskToEdit: t,
+                                  defaultCourseId: updatedCourse.id,
+                                ),
+                              ),
+                            ),
+                            onDelete: () async {
+                              final c = await _confirmDeleteTask(
+                                  context, t);
+                              if (c == true && context.mounted) {
+                                await provider.deleteTask(t.id);
+                              }
+                            },
+                            isDark: isDark,
+                          ))
                       .toList(),
                 ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Future<bool?> _confirmDeleteTask(BuildContext context, Task t) {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text('Elimina attività'),
+        content: Text('Eliminare "${t.titolo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Elimina',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -272,23 +323,163 @@ class CourseDetailScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GROUP HEADER (label uppercase sopra ogni gruppo, stile Settings)
+// HERO CARD: card grande pastello rosa con resoconto a colpo d'occhio
 // ═══════════════════════════════════════════════════════════════
-class _GroupHeader extends StatelessWidget {
-  final String label;
-  const _GroupHeader({required this.label});
+class _HeroCard extends StatelessWidget {
+  final Course course;
+  final String statoLabel;
+  final String votoOttenuto;
+  final String votoDesiderato;
+  final bool isDark;
+
+  const _HeroCard({
+    required this.course,
+    required this.statoLabel,
+    required this.votoOttenuto,
+    required this.votoDesiderato,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 8, 16, 8),
+    final statoColor = AppColors.statoCorso(course.stato);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        // Pastello rosa coerente con palette "courses"
+        color: isDark
+            ? AppColors.pastelRedDeep.withValues(alpha: 0.18)
+            : AppColors.pastelRedLight,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CORSO',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: AppColors.pastelRedDeep,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      course.nome,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.pastelRedDeep,
+                        letterSpacing: -0.5,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      course.docente,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? Colors.white70
+                            : AppColors.pastelRedDeep
+                                .withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Badge CFU (rettangolino bianco-trasparente con numero grande)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      course.cfu.toString(),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.pastelRedDeep,
+                        height: 1.0,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'CFU',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.pastelRedDeep,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Chips di stato + voto
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _StatoChip(label: statoLabel, color: statoColor),
+              if (course.votoOttenuto != null)
+                _StatoChip(
+                  label: '$votoOttenuto/30',
+                  color: AppColors.success,
+                ),
+              if (course.votoDesiderato != null)
+                _StatoChip(
+                  label: 'obiettivo $votoDesiderato',
+                  color: AppColors.pastelLavenderDeep,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Chip piccolino bianco con bordino colorato per il testo
+class _StatoChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _StatoChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textSecondary,
-          letterSpacing: 0.3,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: -0.1,
         ),
       ),
     );
@@ -296,34 +487,253 @@ class _GroupHeader extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CONTAINER GRUPPO (card bianca arrotondata con righe e divider)
+// MINI INFO CARD (semestre, voto, ecc.)
 // ═══════════════════════════════════════════════════════════════
-class _SettingsGroup extends StatelessWidget {
-  final List<Widget> children;
+class _MiniInfoCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
   final bool isDark;
 
-  const _SettingsGroup({
-    required this.children,
+  const _MiniInfoCard({
+    required this.label,
+    required this.value,
+    this.valueColor,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1C1C1E)
-            : AppColors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        children: _withDividers(children, isDark),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: valueColor ??
+                  (isDark ? Colors.white : AppColors.textPrimary),
+              letterSpacing: -0.2,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
+}
 
-  /// Inserisce automaticamente i divider tra le righe (non in cima/fondo).
+// ═══════════════════════════════════════════════════════════════
+// NOTE CARD (per Note e/o Materiale del corso)
+// ═══════════════════════════════════════════════════════════════
+class _NoteCard extends StatelessWidget {
+  final String? note;
+  final String? materiale;
+  final bool isDark;
+
+  const _NoteCard({
+    required this.note,
+    required this.materiale,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (materiale != null && materiale!.isNotEmpty) ...[
+            Text(
+              'MATERIALE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              materiale!,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                height: 1.4,
+              ),
+            ),
+            if (note != null && note!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.groupedDivider,
+                ),
+              ),
+          ],
+          if (note != null && note!.isNotEmpty) ...[
+            Text(
+              'NOTE',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              note!,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION TITLE: "Esami 3"  con eventuale "+ Aggiungi" a destra
+// ═══════════════════════════════════════════════════════════════
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  final int count;
+  final Widget? trailing;
+  final bool isDark;
+
+  const _SectionTitle({
+    required this.title,
+    required this.count,
+    this.trailing,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMuted,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const Spacer(),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+  }
+}
+
+// Bottoncino "+ Aggiungi" inline accanto al titolo di sezione
+class _AddInlineButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _AddInlineButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.add_rounded,
+                  size: 18, color: AppColors.iosBlue),
+              const SizedBox(width: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.iosBlue,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONTAINER LISTA (card bianca con righe + divider sottili)
+// ═══════════════════════════════════════════════════════════════
+class _ItemsContainer extends StatelessWidget {
+  final List<Widget> children;
+  final bool isDark;
+
+  const _ItemsContainer({required this.children, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(children: _withDividers(children, isDark)),
+    );
+  }
+
   List<Widget> _withDividers(List<Widget> rows, bool isDark) {
     if (rows.length <= 1) return rows;
     final result = <Widget>[];
@@ -331,7 +741,7 @@ class _SettingsGroup extends StatelessWidget {
       result.add(rows[i]);
       if (i < rows.length - 1) {
         result.add(Padding(
-          padding: const EdgeInsets.only(left: 16),
+          padding: const EdgeInsets.only(left: 14),
           child: Divider(
             height: 1,
             thickness: 0.5,
@@ -347,150 +757,34 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SETTINGS ROW: label sx, valore dx, su una riga (Settings iOS)
+// EMPTY CARD ("Nessun esame collegato")
 // ═══════════════════════════════════════════════════════════════
-class _SettingsRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final bool isDark;
-
-  const _SettingsRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      constraints: const BoxConstraints(minHeight: 44),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 16,
-                color: valueColor ??
-                    (isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary),
-                letterSpacing: -0.3,
-                fontWeight: valueColor != null
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MULTILINE ROW (per Note / Materiale): label sopra, valore sotto
-// ═══════════════════════════════════════════════════════════════
-class _SettingsMultilineRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isDark;
-
-  const _SettingsMultilineRow({
-    required this.label,
-    required this.value,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark
-                  ? Colors.white60
-                  : AppColors.textSecondary,
-              letterSpacing: -0.2,
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// EMPTY GROUP ROW (quando una sezione non ha elementi)
-// ═══════════════════════════════════════════════════════════════
-class _EmptyGroupRow extends StatelessWidget {
+class _EmptyCard extends StatelessWidget {
   final String text;
   final bool isDark;
-
-  const _EmptyGroupRow({
-    required this.text,
-    required this.isDark,
-  });
+  const _EmptyCard({required this.text, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1C1C1E)
-            : AppColors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
       ),
+      alignment: Alignment.center,
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 15,
-          color: isDark ? Colors.white60 : AppColors.textSecondary,
-          letterSpacing: -0.2,
-        ),
+        style: TextStyle(fontSize: 14, color: AppColors.textMuted),
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// EXAM ROW (riga dentro il gruppo Esami)
+// EXAM ROW (dentro la card lista)
 // ═══════════════════════════════════════════════════════════════
 class _ExamRow extends StatelessWidget {
   final String titolo;
@@ -513,9 +807,7 @@ class _ExamRow extends StatelessWidget {
         '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
 
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -539,11 +831,9 @@ class _ExamRow extends StatelessWidget {
                 Text(
                   titolo,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? Colors.white
-                        : AppColors.textPrimary,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -551,7 +841,7 @@ class _ExamRow extends StatelessWidget {
                 Text(
                   '$tipologia · $dateStr',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: isDark
                         ? Colors.white60
                         : AppColors.textSecondary,
@@ -575,102 +865,119 @@ class _ExamRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TASK ROW (riga dentro il gruppo Attività, con checkbox toggle)
+// TASK ROW (con checkbox iOS-style + tap modifica + swipe delete)
 // ═══════════════════════════════════════════════════════════════
 class _TaskRow extends StatelessWidget {
-  final String titolo;
-  final String priorita;
-  final bool completata;
+  final Task task;
   final VoidCallback onToggle;
+  final VoidCallback? onTap;
+  final Future<void> Function()? onDelete;
   final bool isDark;
 
   const _TaskRow({
-    required this.titolo,
-    required this.priorita,
-    required this.completata,
+    required this.task,
     required this.onToggle,
+    this.onTap,
+    this.onDelete,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final priorityColor = AppColors.priorita(priorita);
+    final priorityColor = AppColors.priorita(task.priorita);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onToggle,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Row(
-            children: [
-              // Checkbox circolare stile iOS
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: completata
+    Widget content = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: task.completata
+                    ? AppColors.iosBlue
+                    : Colors.transparent,
+                border: Border.all(
+                  color: task.completata
                       ? AppColors.iosBlue
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: completata
-                        ? AppColors.iosBlue
-                        : (isDark
-                            ? Colors.white38
-                            : AppColors.textMuted),
-                    width: 2,
-                  ),
-                ),
-                child: completata
-                    ? const Icon(
-                        Icons.check_rounded,
-                        size: 14,
-                        color: Colors.white,
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  titolo,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark
-                        ? Colors.white
-                        : AppColors.textPrimary,
-                    decoration: completata
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: AppColors.textMuted,
-                    letterSpacing: -0.3,
-                  ),
+                      : (isDark
+                          ? Colors.white38
+                          : AppColors.textMuted),
+                  width: 2,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: priorityColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  priorita.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: priorityColor,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-            ],
+              child: task.completata
+                  ? const Icon(Icons.check_rounded,
+                      size: 14, color: Colors.white)
+                  : null,
+            ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              task.titolo,
+              style: TextStyle(
+                fontSize: 15,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+                decoration: task.completata
+                    ? TextDecoration.lineThrough
+                    : null,
+                decorationColor: AppColors.textMuted,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: priorityColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              task.priorita.toUpperCase(),
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: priorityColor,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+
+    Widget row = Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: onTap, child: content),
+    );
+
+    if (onDelete != null) {
+      return Dismissible(
+        key: ValueKey('task_${task.id}'),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          color: AppColors.danger,
+          child: const Icon(Icons.delete_rounded, color: Colors.white),
+        ),
+        confirmDismiss: (_) async {
+          await onDelete!();
+          // Restituiamo false perché la rimozione la fa il Provider via
+          // notifyListeners, non il Dismissible.
+          return false;
+        },
+        child: row,
+      );
+    }
+
+    return row;
   }
 }

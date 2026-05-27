@@ -132,30 +132,41 @@ class _HeaderSection extends StatelessWidget {
         ),
         Consumer<ThemeProvider>(
           builder: (context, themeProvider, _) {
-            return GestureDetector(
-              onTap: () => themeProvider.toggleTheme(),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+            // Toggle Dark Mode VISIBILE — risponde al problema 7 della
+            // chat tecnica. Prima era nascosto su onLongPress dell'avatar
+            // e il prof non lo avrebbe mai trovato. Ora è un IconButton
+            // esplicito con tooltip, ben visibile in alto a destra,
+            // proprio come dichiarato nella scaletta (sezione E. Dark Mode).
+            return Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : AppColors.surface,
+                border: Border.all(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : AppColors.surface,
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : AppColors.border,
-                    width: 1,
-                  ),
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : AppColors.border,
+                  width: 1,
                 ),
-                child: Icon(
+              ),
+              child: IconButton(
+                tooltip: themeProvider.isDarkMode
+                    ? 'Passa al tema chiaro'
+                    : 'Passa al tema scuro',
+                padding: EdgeInsets.zero,
+                icon: Icon(
                   themeProvider.isDarkMode
                       ? Icons.light_mode_rounded
                       : Icons.dark_mode_rounded,
                   size: 20,
-                  color: secondaryColor,
+                  color: themeProvider.isDarkMode
+                      ? Colors.amber
+                      : secondaryColor,
                 ),
+                onPressed: () => themeProvider.toggleTheme(),
               ),
             );
           },
@@ -207,7 +218,11 @@ class _StatGrid extends StatelessWidget {
         ),
         _GlowStatCard(
           title: 'CFU',
-          value: '${provider.earnedCfu}/${provider.totalCfu}',
+          // CFU ottenuti su 180 (totale laurea triennale).
+          // Mostriamo l'avanzamento rispetto al traguardo complessivo,
+          // non rispetto ai soli corsi inseriti, così il valore ha
+          // senso anche se l'utente ha caricato pochi corsi.
+          value: '${provider.earnedCfu}/180',
           icon: Icons.school_rounded,
           pastel: AppColors.pastelYellow,
           isDark: isDark,

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'providers/planner_provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
 import 'utils/app_colors.dart';
 
-void main() {
+void main() async {
+  // Inizializzazione necessaria prima del runApp per locale 'it_IT'
+  WidgetsFlutterBinding.ensureInitialized();
+  // Carica i dati di localizzazione per le date in italiano (giorni e mesi).
+  // Senza questa chiamata, DateFormat('EEEE dd MMMM') ritorna "Thursday" invece di "Giovedì".
+  await initializeDateFormatting('it_IT', null);
+
   runApp(const StudyPlannerApp());
 }
 
@@ -73,7 +80,7 @@ class StudyPlannerApp extends StatelessWidget {
             themeMode: themeProvider.isDarkMode
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            // Qui forziamo la larghezza massima dell'intera app
+            // Larghezza massima dell'intera app (430 per phone landscape)
             builder: (context, child) {
               return Center(
                 child: ConstrainedBox(
