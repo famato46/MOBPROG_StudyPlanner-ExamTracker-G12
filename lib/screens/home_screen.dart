@@ -13,7 +13,12 @@ import '../utils/app_colors.dart';
 ///  3. Card prossimo esame con countdown
 ///  4. Lista suggerimenti automatici (dal Provider)
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  /// Callback per cambiare tab nella BottomNavigationBar del MainScreen.
+  /// Permette alle card della dashboard di portare alle sezioni:
+  /// 1 = Corsi, 2 = Esami, 3 = Pianifica, 4 = Stats.
+  final void Function(int)? onNavigateToTab;
+
+  const HomeScreen({super.key, this.onNavigateToTab});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +46,11 @@ class HomeScreen extends StatelessWidget {
               children: [
                 _HeaderSection(isDark: isDark),
                 const SizedBox(height: 28),
-                _StatGrid(provider: provider, isDark: isDark),
+                _StatGrid(
+                  provider: provider,
+                  isDark: isDark,
+                  onNavigateToTab: onNavigateToTab,
+                ),
                 const SizedBox(height: 28),
                 if (prossimoEsame != null) ...[
                   _SectionLabel(
@@ -182,8 +191,13 @@ class _HeaderSection extends StatelessWidget {
 class _StatGrid extends StatelessWidget {
   final PlannerProvider provider;
   final bool isDark;
+  final void Function(int)? onNavigateToTab;
 
-  const _StatGrid({required this.provider, required this.isDark});
+  const _StatGrid({
+    required this.provider,
+    required this.isDark,
+    this.onNavigateToTab,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -201,6 +215,7 @@ class _StatGrid extends StatelessWidget {
           icon: Icons.menu_book_rounded,
           pastel: AppColors.pastelRed,
           isDark: isDark,
+          onTap: () => onNavigateToTab?.call(1),
         ),
         _GlowStatCard(
           title: 'Esami',
@@ -208,6 +223,7 @@ class _StatGrid extends StatelessWidget {
           icon: Icons.calendar_month_rounded,
           pastel: AppColors.pastelBlue,
           isDark: isDark,
+          onTap: () => onNavigateToTab?.call(2),
         ),
         _GlowStatCard(
           title: 'Attività',
@@ -215,6 +231,7 @@ class _StatGrid extends StatelessWidget {
           icon: Icons.check_circle_outline_rounded,
           pastel: AppColors.pastelGreen,
           isDark: isDark,
+          onTap: () => onNavigateToTab?.call(3),
         ),
         _GlowStatCard(
           title: 'CFU',
@@ -226,6 +243,7 @@ class _StatGrid extends StatelessWidget {
           icon: Icons.school_rounded,
           pastel: AppColors.pastelYellow,
           isDark: isDark,
+          onTap: () => onNavigateToTab?.call(4),
         ),
       ],
     );
@@ -241,6 +259,7 @@ class _GlowStatCard extends StatelessWidget {
   final IconData icon;
   final Color pastel;
   final bool isDark;
+  final VoidCallback? onTap;
 
   const _GlowStatCard({
     required this.title,
@@ -248,6 +267,7 @@ class _GlowStatCard extends StatelessWidget {
     required this.icon,
     required this.pastel,
     required this.isDark,
+    this.onTap,
   });
 
   @override
@@ -267,43 +287,55 @@ class _GlowStatCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              pastel.withValues(alpha: isDark ? 0.85 : 1.0),
-              Color.lerp(pastel, Colors.white, isDark ? 0.0 : 0.18)!,
-              pastel.withValues(alpha: isDark ? 0.85 : 1.0),
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  pastel.withValues(alpha: isDark ? 0.85 : 1.0),
+                  Color.lerp(pastel, Colors.white, isDark ? 0.0 : 0.18)!,
+                  pastel.withValues(alpha: isDark ? 0.85 : 1.0),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, size: 20, color: textColor),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
-                    letterSpacing: -0.2,
-                  ),
+                Row(
+                  children: [
+                    Icon(icon, size: 20, color: textColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 18,
+                        color: textColor.withValues(alpha: 0.45)),
+                  ],
                 ),
+                _ValueText(value: value, color: textColor),
               ],
             ),
-            _ValueText(value: value, color: textColor),
-          ],
+          ),
         ),
       ),
     );

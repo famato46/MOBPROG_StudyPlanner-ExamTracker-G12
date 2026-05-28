@@ -109,7 +109,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
-                _FilterRow(
+                _StatoSegmentedTab(
                   options: const [
                     ('tutti', 'Tutti'),
                     ('da_iniziare', 'Da iniziare'),
@@ -504,6 +504,79 @@ class _FilterPill extends StatelessWidget {
               color: fg,
               letterSpacing: -0.2,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEGMENTED TAB STATO (stile coerente con il TabBar di Esami)
+// Contenitore grigio arrotondato + pillola pastello sull'elemento
+// attivo. Scrollabile orizzontalmente perché gli stati sono 6 e non
+// entrerebbero in un segmented a larghezza fissa.
+// ═══════════════════════════════════════════════════════════════
+class _StatoSegmentedTab extends StatelessWidget {
+  final List<(String, String)> options;
+  final String current;
+  final ValueChanged<String> onSelected;
+  final bool isDark;
+
+  const _StatoSegmentedTab({
+    required this.options,
+    required this.current,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: options.map((opt) {
+              final selected = opt.$1 == current;
+              return GestureDetector(
+                onTap: () => onSelected(opt.$1),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:
+                        selected ? AppColors.pastelRed : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    opt.$2,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w600,
+                      color: selected
+                          ? Colors.white
+                          : (isDark
+                              ? Colors.white70
+                              : AppColors.textSecondary),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ),

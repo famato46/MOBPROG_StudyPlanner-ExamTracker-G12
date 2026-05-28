@@ -24,27 +24,31 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  // Pre-istanziamo tutte le schermate in modo che lo state locale
-  // (ricerca corsi, filtri esami, timer pomodoro) non venga distrutto
-  // al cambio di tab. È il pattern usato dal prof negli snippet
-  // Flashcard/Pomodoro.
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    CoursesScreen(),
-    ExamsScreen(),
-    PlanningScreen(),
-    StatsScreen(),
-  ];
+  /// Cambia la tab attiva. Passata in giù alla HomeScreen come
+  /// VoidCallback (pattern "evento dal basso verso l'alto" del prof)
+  /// così le card della dashboard possono navigare alle altre sezioni.
+  void _goToTab(int index) => setState(() => _currentIndex = index);
 
+  // Le schermate sono costruite in build (non più const) perché la
+  // HomeScreen riceve la callback _goToTab. Restano comunque istanziate
+  // una sola volta dentro l'IndexedStack, che ne preserva lo stato.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final screens = <Widget>[
+      HomeScreen(onNavigateToTab: _goToTab),
+      const CoursesScreen(),
+      const ExamsScreen(),
+      const PlanningScreen(),
+      const StatsScreen(),
+    ];
 
     return Scaffold(
       // IndexedStack mantiene tutte le tab in memoria → no rebuild
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

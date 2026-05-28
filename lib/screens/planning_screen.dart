@@ -7,19 +7,25 @@ import '../providers/planner_provider.dart';
 import '../models/task.dart';
 import '../models/study_session.dart';
 import '../models/course.dart';
+import 'task_form_screen.dart';
+import 'session_form_screen.dart';
 
-/// PlanningScreen — "Pianifica" in stile Apple moderno, coerente con
-/// le altre schermate (large title, segmented control iOS, card pulite).
+/// Tipo di sessione del timer Focus.
+/// Replica il pattern `enum SessionType { pomodoro, pausa }` del prof.
+enum FocusType { pomodoro, pausa }
+
+/// PlanningScreen — "Pianifica" in stile Apple moderno.
 ///
-/// Tre sotto-viste tramite segmented control iOS (non più TabBar Material):
-///  1. Oggi          — impegni di oggi
+/// Tre sotto-viste tramite segmented control iOS:
+///  1. Oggi          — impegni di oggi (sessioni + task) con "+ Attività"
 ///  2. Pianificatore — calendario giorno/settimana + filtri + CRUD sessioni
-///  3. Focus         — timer Pomodoro
+///  3. Focus         — timer con Tecnica Pomodoro (Pomodoro / Pausa + reset)
 ///
 /// Pattern del prof rispettati:
-///  - setState per stato effimero (tab attiva, timer, filtri)
+///  - setState per stato effimero (tab, timer, filtri)
 ///  - Provider per App State (sessioni, task, corsi)
 ///  - Timer.periodic + dispose() per il countdown
+///  - enum FocusType per il tipo di sessione (come SessionType del prof)
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -39,84 +45,112 @@ class _PlanningScreenState extends State<PlanningScreen> {
   bool _isVistaSettimanale = false;
   bool _filtriEspansi = false;
 
-  // Stato Timer Pomodoro (stato effimero)
-  Timer? _pomodoroTimer;
-  int _secondsRemaining = 25 * 60;
+  // ─── Stato Timer Focus (Pomodoro / Pausa) ───
+  // Durate (in secondi). Come il prof: due durate diverse.
+  static const int _pomodoroSeconds = 25 * 60;
+  static const int _pausaSeconds = 5 * 60;
+
+  FocusType _focusType = FocusType.pomodoro;
+  Timer? _focusTimer;
+  int _secondsRemaining = _pomodoroSeconds;
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
-  static const int _pomodoroTotal = 25 * 60;
+  int get _currentTotal =>
+      _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
 
   @override
   void dispose() {
-    _pomodoroTimer?.cancel();
+    _focusTimer?.cancel();
     super.dispose();
   }
 
   void _onSegmentChanged(int index) {
-    // Uscendo dal Focus, mettiamo in pausa il timer (come prima).
-    if (index != 2 && _isTimerRunning) _pausePomodoro();
+    if (index != 2 && _isTimerRunning) _pauseTimer();
     setState(() => _currentSegment = index);
   }
 
   // ─────────────────────────── TIMER ───────────────────────────
-  void _startPomodoro() {
-    if (_selectedTaskForPomodoro == null) {
+  void _startTimer() {
+    // Solo per il Pomodoro serve un obiettivo selezionato; la pausa no.
+    if (_focusType == FocusType.pomodoro &&
+        _selectedTaskForPomodoro == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content:
-                Text('Seleziona un obiettivo prima di avviare il timer!')),
+                Text('Seleziona un obiettivo prima di avviare il Pomodoro!')),
       );
       return;
     }
     setState(() => _isTimerRunning = true);
-    _pomodoroTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _focusTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining > 0) {
         setState(() => _secondsRemaining--);
       } else {
-        _completaPomodoro();
+        _completaSessione();
       }
     });
   }
 
-  void _pausePomodoro() {
-    _pomodoroTimer?.cancel();
+  void _pauseTimer() {
+    _focusTimer?.cancel();
     setState(() => _isTimerRunning = false);
   }
 
-  void _resetPomodoro() {
-    _pausePomodoro();
-    setState(() => _secondsRemaining = _pomodoroTotal);
+  // Reset: ferma e riporta al valore pieno del tipo corrente.
+  void _resetTimer() {
+    _focusTimer?.cancel();
+    setState(() {
+      _isTimerRunning = false;
+      _secondsRemaining = _currentTotal;
+    });
   }
 
-  Future<void> _completaPomodoro() async {
-    _pomodoroTimer?.cancel();
-    if (_selectedTaskForPomodoro != null) {
+  // Cambia tipo (Pomodoro/Pausa): ferma il timer e resetta i secondi.
+  void _switchFocusType(FocusType type) {
+    _focusTimer?.cancel();
+    setState(() {
+      _focusType = type;
+      _isTimerRunning = false;
+      _secondsRemaining =
+          type == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
+    });
+  }
+
+  Future<void> _completaSessione() async {
+    _focusTimer?.cancel();
+
+    // Salviamo nello storico solo i Pomodoro (lavoro vero), non le pause.
+    if (_focusType == FocusType.pomodoro &&
+        _selectedTaskForPomodoro != null) {
       await Provider.of<PlannerProvider>(context, listen: false)
           .savePomodoroSession(
         titolo: 'Focus: ${_selectedTaskForPomodoro!.titolo}',
         courseId: _selectedTaskForPomodoro!.courseId,
         examId: _selectedTaskForPomodoro!.examId,
         taskId: _selectedTaskForPomodoro!.id,
-        durataEffettiva: 25,
+        durataEffettiva: _pomodoroSeconds ~/ 60,
       );
     }
+
     setState(() {
       _isTimerRunning = false;
-      _secondsRemaining = _pomodoroTotal;
+      _secondsRemaining = _currentTotal;
     });
-    if (mounted) _mostraDialogSuccesso();
+    if (mounted) _mostraDialogFine();
   }
 
-  void _mostraDialogSuccesso() {
+  void _mostraDialogFine() {
+    final isPomodoro = _focusType == FocusType.pomodoro;
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Ottimo lavoro!'),
-        content: const Text(
-            'I tuoi 25 minuti di focus sono stati registrati con successo.'),
+        title: Text(isPomodoro ? 'Pomodoro completato!' : 'Pausa finita!'),
+        content: Text(isPomodoro
+            ? 'I tuoi 25 minuti di focus sono stati registrati. Fai una pausa!'
+            : 'Pronto per un altro Pomodoro?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -141,7 +175,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
     }
   }
 
-  // _isSameWeek pulito: inizio settimana (lunedì 00:00) → lunedì successivo.
   bool _isSameWeek(DateTime date, DateTime reference) {
     final inizioSettimana =
         DateTime(reference.year, reference.month, reference.day)
@@ -159,6 +192,36 @@ class _PlanningScreenState extends State<PlanningScreen> {
     }
     return DateFormat('EEEE dd MMMM', 'it_IT')
         .format(_giornoPianificatore);
+  }
+
+  // Apre il form a tutto schermo per creare/modificare una sessione.
+  void _apriFormSessione({StudySession? sessione}) {
+    final provider = context.read<PlannerProvider>();
+    if (provider.courses.isEmpty && sessione == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content:
+              Text('Inserisci prima un Corso nell\'apposita schermata!')));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SessionFormScreen(
+          sessione: sessione,
+          dataIniziale: _giornoPianificatore,
+        ),
+      ),
+    );
+  }
+
+  // Apre il form a tutto schermo per creare/modificare un Task.
+  void _apriFormTask({Task? task}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TaskFormScreen(taskToEdit: task),
+      ),
+    );
   }
 
   @override
@@ -206,7 +269,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── Large title + segmented control ──
             _Header(isDark: isDark),
             const SizedBox(height: 8),
             _SegmentedControl(
@@ -215,8 +277,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
               isDark: isDark,
             ),
             const SizedBox(height: 8),
-
-            // ── Contenuto della vista selezionata ──
             Expanded(
               child: provider.isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -226,27 +286,32 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         _buildTabOggi(sessioniOggi, taskOggi, provider),
                         _buildTabPianificatore(
                             sessioniPianificatore, provider),
-                        _buildTabPomodoro(provider.getPendingTasks()),
+                        _buildTabFocus(provider.getPendingTasks()),
                       ],
                     ),
             ),
           ],
         ),
       ),
-      // FAB "Pianifica" solo nella vista Pianificatore.
-      // heroTag univoco per non collidere con gli altri FAB dell'IndexedStack.
-      floatingActionButton: _currentSegment == 1
-          ? FloatingActionButton.extended(
-              heroTag: 'fab_planning',
-              backgroundColor: AppColors.planning,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              onPressed: () => _apriDialogPianificazione(context),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Pianifica',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-            )
-          : null,
+      floatingActionButton: _buildFab(),
+    );
+  }
+
+  // FAB dipendente dalla tab:
+  //  - Oggi          → niente FAB (i "+" sono inline nelle sezioni)
+  //  - Pianificatore → "+ Pianifica" (crea sessione)
+  //  - Focus         → niente FAB
+  Widget? _buildFab() {
+    if (_currentSegment != 1) return null;
+    return FloatingActionButton.extended(
+      heroTag: 'fab_planning',
+      backgroundColor: AppColors.planning,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      onPressed: () => _apriFormSessione(),
+      icon: const Icon(Icons.add_rounded),
+      label: const Text('Pianifica',
+          style: TextStyle(fontWeight: FontWeight.w700)),
     );
   }
 
@@ -255,80 +320,92 @@ class _PlanningScreenState extends State<PlanningScreen> {
   // ═══════════════════════════════════════════════════════════════
   Widget _buildTabOggi(
       List<StudySession> sessioni, List<Task> task, PlannerProvider provider) {
-    if (sessioni.isEmpty && task.isEmpty) {
-      return _EmptyState(
-        icon: Icons.wb_sunny_outlined,
-        text: 'Libero! Nessuna attività prevista per oggi.',
-      );
-    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final taskInCorso = task.where((t) => !t.completata).toList();
     final taskCompletati = task.where((t) => t.completata).toList();
     final sessioniInCorso = sessioni.where((s) => !s.completata).toList();
     final sessioniCompletate = sessioni.where((s) => s.completata).toList();
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tuttoVuoto = sessioni.isEmpty && task.isEmpty;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        if (taskInCorso.isNotEmpty || sessioniInCorso.isNotEmpty) ...[
-          _SectionLabel(label: 'Da completare oggi', isDark: isDark),
-          const SizedBox(height: 8),
-          _CardGroup(
-            isDark: isDark,
-            children: [
-              ...taskInCorso.map((t) => _TaskRow(
-                    task: t,
-                    sottotitolo:
-                        provider.getCourseById(t.courseId ?? '')?.nome ??
-                            'Generico',
-                    onToggle: () => provider.toggleTaskCompletion(t.id),
-                    isDark: isDark,
-                  )),
-              ...sessioniInCorso.map((s) => _SessionRow(
-                    session: s,
-                    sottotitolo:
-                        '${provider.getCourseById(s.courseId ?? '')?.nome ?? "Generico"} · ${s.tipo}',
-                    onToggle: () => provider.updateStudySession(
-                        s.copyWith(completata: !s.completata)),
-                    onEdit: () => _apriDialogPianificazione(context,
-                        sessioneEsistente: s),
-                    isDark: isDark,
-                  )),
-            ],
-          ),
-          const SizedBox(height: 24),
-        ],
-        if (taskCompletati.isNotEmpty || sessioniCompletate.isNotEmpty) ...[
-          _SectionLabel(
-              label: 'Completate',
+        // ── Intestazione sezione Attività con "+ Attività" ──
+        _SectionTitleWithAction(
+          title: 'Le mie attività',
+          isDark: isDark,
+          actionLabel: 'Attività',
+          onAction: () => _apriFormTask(),
+        ),
+        const SizedBox(height: 8),
+
+        if (tuttoVuoto)
+          _EmptyState(
+            icon: Icons.wb_sunny_outlined,
+            text: 'Libero! Nessuna attività o sessione per oggi.',
+          )
+        else ...[
+          if (taskInCorso.isNotEmpty || sessioniInCorso.isNotEmpty) ...[
+            _SectionLabel(label: 'Da completare oggi', isDark: isDark),
+            const SizedBox(height: 8),
+            _CardGroup(
               isDark: isDark,
-              color: AppColors.success),
-          const SizedBox(height: 8),
-          _CardGroup(
-            isDark: isDark,
-            children: [
-              ...taskCompletati.map((t) => _TaskRow(
-                    task: t,
-                    sottotitolo:
-                        provider.getCourseById(t.courseId ?? '')?.nome ??
-                            'Generico',
-                    onToggle: () => provider.toggleTaskCompletion(t.id),
-                    isDark: isDark,
-                  )),
-              ...sessioniCompletate.map((s) => _SessionRow(
-                    session: s,
-                    sottotitolo:
-                        '${provider.getCourseById(s.courseId ?? '')?.nome ?? "Generico"} · ${s.tipo}',
-                    onToggle: () => provider.updateStudySession(
-                        s.copyWith(completata: !s.completata)),
-                    onEdit: () => _apriDialogPianificazione(context,
-                        sessioneEsistente: s),
-                    isDark: isDark,
-                  )),
-            ],
-          ),
+              children: [
+                ...taskInCorso.map((t) => _TaskRow(
+                      task: t,
+                      sottotitolo:
+                          provider.getCourseById(t.courseId ?? '')?.nome ??
+                              'Generico',
+                      onToggle: () => provider.toggleTaskCompletion(t.id),
+                      onTap: () => _apriFormTask(task: t),
+                      isDark: isDark,
+                    )),
+                ...sessioniInCorso.map((s) => _SessionRow(
+                      session: s,
+                      sottotitolo:
+                          '${provider.getCourseById(s.courseId ?? '')?.nome ?? "Generico"} · ${s.tipo}',
+                      onToggle: () => provider.updateStudySession(
+                          s.copyWith(completata: !s.completata)),
+                      onEdit: () => _apriFormSessione(sessione: s),
+                      isDark: isDark,
+                    )),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+          if (taskCompletati.isNotEmpty ||
+              sessioniCompletate.isNotEmpty) ...[
+            _SectionLabel(
+                label: 'Completate',
+                isDark: isDark,
+                color: AppColors.success),
+            const SizedBox(height: 8),
+            _CardGroup(
+              isDark: isDark,
+              children: [
+                ...taskCompletati.map((t) => _TaskRow(
+                      task: t,
+                      sottotitolo:
+                          provider.getCourseById(t.courseId ?? '')?.nome ??
+                              'Generico',
+                      onToggle: () => provider.toggleTaskCompletion(t.id),
+                      onTap: () => _apriFormTask(task: t),
+                      isDark: isDark,
+                    )),
+                ...sessioniCompletate.map((s) => _SessionRow(
+                      session: s,
+                      sottotitolo:
+                          '${provider.getCourseById(s.courseId ?? '')?.nome ?? "Generico"} · ${s.tipo}',
+                      onToggle: () => provider.updateStudySession(
+                          s.copyWith(completata: !s.completata)),
+                      onEdit: () => _apriFormSessione(sessione: s),
+                      isDark: isDark,
+                    )),
+              ],
+            ),
+          ],
         ],
       ],
     );
@@ -347,7 +424,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
 
     return Column(
       children: [
-        // ── Toggle Giornaliera/Settimanale + Scegli Data ──
+        // ── Toggle Giornaliera/Settimanale + Data ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Row(
@@ -405,7 +482,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
           ),
         ),
 
-        // ── Filtri (espandibili) ──
+        // ── Filtri ──
         _FilterSection(
           espanso: _filtriEspansi,
           filtriAttivi: filtriAttivi,
@@ -432,7 +509,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   text: 'Nessun impegno corrisponde ai criteri.',
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
                   children: [
                     if (sessioniInCorso.isNotEmpty)
                       _CardGroup(
@@ -440,19 +517,19 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         children: sessioniInCorso
                             .map((s) => _SessionRow(
                                   session: s,
-                                  sottotitolo: _sottotitoloSessione(
-                                      s, provider),
+                                  sottotitolo:
+                                      _sottotitoloSessione(s, provider),
                                   onToggle: () =>
                                       provider.updateStudySession(s.copyWith(
                                           completata: !s.completata)),
-                                  onEdit: () => _apriDialogPianificazione(
-                                      context,
-                                      sessioneEsistente: s),
+                                  onEdit: () =>
+                                      _apriFormSessione(sessione: s),
                                   onDelete: () async {
                                     final c = await _confirmDeleteSessione(
                                         context, s);
                                     if (c == true && context.mounted) {
-                                      await provider.deleteStudySession(s.id);
+                                      await provider
+                                          .deleteStudySession(s.id);
                                     }
                                   },
                                   isDark: isDark,
@@ -471,19 +548,19 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         children: sessioniCompletate
                             .map((s) => _SessionRow(
                                   session: s,
-                                  sottotitolo: _sottotitoloSessione(
-                                      s, provider),
+                                  sottotitolo:
+                                      _sottotitoloSessione(s, provider),
                                   onToggle: () =>
                                       provider.updateStudySession(s.copyWith(
                                           completata: !s.completata)),
-                                  onEdit: () => _apriDialogPianificazione(
-                                      context,
-                                      sessioneEsistente: s),
+                                  onEdit: () =>
+                                      _apriFormSessione(sessione: s),
                                   onDelete: () async {
                                     final c = await _confirmDeleteSessione(
                                         context, s);
                                     if (c == true && context.mounted) {
-                                      await provider.deleteStudySession(s.id);
+                                      await provider
+                                          .deleteStudySession(s.id);
                                     }
                                   },
                                   isDark: isDark,
@@ -532,53 +609,88 @@ class _PlanningScreenState extends State<PlanningScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // TAB 3 — FOCUS POMODORO
+  // TAB 3 — FOCUS (Tecnica Pomodoro: Pomodoro / Pausa + reset)
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildTabPomodoro(List<Task> pendingTasks) {
+  Widget _buildTabFocus(List<Task> pendingTasks) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress = _secondsRemaining / _pomodoroTotal;
+    final progress = _secondsRemaining / _currentTotal;
+    final isPomodoro = _focusType == FocusType.pomodoro;
+    // Colore accento: rosso per Pomodoro, verde per Pausa (come il prof).
+    final accent =
+        isPomodoro ? AppColors.danger : AppColors.success;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       child: Column(
         children: [
-          // ── Selettore obiettivo (card iOS) ──
-          Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<Task>(
-                isExpanded: true,
-                value: _selectedTaskForPomodoro,
-                hint: Text(
-                  'Seleziona l\'obiettivo su cui concentrarti',
-                  style: TextStyle(
-                      fontSize: 15, color: AppColors.textMuted),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                icon: Icon(Icons.unfold_more_rounded,
-                    color: AppColors.textMuted, size: 20),
-                items: pendingTasks
-                    .map((t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(t.titolo,
-                              overflow: TextOverflow.ellipsis),
-                        ))
-                    .toList(),
-                onChanged: _isTimerRunning
-                    ? null
-                    : (task) =>
-                        setState(() => _selectedTaskForPomodoro = task),
-              ),
+          // ── Titolo "Tecnica Pomodoro" ──
+          Text(
+            'Tecnica Pomodoro',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 4),
+          Text(
+            isPomodoro
+                ? '25 minuti di studio concentrato'
+                : '5 minuti di pausa',
+            style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Selettore Pomodoro / Pausa ──
+          _MiniSegment(
+            options: const ['Pomodoro', 'Pausa'],
+            selectedIndex: isPomodoro ? 0 : 1,
+            onChanged: (i) => _switchFocusType(
+                i == 0 ? FocusType.pomodoro : FocusType.pausa),
+            isDark: isDark,
+            fullWidth: true,
+          ),
+          const SizedBox(height: 24),
+
+          // ── Selettore obiettivo (solo per Pomodoro) ──
+          if (isPomodoro)
+            Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Task>(
+                  isExpanded: true,
+                  value: _selectedTaskForPomodoro,
+                  hint: Text(
+                    'Seleziona l\'obiettivo su cui concentrarti',
+                    style: TextStyle(
+                        fontSize: 15, color: AppColors.textMuted),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  icon: Icon(Icons.unfold_more_rounded,
+                      color: AppColors.textMuted, size: 20),
+                  items: pendingTasks
+                      .map((t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(t.titolo,
+                                overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: _isTimerRunning
+                      ? null
+                      : (task) =>
+                          setState(() => _selectedTaskForPomodoro = task),
+                ),
+              ),
+            ),
+          const SizedBox(height: 36),
 
           // ── Cerchio timer ──
           SizedBox(
@@ -595,9 +707,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
                     strokeWidth: 8,
                     backgroundColor: isDark
                         ? Colors.white.withValues(alpha: 0.08)
-                        : AppColors.planning.withValues(alpha: 0.15),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.planningDeep),
+                        : accent.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
                 ),
                 Column(
@@ -614,7 +725,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       ),
                     ),
                     Text(
-                      _isTimerRunning ? 'In corso' : 'Pronto',
+                      _isTimerRunning
+                          ? 'In corso'
+                          : (isPomodoro ? 'Pomodoro' : 'Pausa'),
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textMuted,
@@ -626,28 +739,25 @@ class _PlanningScreenState extends State<PlanningScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 36),
 
-          // ── Controlli ──
+          // ── Controlli: Reset + Avvia/Pausa ──
           Row(
             children: [
-              if (!_isTimerRunning && _secondsRemaining < _pomodoroTotal) ...[
-                _CircleControl(
-                  icon: Icons.refresh_rounded,
-                  onTap: _resetPomodoro,
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 14),
-              ],
+              // Tasto Reset (sempre presente, come il prof)
+              _CircleControl(
+                icon: Icons.refresh_rounded,
+                onTap: _resetTimer,
+                isDark: isDark,
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: GestureDetector(
-                  onTap: _isTimerRunning ? _pausePomodoro : _startPomodoro,
+                  onTap: _isTimerRunning ? _pauseTimer : _startTimer,
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      color: _isTimerRunning
-                          ? AppColors.warning
-                          : AppColors.planningDeep,
+                      color: _isTimerRunning ? AppColors.warning : accent,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -661,7 +771,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _isTimerRunning ? 'Pausa' : 'Inizia Focus',
+                          _isTimerRunning
+                              ? 'Pausa'
+                              : (isPomodoro
+                                  ? 'Inizia Focus'
+                                  : 'Inizia Pausa'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -676,124 +790,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════
-  // DIALOG PIANIFICAZIONE (invariato nella logica)
-  // ═══════════════════════════════════════════════════════════════
-  void _apriDialogPianificazione(BuildContext context,
-      {StudySession? sessioneEsistente}) {
-    final provider = Provider.of<PlannerProvider>(context, listen: false);
-    final isModifica = sessioneEsistente != null;
-    final titController = TextEditingController(
-        text: isModifica ? sessioneEsistente.titolo : '');
-    Course? corsoScelto;
-    if (isModifica) {
-      try {
-        corsoScelto = provider.courses
-            .firstWhere((c) => c.id == sessioneEsistente.courseId);
-      } catch (_) {
-        corsoScelto = null;
-      }
-    }
-    String tipoStudio = isModifica ? sessioneEsistente.tipo : 'Studio';
-
-    if (provider.courses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Inserisci prima un Corso nell\'apposita schermata!')));
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
-          title: Text(isModifica ? 'Modifica Sessione' : 'Pianifica Studio'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titController,
-                  decoration: const InputDecoration(
-                      labelText: 'Cosa farai? (Titolo) *'),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<Course>(
-                  decoration: const InputDecoration(labelText: 'Corso *'),
-                  initialValue: corsoScelto,
-                  items: provider.courses
-                      .map((c) =>
-                          DropdownMenuItem(value: c, child: Text(c.nome)))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() => corsoScelto = v),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  decoration:
-                      const InputDecoration(labelText: 'Tipo Attività'),
-                  initialValue: tipoStudio,
-                  items: const [
-                    'Studio',
-                    'Ripasso',
-                    'Esercitazione',
-                    'Progetto',
-                    'Consegna'
-                  ]
-                      .map((e) =>
-                          DropdownMenuItem(value: e, child: Text(e)))
-                      .toList(),
-                  onChanged: (v) => setDialogState(() => tipoStudio = v!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Annulla'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.planning,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                if (titController.text.trim().isEmpty ||
-                    corsoScelto == null) {
-                  return;
-                }
-                try {
-                  if (isModifica) {
-                    final sessioneAggiornata = sessioneEsistente.copyWith(
-                      titolo: titController.text.trim(),
-                      courseId: corsoScelto!.id,
-                      tipo: tipoStudio,
-                    );
-                    await provider.updateStudySession(sessioneAggiornata);
-                  } else {
-                    await provider.addStudySession(
-                      titolo: titController.text.trim(),
-                      courseId: corsoScelto!.id,
-                      data: _giornoPianificatore,
-                      durataPianificata: 60,
-                      tipo: tipoStudio,
-                    );
-                  }
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                } catch (e) {
-                  debugPrint('Errore salvataggio sessione: $e');
-                }
-              },
-              child: Text(isModifica ? 'Aggiorna' : 'Salva'),
-            )
-          ],
-        ),
       ),
     );
   }
@@ -830,9 +826,8 @@ class _Header extends StatelessWidget {
               'Organizza studio e sessioni di focus',
               style: TextStyle(
                 fontSize: 15,
-                color: isDark
-                    ? Colors.white70
-                    : AppColors.textSecondary,
+                color:
+                    isDark ? Colors.white70 : AppColors.textSecondary,
               ),
             ),
           ],
@@ -931,23 +926,67 @@ class _SegmentedControl extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MINI SEGMENT (Giornaliera / Settimanale)
+// MINI SEGMENT (Giornaliera/Settimanale, Pomodoro/Pausa)
 // ═══════════════════════════════════════════════════════════════
 class _MiniSegment extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool isDark;
+  final bool fullWidth;
 
   const _MiniSegment({
     required this.options,
     required this.selectedIndex,
     required this.onChanged,
     required this.isDark,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final row = Row(
+      mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+      children: List.generate(options.length, (i) {
+        final selected = i == selectedIndex;
+        final chip = AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFF3A3A3C) : Colors.white)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            options[i],
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected
+                  ? (isDark ? Colors.white : AppColors.textPrimary)
+                  : AppColors.textMuted,
+            ),
+          ),
+        );
+        return fullWidth
+            ? Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: chip,
+                ),
+              )
+            : GestureDetector(
+                onTap: () => onChanged(i),
+                behavior: HitTestBehavior.opaque,
+                child: chip,
+              );
+      }),
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: isDark
@@ -956,38 +995,7 @@ class _MiniSegment extends StatelessWidget {
         borderRadius: BorderRadius.circular(9),
       ),
       padding: const EdgeInsets.all(3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(options.length, (i) {
-          final selected = i == selectedIndex;
-          return GestureDetector(
-            onTap: () => onChanged(i),
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: selected
-                    ? (isDark ? const Color(0xFF3A3A3C) : Colors.white)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Text(
-                options[i],
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected
-                      ? (isDark ? Colors.white : AppColors.textPrimary)
-                      : AppColors.textMuted,
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
+      child: row,
     );
   }
 }
@@ -1090,7 +1098,6 @@ class _FilterSection extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Riga header del filtro
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1141,68 +1148,185 @@ class _FilterSection extends StatelessWidget {
               ),
             ),
           ),
-          // Corpo espandibile
           if (espanso)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<Course?>(
-                      decoration: InputDecoration(
-                        labelText: 'Corso',
-                        isDense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                  // Filtro Corso
+                  _FilterDropdownRow<Course?>(
+                    label: 'Corso',
+                    value: filtroCorso,
+                    isDark: isDark,
+                    items: [
+                      DropdownMenuItem<Course?>(
+                        value: null,
+                        child: Text('Tutti i Corsi',
+                            style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary)),
                       ),
-                      initialValue: filtroCorso,
-                      isExpanded: true,
-                      items: [
-                        const DropdownMenuItem<Course?>(
-                            value: null,
-                            child: Text('Tutti i Corsi')),
-                        ...corsi.map((c) => DropdownMenuItem(
+                      ...corsi.map((c) => DropdownMenuItem<Course?>(
                             value: c,
                             child: Text(c.nome,
-                                overflow: TextOverflow.ellipsis))),
-                      ],
-                      onChanged: onCorsoChanged,
-                    ),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white
+                                        : AppColors.textPrimary)),
+                          )),
+                    ],
+                    onChanged: onCorsoChanged,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Tipo',
-                        isDense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      initialValue: filtroTipo,
-                      isExpanded: true,
-                      items: const [
-                        'Tutti',
-                        'Studio',
-                        'Ripasso',
-                        'Esercitazione',
-                        'Progetto',
-                        'Consegna'
-                      ]
-                          .map((e) => DropdownMenuItem(
-                              value: e, child: Text(e)))
-                          .toList(),
-                      onChanged: (v) => onTipoChanged(v!),
-                    ),
+                  const SizedBox(height: 10),
+                  // Filtro Tipo
+                  _FilterDropdownRow<String>(
+                    label: 'Tipo',
+                    value: filtroTipo,
+                    isDark: isDark,
+                    items: const [
+                      'Tutti',
+                      'Studio',
+                      'Ripasso',
+                      'Esercitazione',
+                      'Progetto',
+                      'Consegna'
+                    ]
+                        .map((e) => DropdownMenuItem<String>(
+                            value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => onTipoChanged(v!),
                   ),
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// Riga filtro: etichetta a sinistra + dropdown "nudo" a destra
+class _FilterDropdownRow<T> extends StatelessWidget {
+  final String label;
+  final T value;
+  final List<DropdownMenuItem<T>> items;
+  final ValueChanged<T?> onChanged;
+  final bool isDark;
+
+  const _FilterDropdownRow({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white70 : AppColors.textSecondary,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : AppColors.groupedBackground,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                isExpanded: true,
+                value: value,
+                icon: Icon(Icons.unfold_more_rounded,
+                    size: 18, color: AppColors.textMuted),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+                items: items,
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION TITLE con azione "+ ..." (per "Le mie attività")
+// ═══════════════════════════════════════════════════════════════
+class _SectionTitleWithAction extends StatelessWidget {
+  final String title;
+  final String actionLabel;
+  final VoidCallback onAction;
+  final bool isDark;
+
+  const _SectionTitleWithAction({
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: onAction,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded,
+                        size: 18, color: AppColors.planningDeep),
+                    const SizedBox(width: 2),
+                    Text(
+                      actionLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.planningDeep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1242,7 +1366,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CARD GROUP (contenitore lista bianco con divider)
+// CARD GROUP
 // ═══════════════════════════════════════════════════════════════
 class _CardGroup extends StatelessWidget {
   final List<Widget> children;
@@ -1293,103 +1417,116 @@ class _TaskRow extends StatelessWidget {
   final Task task;
   final String sottotitolo;
   final VoidCallback onToggle;
+  final VoidCallback? onTap;
   final bool isDark;
 
   const _TaskRow({
     required this.task,
     required this.sottotitolo,
     required this.onToggle,
+    this.onTap,
     required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     final priorityColor = AppColors.priorita(task.priorita);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onToggle,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: task.completata
-                    ? AppColors.iosBlue
-                    : Colors.transparent,
-                border: Border.all(
-                  color: task.completata
-                      ? AppColors.iosBlue
-                      : (isDark ? Colors.white38 : AppColors.textMuted),
-                  width: 2,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: onToggle,
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: task.completata
+                        ? AppColors.iosBlue
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: task.completata
+                          ? AppColors.iosBlue
+                          : (isDark
+                              ? Colors.white38
+                              : AppColors.textMuted),
+                      width: 2,
+                    ),
+                  ),
+                  child: task.completata
+                      ? const Icon(Icons.check_rounded,
+                          size: 15, color: Colors.white)
+                      : null,
                 ),
               ),
-              child: task.completata
-                  ? const Icon(Icons.check_rounded,
-                      size: 15, color: Colors.white)
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.titolo,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                    decoration: task.completata
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: AppColors.textMuted,
-                    letterSpacing: -0.2,
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.titolo,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.textPrimary,
+                        decoration: task.completata
+                            ? TextDecoration.lineThrough
+                            : null,
+                        decorationColor: AppColors.textMuted,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      sottotitolo,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.white60
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  sottotitolo,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: priorityColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              task.priorita.toUpperCase(),
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: priorityColor,
-                letterSpacing: 0.3,
               ),
-            ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: priorityColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  task.priorita.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: priorityColor,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SESSION ROW (con toggle, edit, swipe-delete)
+// SESSION ROW
 // ═══════════════════════════════════════════════════════════════
 class _SessionRow extends StatelessWidget {
   final StudySession session;
@@ -1575,10 +1712,7 @@ class _EmptyState extends StatelessWidget {
             child: Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textMuted,
-              ),
+              style: TextStyle(fontSize: 15, color: AppColors.textMuted),
             ),
           ),
         ],
