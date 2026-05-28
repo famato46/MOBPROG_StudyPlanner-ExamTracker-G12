@@ -405,7 +405,7 @@ class _StatsScreenState extends State<StatsScreen> {
       return const SizedBox(
         height: 150,
         child: Center(
-          child: Text('Nessuna sessione questa settimana. 🛌',
+          child: Text('Nessuna sessione questa settimana.',
               style: TextStyle(color: Colors.grey, fontSize: 13)),
         ),
       );
@@ -579,7 +579,7 @@ class _StatsScreenState extends State<StatsScreen> {
       return const SizedBox(
         height: 80,
         child: Center(
-          child: Text('Nessuna scadenza nei prossimi 7 giorni. 🎉',
+          child: Text('Nessuna scadenza nei prossimi 7 giorni.',
               style: TextStyle(color: Colors.grey, fontSize: 13)),
         ),
       );
@@ -593,7 +593,7 @@ class _StatsScreenState extends State<StatsScreen> {
         final giorni = dataEsame.difference(oggi).inDays;
 
         final testoGiorni = giorni == 0
-            ? 'Oggi! 🚨'
+            ? 'Oggi!'
             : giorni == 1
                 ? 'Domani'
                 : 'In $giorni gg';
