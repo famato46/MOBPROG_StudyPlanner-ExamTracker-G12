@@ -209,16 +209,19 @@ class _StatsScreenState extends State<StatsScreen> {
     final oreEffettive = _oreEffettiveSettimana(provider);
     final percentualeOre =
         orePianificate > 0 ? (oreEffettive / orePianificate) : 0.0;
-    final cfuTotali =
-        provider.totalCfu > 0 ? provider.totalCfu : 180;
-    final percentualeCfu = provider.earnedCfu / cfuTotali;
+    // Obiettivo di laurea fisso (triennale = 180 CFU).
+    // Non deriva dai corsi inseriti: rappresenta il TARGET verso
+    // cui si misura il progresso, come richiesto dalla traccia
+    // ("progresso rispetto a un obiettivo").
+    const int cfuObiettivoLaurea = 180;
+    final percentualeCfu = provider.earnedCfu / cfuObiettivoLaurea;
 
     return Row(
       children: [
         Expanded(
           child: _buildCircularIndicator(
             title: 'CFU Ottenuti',
-            subtitle: '${provider.earnedCfu} / $cfuTotali CFU',
+            subtitle: '${provider.earnedCfu} / $cfuObiettivoLaurea CFU',
             value: percentualeCfu.toDouble(),
             color: Colors.purple,
           ),
@@ -753,6 +756,18 @@ class _StatsScreenState extends State<StatsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Se non c'è alcun esame superato, il simulatore non ha una
+        // base reale da cui partire: mostriamo un avviso invece di un
+        // voto privo di senso calcolato su 0 CFU reali.
+        if (corsiSuperati.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Nessun esame superato: registra almeno un esame con voto '
+              'per usare il simulatore.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ),
         // Box situazione attuale (App State puro)
         Container(
           width: double.infinity,
