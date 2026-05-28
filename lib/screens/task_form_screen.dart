@@ -51,7 +51,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   bool get _isEditing => widget.taskToEdit != null;
 
-  static const List<(String, String)> _priorita_options = [
+  static const List<(String, String)> _prioritaOptions = [
     ('alta', 'Alta'),
     ('media', 'Media'),
     ('bassa', 'Bassa'),
@@ -126,7 +126,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     Navigator.pop(context);
   }
 
-  String _prioritaLabel(String p) => _priorita_options
+  String _prioritaLabel(String p) => _prioritaOptions
       .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
       .$2;
 
@@ -396,7 +396,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       context: context,
       isDark: isDark,
       title: 'Priorità',
-      options: _priorita_options,
+      options: _prioritaOptions,
       current: _priorita,
       onSelected: (v) => setState(() => _priorita = v),
     );

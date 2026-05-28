@@ -501,36 +501,36 @@ class _ExamTabBar extends StatelessWidget {
           unselectedLabelColor:
               isDark ? Colors.white70 : AppColors.textSecondary,
           labelStyle: const TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.2),
+              letterSpacing: -0.3),
           unselectedLabelStyle: const TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
-              letterSpacing: -0.2),
+              letterSpacing: -0.3),
           splashFactory: NoSplash.splashFactory,
           overlayColor:
               WidgetStateProperty.all(Colors.transparent),
           tabs: [
-            // Label compatte per evitare il troncamento "Completati (0" su
-            // schermi stretti. FittedBox garantisce inoltre che il contatore
-            // resti sempre leggibile anche se l'utente ha numeri a 2 cifre.
+            // Label complete. Il FittedBox scala il testo verso il basso
+            // SOLO se non ci sta nello spazio del tab, così evitiamo il
+            // troncamento "Completati (0" senza abbreviare a priori.
             Tab(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text('Prog. (${counts[0]})'),
+                child: Text('Programmati (${counts[0]})'),
               ),
             ),
             Tab(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text('Compl. (${counts[1]})'),
+                child: Text('Completati (${counts[1]})'),
               ),
             ),
             Tab(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text('Ann. (${counts[2]})'),
+                child: Text('Annullati (${counts[2]})'),
               ),
             ),
           ],
@@ -956,6 +956,7 @@ class _SectionFab extends StatelessWidget {
         ],
       ),
       child: FloatingActionButton(
+        heroTag: 'fab_exams',
         backgroundColor: color,
         foregroundColor: Colors.white,
         elevation: 0,

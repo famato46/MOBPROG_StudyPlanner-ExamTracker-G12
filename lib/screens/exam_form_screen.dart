@@ -41,7 +41,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     ('progetto', 'Progetto'),
   ];
 
-  static const List<(String, String)> _priorita_options = [
+  static const List<(String, String)> _prioritaOptions = [
     ('alta', 'Alta'),
     ('media', 'Media'),
     ('bassa', 'Bassa'),
@@ -152,7 +152,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
   String _tipologiaLabel(String t) =>
       _tipologie.firstWhere((e) => e.$1 == t, orElse: () => (t, t)).$2;
-  String _prioritaLabel(String p) => _priorita_options
+  String _prioritaLabel(String p) => _prioritaOptions
       .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
       .$2;
   String _statoLabel(String s) =>
@@ -365,7 +365,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       isDark: isDark,
       title: 'Priorità',
       current: _priorita,
-      options: _priorita_options,
+      options: _prioritaOptions,
       onSelected: (v) => setState(() => _priorita = v),
     );
   }
@@ -547,7 +547,6 @@ class _TextFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
-  final TextInputType keyboardType;
   final bool required;
   final String? Function(String?)? validator;
   final bool isDark;
@@ -556,7 +555,6 @@ class _TextFieldRow extends StatelessWidget {
     required this.label,
     required this.controller,
     this.hint,
-    this.keyboardType = TextInputType.text,
     this.required = false,
     this.validator,
     required this.isDark,
@@ -583,7 +581,6 @@ class _TextFieldRow extends StatelessWidget {
           Expanded(
             child: TextFormField(
               controller: controller,
-              keyboardType: keyboardType,
               textAlign: TextAlign.end,
               cursorColor: AppColors.iosBlue,
               style: TextStyle(
