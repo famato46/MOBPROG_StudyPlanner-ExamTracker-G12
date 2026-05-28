@@ -32,12 +32,14 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
 
   bool get _isEditing => widget.courseToEdit != null;
 
-  static const List<String> _semestri = [
-    'Primo semestre 2024/25',
-    'Secondo semestre 2024/25',
-    'Primo semestre 2025/26',
-    'Secondo semestre 2025/26',
-  ];
+static const List<String> _semestri = [
+  'Primo semestre 2024/25',
+  'Secondo semestre 2024/25',
+  'Primo semestre 2025/26',
+  'Secondo semestre 2025/26',
+  'Primo semestre 2026/27',
+  'Secondo semestre 2026/27',
+];
 
   static const List<(String, String)> _stati = [
     ('da_iniziare', 'Da iniziare'),
