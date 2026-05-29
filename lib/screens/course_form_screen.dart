@@ -403,7 +403,30 @@ static const List<String> _semestri = [
       title: 'Stato',
       options: _stati,
       current: _stato,
-      onSelected: (v) => setState(() => _stato = v),
+      onSelected: (v) {
+        setState(() => _stato = v);
+        // Quando si seleziona "superato" e il campo voto è vuoto,
+        // pre-compila con la media degli esami completati del corso.
+        // Così l'utente vede subito il voto consigliato senza dover
+        // aggiungere widget extra che rompono lo spacing.
+        if (v == 'superato' && _votoOttenutoCtrl.text.isEmpty) {
+          final courseId = widget.courseToEdit?.id;
+          if (courseId != null) {
+            final media = context
+                .read<PlannerProvider>()
+                .getAverageExamsGrade(courseId);
+            if (media != null) {
+              final arrotondato = media.round().clamp(18, 31);
+              _votoOttenutoCtrl.text =
+                  arrotondato >= 31 ? '30L' : '$arrotondato';
+            }
+          }
+        }
+        // Se si cambia stato a qualcosa di diverso da superato, svuota il voto
+        if (v != 'superato') {
+          _votoOttenutoCtrl.clear();
+        }
+      },
     );
   }
 }
