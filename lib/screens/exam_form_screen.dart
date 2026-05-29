@@ -38,6 +38,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
   static const List<(String, String)> _tipologie = [
     ('esame', 'Esame'),
+    ('orale', 'Orale'), // <-- NUOVA TIPOLOGIA AGGIUNTA QUI
     ('intercorso', 'Intercorso'),
     ('consegna', 'Consegna'),
     ('progetto', 'Progetto'),

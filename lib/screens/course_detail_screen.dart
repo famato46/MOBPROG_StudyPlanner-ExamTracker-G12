@@ -6,6 +6,7 @@ import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'course_form_screen.dart';
 import 'task_form_screen.dart';
+import 'exam_detail_screen.dart'; // <-- IMPORTANTE: aggiunto per la navigazione
 
 /// CourseDetailScreen — Stile Apple moderno, minimalista.
 ///
@@ -58,15 +59,6 @@ class CourseDetailScreen extends StatelessWidget {
     if (voto == null) return '-';
     if (voto >= 31) return '30L';
     return voto.toString();
-  }
-
-  // Mostra "1° sem 24/25" invece di "Primo semestre 2024/25" per
-  // farlo stare nella card compatta senza troncamento.
-  String _shortSemestre(String s) {
-    return s
-        .replaceAll('Primo semestre', '1° sem')
-        .replaceAll('Secondo semestre', '2° sem')
-        .replaceAll('20', '');
   }
 
   @override
@@ -144,7 +136,8 @@ class CourseDetailScreen extends StatelessWidget {
                   Expanded(
                     child: _MiniInfoCard(
                       label: 'SEMESTRE',
-                      value: _shortSemestre(updatedCourse.semestre),
+                      // Passiamo la stringa intatta senza manipolazioni per mantenere la coerenza col form
+                      value: updatedCourse.semestre, 
                       isDark: isDark,
                     ),
                   ),
@@ -196,6 +189,13 @@ class CourseDetailScreen extends StatelessWidget {
                             data: e.data,
                             isCompletato: e.isCompletato,
                             isDark: isDark,
+                            // <-- FIX: Navigazione verso il dettaglio dell'esame
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ExamDetailScreen(exam: e),
+                              ),
+                            ),
                           ))
                       .toList(),
                 ),
@@ -206,11 +206,6 @@ class CourseDetailScreen extends StatelessWidget {
                 title: 'Attività',
                 count: tasks.length,
                 isDark: isDark,
-                // "+ Aggiungi" come trailing della section title.
-                // Sostituisce il FAB ingombrante in fondo alla schermata,
-                // mantenendo comunque la possibilità di creare task
-                // collegate al corso direttamente dal dettaglio (CRUD
-                // Task completo, requisito traccia).
                 trailing: _AddInlineButton(
                   label: 'Aggiungi',
                   onTap: () => Navigator.push(
@@ -347,7 +342,6 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // Pastello rosa coerente con palette "courses"
         color: isDark
             ? AppColors.pastelRedDeep.withValues(alpha: 0.18)
             : AppColors.pastelRedLight,
@@ -399,7 +393,6 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Badge CFU (rettangolino bianco-trasparente con numero grande)
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
@@ -435,7 +428,6 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Chips di stato + voto
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -459,7 +451,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// Chip piccolino bianco con bordino colorato per il testo
 class _StatoChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -792,6 +783,7 @@ class _ExamRow extends StatelessWidget {
   final DateTime data;
   final bool isCompletato;
   final bool isDark;
+  final VoidCallback onTap; // <-- Aggiunto il callback
 
   const _ExamRow({
     required this.titolo,
@@ -799,6 +791,7 @@ class _ExamRow extends StatelessWidget {
     required this.data,
     required this.isCompletato,
     required this.isDark,
+    required this.onTap,
   });
 
   @override
@@ -806,59 +799,66 @@ class _ExamRow extends StatelessWidget {
     final dateStr =
         '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.pastelBlueLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.calendar_today_rounded,
-              size: 16,
-              color: AppColors.pastelBlueDeep,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titolo,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
+    // Aggiunto il Material + InkWell per far funzionare l'onTap con il feedback tattile
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.pastelBlueLight,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$tipologia · $dateStr',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary,
-                  ),
+                child: Icon(
+                  Icons.calendar_today_rounded,
+                  size: 16,
+                  color: AppColors.pastelBlueDeep,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titolo,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$tipologia · $dateStr',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? Colors.white60
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isCompletato)
+                Icon(Icons.check_circle_rounded,
+                    size: 20, color: AppColors.success)
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark ? Colors.white38 : Colors.black26,
+                ),
+            ],
           ),
-          if (isCompletato)
-            Icon(Icons.check_circle_rounded,
-                size: 20, color: AppColors.success)
-          else
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? Colors.white38 : Colors.black26,
-            ),
-        ],
+        ),
       ),
     );
   }

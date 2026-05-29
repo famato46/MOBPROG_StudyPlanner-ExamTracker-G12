@@ -167,6 +167,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                   options: const [
                     ('tutti', 'Tutti'),
                     ('esame', 'Esami'),
+                    ('orale', 'Orali'), // <-- NUOVA OPZIONE FILTRO
                     ('intercorso', 'Intercorso'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
@@ -712,6 +713,8 @@ class _ExamCard extends StatelessWidget {
     switch (tipologia.toLowerCase()) {
       case 'esame':
         return Icons.school_rounded;
+      case 'orale':
+        return Icons.record_voice_over_rounded; // <-- NUOVA ICONA
       case 'intercorso':
         return Icons.rate_review_rounded;
       case 'consegna':
@@ -726,6 +729,7 @@ class _ExamCard extends StatelessWidget {
   String _formatTipologia(String tipologia) {
     switch (tipologia.toLowerCase()) {
       case 'esame':      return 'Esame';
+      case 'orale':      return 'Orale'; // <-- NUOVA ETICHETTA FORMATTATA
       case 'intercorso': return 'Intercorso';
       case 'consegna':   return 'Consegna';
       case 'progetto':   return 'Progetto';
