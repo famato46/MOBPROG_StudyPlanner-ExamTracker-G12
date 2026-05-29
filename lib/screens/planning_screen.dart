@@ -33,7 +33,9 @@ class PlanningScreen extends StatefulWidget {
   State<PlanningScreen> createState() => _PlanningScreenState();
 }
 
-class _PlanningScreenState extends State<PlanningScreen> {
+class _PlanningScreenState extends State<PlanningScreen>
+    with TickerProviderStateMixin {
+  late final TabController _tabController;
   // 0 = Oggi, 1 = Pianificatore, 2 = Focus
   int _currentSegment = 0;
 
@@ -44,6 +46,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
   String _filtroTipoAttivita = 'Tutti';
   bool _isVistaSettimanale = false;
   bool _filtriEspansi = false;
+  // Tab Oggi: mostra o nasconde le attività future (prossimi 7 giorni)
+  bool _mostraFuture = false;
 
   // ─── Stato Timer Focus (Pomodoro / Pausa) ───
   // Durate (in secondi). Come il prof: due durate diverse.
@@ -59,7 +63,21 @@ class _PlanningScreenState extends State<PlanningScreen> {
   final ValueNotifier<int> _secondsNotifier =
       ValueNotifier(_pomodoroSeconds);
 
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this)
+      ..addListener(() {
+        if (_tabController.indexIsChanging) return;
+        if (_currentSegment != _tabController.index) {
+          if (_tabController.index != 2 && _isTimerRunning) _pauseTimer();
+          setState(() => _currentSegment = _tabController.index);
+        }
+      });
+  }
+
   // Alias per compatibilità con il resto del codice.
+  int get _secondsRemaining => _secondsNotifier.value;
 
   FocusType _focusType = FocusType.pomodoro;
   Timer? _focusTimer;
@@ -72,6 +90,7 @@ class _PlanningScreenState extends State<PlanningScreen> {
   @override
   void dispose() {
     _focusTimer?.cancel();
+    _tabController.dispose();
     _secondsNotifier.dispose();
     super.dispose();
   }
@@ -282,9 +301,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
           children: [
             _Header(isDark: isDark),
             const SizedBox(height: 8),
-            _SegmentedControl(
-              current: _currentSegment,
-              onChanged: _onSegmentChanged,
+            _PlanningTabBar(
+              controller: _tabController,
               isDark: isDark,
             ),
             const SizedBox(height: 8),
@@ -472,132 +490,140 @@ class _PlanningScreenState extends State<PlanningScreen> {
         .map((s) => DateTime(s.data.year, s.data.month, s.data.day))
         .toSet();
 
-    return Column(
-      children: [
-        // ── Calendario a griglia (GridView 7 colonne) ──
-        _CalendarGrid(
-          selectedDay: _giornoPianificatore,
-          giorniConSessioni: giorniConSessioni,
-          onDaySelected: (d) => setState(() => _giornoPianificatore = d),
-          isDark: isDark,
+    return CustomScrollView(
+      slivers: [
+        // ── Calendario a griglia ──
+        SliverToBoxAdapter(
+          child: _CalendarGrid(
+            selectedDay: _giornoPianificatore,
+            giorniConSessioni: giorniConSessioni,
+            onDaySelected: (d) => setState(() => _giornoPianificatore = d),
+            isDark: isDark,
+          ),
         ),
 
         // ── Toggle Giornaliera/Settimanale ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-          child: Row(
-            children: [
-              _MiniSegment(
-                options: const ['Giornaliera', 'Settimanale'],
-                selectedIndex: _isVistaSettimanale ? 1 : 0,
-                onChanged: (i) =>
-                    setState(() => _isVistaSettimanale = i == 1),
-                isDark: isDark,
-              ),
-              const Spacer(),
-              // Label data selezionata
-              Text(
-                _formatGiornoPianificatore(),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white70 : AppColors.textSecondary,
-                  letterSpacing: -0.2,
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+            child: Row(
+              children: [
+                _MiniSegment(
+                  options: const ['Giornaliera', 'Settimanale'],
+                  selectedIndex: _isVistaSettimanale ? 1 : 0,
+                  onChanged: (i) =>
+                      setState(() => _isVistaSettimanale = i == 1),
+                  isDark: isDark,
                 ),
-              ),
-            ],
+                const Spacer(),
+                Text(
+                  _formatGiornoPianificatore(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white70 : AppColors.textSecondary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
         // ── Filtri ──
-        _FilterSection(
-          espanso: _filtriEspansi,
-          filtriAttivi: filtriAttivi,
-          onToggle: () => setState(() => _filtriEspansi = !_filtriEspansi),
-          onReset: () => setState(() {
-            _filtroCorso = null;
-            _filtroTipoAttivita = 'Tutti';
-          }),
-          corsi: provider.courses,
-          filtroCorso: _filtroCorso,
-          filtroTipo: _filtroTipoAttivita,
-          onCorsoChanged: (c) => setState(() => _filtroCorso = c),
-          onTipoChanged: (t) => setState(() => _filtroTipoAttivita = t),
-          isDark: isDark,
+        SliverToBoxAdapter(
+          child: _FilterSection(
+            espanso: _filtriEspansi,
+            filtriAttivi: filtriAttivi,
+            onToggle: () => setState(() => _filtriEspansi = !_filtriEspansi),
+            onReset: () => setState(() {
+              _filtroCorso = null;
+              _filtroTipoAttivita = 'Tutti';
+            }),
+            corsi: provider.courses,
+            filtroCorso: _filtroCorso,
+            filtroTipo: _filtroTipoAttivita,
+            onCorsoChanged: (c) => setState(() => _filtroCorso = c),
+            onTipoChanged: (t) => setState(() => _filtroTipoAttivita = t),
+            isDark: isDark,
+          ),
         ),
 
-        const SizedBox(height: 8),
+        const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
         // ── Lista sessioni ──
-        Expanded(
-          child: sessioni.isEmpty
-              ? _EmptyState(
-                  icon: Icons.event_busy_outlined,
-                  text: 'Nessun impegno corrisponde ai criteri.',
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 90),
-                  children: [
-                    if (sessioniInCorso.isNotEmpty)
-                      _CardGroup(
-                        isDark: isDark,
-                        children: sessioniInCorso
-                            .map((s) => _SessionRow(
-                                  session: s,
-                                  sottotitolo:
-                                      _sottotitoloSessione(s, provider),
-                                  onToggle: () =>
-                                      provider.updateStudySession(s.copyWith(
-                                          completata: !s.completata)),
-                                  onEdit: () =>
-                                      _apriFormSessione(sessione: s),
-                                  onDelete: () async {
-                                    final c = await _confirmDeleteSessione(
-                                        context, s);
-                                    if (c == true && context.mounted) {
-                                      await provider
-                                          .deleteStudySession(s.id);
-                                    }
-                                  },
-                                  isDark: isDark,
-                                ))
-                            .toList(),
-                      ),
-                    if (sessioniCompletate.isNotEmpty) ...[
-                      const SizedBox(height: 20),
-                      _SectionLabel(
-                          label: 'Completate',
-                          isDark: isDark,
-                          color: AppColors.success),
-                      const SizedBox(height: 8),
-                      _CardGroup(
-                        isDark: isDark,
-                        children: sessioniCompletate
-                            .map((s) => _SessionRow(
-                                  session: s,
-                                  sottotitolo:
-                                      _sottotitoloSessione(s, provider),
-                                  onToggle: () =>
-                                      provider.updateStudySession(s.copyWith(
-                                          completata: !s.completata)),
-                                  onEdit: () =>
-                                      _apriFormSessione(sessione: s),
-                                  onDelete: () async {
-                                    final c = await _confirmDeleteSessione(
-                                        context, s);
-                                    if (c == true && context.mounted) {
-                                      await provider
-                                          .deleteStudySession(s.id);
-                                    }
-                                  },
-                                  isDark: isDark,
-                                ))
-                            .toList(),
-                      ),
-                    ],
-                  ],
+        if (sessioni.isEmpty)
+          SliverFillRemaining(
+            child: _EmptyState(
+              icon: Icons.event_busy_outlined,
+              text: 'Nessun impegno corrisponde ai criteri.',
+            ),
+          )
+        else ...[
+          if (sessioniInCorso.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: _CardGroup(
+                  isDark: isDark,
+                  children: sessioniInCorso
+                      .map((s) => _SessionRow(
+                            session: s,
+                            sottotitolo: _sottotitoloSessione(s, provider),
+                            onToggle: () => provider.updateStudySession(
+                                s.copyWith(completata: !s.completata)),
+                            onEdit: () => _apriFormSessione(sessione: s),
+                            onDelete: () async {
+                              final c = await _confirmDeleteSessione(context, s);
+                              if (c == true && context.mounted) {
+                                await provider.deleteStudySession(s.id);
+                              }
+                            },
+                            isDark: isDark,
+                          ))
+                      .toList(),
                 ),
-        ),
+              ),
+            ),
+          if (sessioniCompletate.isNotEmpty) ...[
+            const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverToBoxAdapter(
+                child: _SectionLabel(
+                    label: 'Completate',
+                    isDark: isDark,
+                    color: AppColors.success),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 8)),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: _CardGroup(
+                  isDark: isDark,
+                  children: sessioniCompletate
+                      .map((s) => _SessionRow(
+                            session: s,
+                            sottotitolo: _sottotitoloSessione(s, provider),
+                            onToggle: () => provider.updateStudySession(
+                                s.copyWith(completata: !s.completata)),
+                            onEdit: () => _apriFormSessione(sessione: s),
+                            onDelete: () async {
+                              final c = await _confirmDeleteSessione(context, s);
+                              if (c == true && context.mounted) {
+                                await provider.deleteStudySession(s.id);
+                              }
+                            },
+                            isDark: isDark,
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ],
+          const SliverToBoxAdapter(child: SizedBox(height: 90)),
+        ],
       ],
     );
   }
@@ -850,17 +876,14 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SEGMENTED CONTROL principale (Oggi / Pianificatore / Focus)
-// ═══════════════════════════════════════════════════════════════
-class _SegmentedControl extends StatelessWidget {
-  final int current;
-  final ValueChanged<int> onChanged;
+// TAB BAR PLANNING — TabBar nativo Flutter = hardware-accelerated, fluido.
+// Stesso pattern di _ExamTabBar in exams_screen.dart e courses_screen.dart.
+class _PlanningTabBar extends StatelessWidget {
+  final TabController controller;
   final bool isDark;
 
-  const _SegmentedControl({
-    required this.current,
-    required this.onChanged,
+  const _PlanningTabBar({
+    required this.controller,
     required this.isDark,
   });
 
@@ -883,55 +906,36 @@ class _SegmentedControl extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
-        child: Row(
-          children: List.generate(3, (i) {
-            final selected = i == current;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(i),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.planning
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _icons[i],
-                        size: 18,
-                        color: selected
-                            ? Colors.white
-                            : (isDark
-                                ? Colors.white70
-                                : AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _labels[i],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          color: selected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white70
-                                  : AppColors.textSecondary),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        child: TabBar(
+          controller: controller,
+          indicator: BoxDecoration(
+            color: AppColors.planning,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor:
+              isDark ? Colors.white70 : AppColors.textSecondary,
+          labelStyle: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: -0.2),
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: List.generate(
+            3,
+            (i) => Tab(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(_icons[i], size: 18),
+                  const SizedBox(height: 2),
+                  Text(_labels[i]),
+                ],
               ),
-            );
-          }),
+            ),
+          ),
         ),
       ),
     );
@@ -1233,6 +1237,61 @@ class _MiniSegment extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // PILL BUTTON ("Data")
 // ═══════════════════════════════════════════════════════════════
+class _PillButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _PillButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : AppColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: AppColors.planningDeep),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // FILTER SECTION (espandibile)
 // ═══════════════════════════════════════════════════════════════
@@ -1533,6 +1592,68 @@ class _FilterPickerRow extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // SECTION TITLE con azione "+ ..." (per "Le mie attività")
 // ═══════════════════════════════════════════════════════════════
+class _SectionTitleWithAction extends StatelessWidget {
+  final String title;
+  final String actionLabel;
+  final VoidCallback onAction;
+  final bool isDark;
+
+  const _SectionTitleWithAction({
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: onAction,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded,
+                        size: 18, color: AppColors.planningDeep),
+                    const SizedBox(width: 2),
+                    Text(
+                      actionLabel,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.planningDeep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // SECTION LABEL
 // ═══════════════════════════════════════════════════════════════
