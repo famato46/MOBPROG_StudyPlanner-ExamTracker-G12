@@ -27,18 +27,18 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   late final TextEditingController _votoDesideratoCtrl;
   late final TextEditingController _votoOttenutoCtrl;
 
-  String _semestre = 'I Semestre · Anno I';
+  String _semestre = 'Primo semestre 2024/25';
   String _stato = 'da_iniziare';
 
   bool get _isEditing => widget.courseToEdit != null;
 
 static const List<String> _semestri = [
-  'I Semestre · Anno I',
-  'II Semestre · Anno I',
-  'I Semestre · Anno II',
-  'II Semestre · Anno II',
-  'I Semestre · Anno III',
-  'II Semestre · Anno III',
+  'Primo semestre 2024/25',
+  'Secondo semestre 2024/25',
+  'Primo semestre 2025/26',
+  'Secondo semestre 2025/26',
+  'Primo semestre 2026/27',
+  'Secondo semestre 2026/27',
 ];
 
   static const List<(String, String)> _stati = [
@@ -63,7 +63,7 @@ static const List<String> _semestri = [
         text: _formatVoto(c?.votoDesiderato));
     _votoOttenutoCtrl = TextEditingController(
         text: _formatVoto(c?.votoOttenuto));
-    _semestre = c?.semestre ?? 'I Semestre · Anno I';
+    _semestre = c?.semestre ?? 'Primo semestre 2024/25';
     _stato = c?.stato ?? 'da_iniziare';
   }
 
@@ -239,14 +239,15 @@ static const List<String> _semestri = [
                 _TextFieldRow(
                   label: 'CFU',
                   controller: _cfuCtrl,
-                  hint: '9',
+                  hint: '1-30',
                   keyboardType: TextInputType.number,
                   required: true,
                   validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Campo obbligatorio';
-                    }
-                    if (int.tryParse(v) == null) return 'Numero non valido';
+                    if (v == null || v.isEmpty) return 'Campo obbligatorio';
+                    final n = int.tryParse(v);
+                    if (n == null) return 'Numero non valido';
+                    if (n < 1) return 'I CFU devono essere almeno 1';
+                    if (n > 30) return 'I CFU non possono superare 30';
                     return null;
                   },
                   isDark: isDark,
