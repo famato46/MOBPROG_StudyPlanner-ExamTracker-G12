@@ -27,19 +27,19 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   late final TextEditingController _votoDesideratoCtrl;
   late final TextEditingController _votoOttenutoCtrl;
 
-  String _semestre = '1° Semestre · Anno I';
+  String _semestre = 'Primo semestre 2024/25';
   String _stato = 'da_iniziare';
 
   bool get _isEditing => widget.courseToEdit != null;
 
-  static const List<String> _semestri = [
-    '1° Semestre · Anno I',
-    '2° Semestre · Anno I',
-    '1° Semestre · Anno II',
-    '2° Semestre · Anno II',
-    '1° Semestre · Anno III',
-    '2° Semestre · Anno III',
-  ];
+static const List<String> _semestri = [
+  'Primo semestre 2024/25',
+  'Secondo semestre 2024/25',
+  'Primo semestre 2025/26',
+  'Secondo semestre 2025/26',
+  'Primo semestre 2026/27',
+  'Secondo semestre 2026/27',
+];
 
   static const List<(String, String)> _stati = [
     ('da_iniziare', 'Da iniziare'),
@@ -63,7 +63,7 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
         text: _formatVoto(c?.votoDesiderato));
     _votoOttenutoCtrl = TextEditingController(
         text: _formatVoto(c?.votoOttenuto));
-    _semestre = c?.semestre ?? '1° Semestre · Anno I';
+    _semestre = c?.semestre ?? 'Primo semestre 2024/25';
     _stato = c?.stato ?? 'da_iniziare';
   }
 
@@ -239,14 +239,15 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                 _TextFieldRow(
                   label: 'CFU',
                   controller: _cfuCtrl,
-                  hint: '9',
+                  hint: '1-30',
                   keyboardType: TextInputType.number,
                   required: true,
                   validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Campo obbligatorio';
-                    }
-                    if (int.tryParse(v) == null) return 'Numero non valido';
+                    if (v == null || v.isEmpty) return 'Campo obbligatorio';
+                    final n = int.tryParse(v);
+                    if (n == null) return 'Numero non valido';
+                    if (n < 1) return 'I CFU devono essere almeno 1';
+                    if (n > 30) return 'I CFU non possono superare 30';
                     return null;
                   },
                   isDark: isDark,
@@ -285,6 +286,9 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
                 _TextFieldRow(
                   label: 'Voto desiderato',
                   controller: _votoDesideratoCtrl,
+                  // FIX 30L: ora accettiamo anche "30L" (oltre a "31" che è
+                  // la rappresentazione interna). Il validator normalizza
+                  // entrambe le forme e accetta range 18-30 più la lode.
                   hint: '18-30 o 30L',
                   keyboardType: TextInputType.text,
                   validator: (v) {
@@ -399,22 +403,7 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
       title: 'Stato',
       options: _stati,
       current: _stato,
-      onSelected: (v) {
-        setState(() {
-          _stato = v;
-          // Automazione Smart Pre-fill: se lo stato passa a 'superato' e il voto ottenuto è vuoto
-          if (_stato == 'superato' && 
-              _votoOttenutoCtrl.text.isEmpty && 
-              _isEditing && 
-              widget.courseToEdit != null) {
-            
-            final averageGrade = context.read<PlannerProvider>().getAverageExamsGrade(widget.courseToEdit!.id);
-            if (averageGrade != null) {
-              _votoOttenutoCtrl.text = _formatVoto(averageGrade.round());
-            }
-          }
-        });
-      },
+      onSelected: (v) => setState(() => _stato = v),
     );
   }
 }
