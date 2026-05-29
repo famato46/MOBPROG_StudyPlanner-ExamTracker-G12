@@ -33,9 +33,10 @@ class PlanningScreen extends StatefulWidget {
   State<PlanningScreen> createState() => _PlanningScreenState();
 }
 
-class _PlanningScreenState extends State<PlanningScreen> {
-  // 0 = Oggi, 1 = Pianificatore, 2 = Focus
-  int _currentSegment = 0;
+class _PlanningScreenState extends State<PlanningScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  int get _currentSegment => _tabController.index;
 
   DateTime _giornoPianificatore = DateTime.now();
 
@@ -71,15 +72,27 @@ class _PlanningScreenState extends State<PlanningScreen> {
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted && !_tabController.indexIsChanging) {
+        if (_tabController.index != 2 && _isTimerRunning) _pauseTimer();
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    _tabController.dispose();
     _focusTimer?.cancel();
     _secondsNotifier.dispose();
     super.dispose();
   }
 
   void _onSegmentChanged(int index) {
-    if (index != 2 && _isTimerRunning) _pauseTimer();
-    setState(() => _currentSegment = index);
+    _tabController.animateTo(index);
   }
 
   // ─────────────────────────── TIMER ───────────────────────────
@@ -283,17 +296,17 @@ class _PlanningScreenState extends State<PlanningScreen> {
           children: [
             _Header(isDark: isDark),
             const SizedBox(height: 8),
-            _SegmentedControl(
-              current: _currentSegment,
-              onChanged: _onSegmentChanged,
+            _PlanningTabBar(
+              controller: _tabController,
               isDark: isDark,
             ),
             const SizedBox(height: 8),
             Expanded(
               child: provider.isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : IndexedStack(
-                      index: _currentSegment,
+                  : TabBarView(
+                      controller: _tabController,
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
                         _buildTabOggi(sessioniOggi, taskOggi, provider),
                         _buildTabPianificatore(
@@ -468,24 +481,11 @@ class _PlanningScreenState extends State<PlanningScreen> {
     final filtriAttivi =
         _filtroCorso != null || _filtroTipoAttivita != 'Tutti';
 
-    // Tutti i giorni che hanno almeno una sessione (per i marker)
-    final giorniConSessioni = provider.studySessions
-        .map((s) => DateTime(s.data.year, s.data.month, s.data.day))
-        .toSet();
-
     return Column(
       children: [
-        // ── Calendario a griglia (GridView 7 colonne) ──
-        _CalendarGrid(
-          selectedDay: _giornoPianificatore,
-          giorniConSessioni: giorniConSessioni,
-          onDaySelected: (d) => setState(() => _giornoPianificatore = d),
-          isDark: isDark,
-        ),
-
-        // ── Toggle Giornaliera/Settimanale ──
+        // ── Toggle Giornaliera/Settimanale + Data ──
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Row(
             children: [
               _MiniSegment(
@@ -496,14 +496,45 @@ class _PlanningScreenState extends State<PlanningScreen> {
                 isDark: isDark,
               ),
               const Spacer(),
-              // Label data selezionata
-              Text(
-                _formatGiornoPianificatore(),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white70 : AppColors.textSecondary,
-                  letterSpacing: -0.2,
+              _PillButton(
+                icon: Icons.calendar_today_rounded,
+                label: 'Data',
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _giornoPianificatore,
+                    firstDate:
+                        DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate:
+                        DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) {
+                    setState(() => _giornoPianificatore = picked);
+                  }
+                },
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+
+        // ── Data corrente ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Row(
+            children: [
+              Icon(Icons.event_rounded,
+                  size: 20, color: AppColors.planningDeep),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _formatGiornoPianificatore(),
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
             ],
@@ -852,25 +883,17 @@ class _Header extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SEGMENTED CONTROL principale (Oggi / Pianificatore / Focus)
+// PLANNING TAB BAR — TabBar nativo con sliding indicator fluido
+// identico a StatsScreen e ExamsScreen.
 // ═══════════════════════════════════════════════════════════════
-class _SegmentedControl extends StatelessWidget {
-  final int current;
-  final ValueChanged<int> onChanged;
+class _PlanningTabBar extends StatelessWidget {
+  final TabController controller;
   final bool isDark;
 
-  const _SegmentedControl({
-    required this.current,
-    required this.onChanged,
+  const _PlanningTabBar({
+    required this.controller,
     required this.isDark,
   });
-
-  static const _labels = ['Oggi', 'Pianificatore', 'Focus'];
-  static const _icons = [
-    Icons.today_rounded,
-    Icons.calendar_month_rounded,
-    Icons.timer_outlined,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -884,55 +907,60 @@ class _SegmentedControl extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
-        child: Row(
-          children: List.generate(3, (i) {
-            final selected = i == current;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(i),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.planning
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _icons[i],
-                        size: 18,
-                        color: selected
-                            ? Colors.white
-                            : (isDark
-                                ? Colors.white70
-                                : AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _labels[i],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          color: selected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white70
-                                  : AppColors.textSecondary),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        child: TabBar(
+          controller: controller,
+          indicator: BoxDecoration(
+            color: AppColors.planning,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor:
+              isDark ? Colors.white70 : AppColors.textSecondary,
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: const [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.today_rounded, size: 16),
+                  SizedBox(width: 5),
+                  Text('Oggi',
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
               ),
-            );
-          }),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.calendar_month_rounded, size: 16),
+                  SizedBox(width: 5),
+                  Flexible(
+                    child: Text('Pianificatore',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.timer_outlined, size: 16),
+                  SizedBox(width: 5),
+                  Text('Focus',
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -941,223 +969,6 @@ class _SegmentedControl extends StatelessWidget {
 
 // ═══════════════════════════════════════════════════════════════
 // MINI SEGMENT (Giornaliera/Settimanale, Pomodoro/Pausa)
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// CALENDAR GRID — Griglia mensile 7 colonne (pattern del prof)
-// Ogni cella è un GestureDetector. I giorni con sessioni mostrano
-// un pallino verde (marker). Il giorno selezionato ha sfondo verde.
-// ═══════════════════════════════════════════════════════════════
-class _CalendarGrid extends StatefulWidget {
-  final DateTime selectedDay;
-  final Set<DateTime> giorniConSessioni;
-  final ValueChanged<DateTime> onDaySelected;
-  final bool isDark;
-
-  const _CalendarGrid({
-    required this.selectedDay,
-    required this.giorniConSessioni,
-    required this.onDaySelected,
-    required this.isDark,
-  });
-
-  @override
-  State<_CalendarGrid> createState() => _CalendarGridState();
-}
-
-class _CalendarGridState extends State<_CalendarGrid> {
-  // Mese correntemente visualizzato
-  late DateTime _viewMonth;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewMonth =
-        DateTime(widget.selectedDay.year, widget.selectedDay.month);
-  }
-
-  void _prevMonth() {
-    setState(() {
-      _viewMonth = DateTime(_viewMonth.year, _viewMonth.month - 1);
-    });
-  }
-
-  void _nextMonth() {
-    setState(() {
-      _viewMonth = DateTime(_viewMonth.year, _viewMonth.month + 1);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final oggi = DateTime.now();
-    final oggiNorm = DateTime(oggi.year, oggi.month, oggi.day);
-
-    // Primo giorno del mese e offset (lun=0)
-    final primoDelMese = DateTime(_viewMonth.year, _viewMonth.month, 1);
-    final offset = (primoDelMese.weekday - 1) % 7; // lun=0 ... dom=6
-    final giorniNelMese =
-        DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
-    final totalCells = offset + giorniNelMese;
-    final rows = (totalCells / 7).ceil();
-
-    // Nome mese in italiano
-    const mesi = [
-      '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-    ];
-    const giorniSettimana = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          // ── Header mese ──
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _prevMonth,
-                child: Icon(Icons.chevron_left_rounded,
-                    color: AppColors.planningDeep, size: 24),
-              ),
-              Expanded(
-                child: Text(
-                  '${mesi[_viewMonth.month]} ${_viewMonth.year}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: _nextMonth,
-                child: Icon(Icons.chevron_right_rounded,
-                    color: AppColors.planningDeep, size: 24),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // ── Intestazione giorni L M M G V S D ──
-          Row(
-            children: giorniSettimana
-                .map((g) => Expanded(
-                      child: Center(
-                        child: Text(
-                          g,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textMuted,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 6),
-
-          // ── Griglia giorni (GridView del prof) ──
-          GridView.count(
-            crossAxisCount: 7,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 2,
-            childAspectRatio: 1.0,
-            children: List.generate(rows * 7, (index) {
-              final dayNumber = index - offset + 1;
-              final isValidDay =
-                  dayNumber >= 1 && dayNumber <= giorniNelMese;
-
-              if (!isValidDay) {
-                return const SizedBox.shrink();
-              }
-
-              final thisDay = DateTime(
-                  _viewMonth.year, _viewMonth.month, dayNumber);
-              final thisDayNorm =
-                  DateTime(thisDay.year, thisDay.month, thisDay.day);
-              final isSelected = thisDayNorm ==
-                  DateTime(widget.selectedDay.year,
-                      widget.selectedDay.month, widget.selectedDay.day);
-              final isOggi = thisDayNorm == oggiNorm;
-              final hasSession =
-                  widget.giorniConSessioni.contains(thisDayNorm);
-
-              return GestureDetector(
-                onTap: () => widget.onDaySelected(thisDay),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.planning
-                        : isOggi
-                            ? AppColors.planning.withValues(alpha: 0.15)
-                            : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$dayNumber',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected || isOggi
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isSelected
-                              ? Colors.white
-                              : isOggi
-                                  ? AppColors.planningDeep
-                                  : (isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary),
-                        ),
-                      ),
-                      // Pallino marker se ci sono sessioni
-                      if (hasSession && !isSelected)
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.only(top: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.planningDeep,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      if (hasSession && isSelected)
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.only(top: 2),
-                          decoration: const BoxDecoration(
-                            color: Colors.white70,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════
 class _MiniSegment extends StatelessWidget {
   final List<String> options;
