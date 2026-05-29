@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../models/task.dart';
 import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'course_form_screen.dart';
+import 'exam_detail_screen.dart';
 import 'task_form_screen.dart';
 
 /// CourseDetailScreen — Stile Apple moderno, minimalista.
@@ -26,12 +28,8 @@ class CourseDetailScreen extends StatelessWidget {
         return 'Da iniziare';
       case 'in_corso':
         return 'In corso';
-      case 'da_ripassare':
-        return 'Da ripassare';
       case 'completato':
         return 'Completato';
-      case 'superato':
-        return 'Superato';
       default:
         return stato;
     }
@@ -58,15 +56,6 @@ class CourseDetailScreen extends StatelessWidget {
     if (voto == null) return '-';
     if (voto >= 31) return '30L';
     return voto.toString();
-  }
-
-  // Mostra "1° sem 24/25" invece di "Primo semestre 2024/25" per
-  // farlo stare nella card compatta senza troncamento.
-  String _shortSemestre(String s) {
-    return s
-        .replaceAll('Primo semestre', '1° sem')
-        .replaceAll('Secondo semestre', '2° sem')
-        .replaceAll('20', '');
   }
 
   @override
@@ -138,30 +127,11 @@ class CourseDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // ─── 2. MINI-GRID INFO (2 colonne) ──────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: _MiniInfoCard(
-                      label: 'SEMESTRE',
-                      value: _shortSemestre(updatedCourse.semestre),
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _MiniInfoCard(
-                      label: 'VOTO',
-                      value: updatedCourse.votoOttenuto != null
-                          ? '${_formatVoto(updatedCourse.votoOttenuto)} / 30'
-                          : '—',
-                      valueColor: updatedCourse.votoOttenuto != null
-                          ? AppColors.success
-                          : null,
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
+              // ─── 2. MINI-GRID INFO (semestre) ──────────────
+              _MiniInfoCard(
+                label: 'SEMESTRE',
+                value: updatedCourse.semestre,
+                isDark: isDark,
               ),
 
               // ─── 3. NOTE / MATERIALE (se presenti) ──────────
@@ -195,6 +165,12 @@ class CourseDetailScreen extends StatelessWidget {
                             tipologia: _formatTipologia(e.tipologia),
                             data: e.data,
                             isCompletato: e.isCompletato,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ExamDetailScreen(exam: e),
+                              ),
+                            ),
                             isDark: isDark,
                           ))
                       .toList(),
@@ -791,6 +767,7 @@ class _ExamRow extends StatelessWidget {
   final String tipologia;
   final DateTime data;
   final bool isCompletato;
+  final VoidCallback? onTap;
   final bool isDark;
 
   const _ExamRow({
@@ -798,6 +775,7 @@ class _ExamRow extends StatelessWidget {
     required this.tipologia,
     required this.data,
     required this.isCompletato,
+    this.onTap,
     required this.isDark,
   });
 
@@ -806,7 +784,11 @@ class _ExamRow extends StatelessWidget {
     final dateStr =
         '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
@@ -859,6 +841,8 @@ class _ExamRow extends StatelessWidget {
               color: isDark ? Colors.white38 : Colors.black26,
             ),
         ],
+      ),
+        ),
       ),
     );
   }

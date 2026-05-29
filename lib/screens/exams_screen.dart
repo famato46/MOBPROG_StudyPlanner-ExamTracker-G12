@@ -167,7 +167,8 @@ class _ExamsScreenState extends State<ExamsScreen>
                   options: const [
                     ('tutti', 'Tutti'),
                     ('esame', 'Esami'),
-                    ('intercorso', 'Intercorso'),
+                    ('intercorso', 'Intercorsi'),
+                    ('orale', 'Orali'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
                   ],
@@ -714,22 +715,14 @@ class _ExamCard extends StatelessWidget {
         return Icons.school_rounded;
       case 'intercorso':
         return Icons.rate_review_rounded;
+      case 'orale':
+        return Icons.record_voice_over_rounded;
       case 'consegna':
         return Icons.alarm_rounded;
       case 'progetto':
         return Icons.analytics_rounded;
       default:
         return Icons.assignment_rounded;
-    }
-  }
-
-  String _formatTipologia(String tipologia) {
-    switch (tipologia.toLowerCase()) {
-      case 'esame':      return 'Esame';
-      case 'intercorso': return 'Intercorso';
-      case 'consegna':   return 'Consegna';
-      case 'progetto':   return 'Progetto';
-      default:           return tipologia;
     }
   }
 
@@ -793,7 +786,7 @@ class _ExamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _formatTipologia(exam.tipologia),
+                        exam.titolo,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
