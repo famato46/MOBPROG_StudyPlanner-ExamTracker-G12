@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 
@@ -163,7 +164,7 @@ class _StatsScreenState extends State<StatsScreen>
         const SizedBox(height: 24),
 
         // ── Indicatori circolari ──
-        _SectionLabel(title: 'Obiettivi & Progresso'),
+        const _SectionLabel(title: 'Obiettivi & Progresso'),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -191,11 +192,149 @@ class _StatsScreenState extends State<StatsScreen>
         ),
         const SizedBox(height: 24),
 
+        // ── STORICO FOCUS (Tecnica Pomodoro) ──
+        const _SectionLabel(title: 'Storico Focus'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _FocusStatCard(
+                label: 'Pomodori',
+                value: provider.pomodoriCompletati.toString(),
+                icon: Icons.check_circle_outline_rounded,
+                color: AppColors.danger,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _FocusStatCard(
+                label: 'Pause',
+                value: provider.pauseCompletate.toString(),
+                icon: Icons.local_cafe_outlined,
+                color: AppColors.success,
+                isDark: isDark,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _FocusStatCard(
+                label: 'Minuti',
+                value: provider.minutiTotaliFocus.toString(),
+                icon: Icons.timer_outlined,
+                color: AppColors.planningDeep,
+                isDark: isDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildFocusHistory(provider, isDark),
+        const SizedBox(height: 24),
+
         // ── Scadenze imminenti ──
-        _SectionLabel(title: 'Scadenze Imminenti'),
+        const _SectionLabel(title: 'Scadenze Imminenti'),
         const SizedBox(height: 12),
         _buildScadenzeImminenti(provider),
       ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // LISTA STORICO FOCUS RECENTE
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildFocusHistory(PlannerProvider provider, bool isDark) {
+    // Filtra e ordina le sessioni (ultime 5 completate)
+    final history = provider.studySessions
+        .where((s) => s.completata && (s.tipo == 'pomodoro' || s.tipo == 'pausa'))
+        .toList()
+      ..sort((a, b) => b.data.compareTo(a.data));
+
+    final recent = history.take(5).toList();
+
+    if (recent.isEmpty) {
+      return const _EmptyCard(text: 'Nessuna sessione Focus registrata di recente.');
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        children: recent.asMap().entries.map((entry) {
+          final isLast = entry.key == recent.length - 1;
+          final s = entry.value;
+          final isPomodoro = s.tipo == 'pomodoro';
+          final icon = isPomodoro ? Icons.check_circle_rounded : Icons.local_cafe_rounded;
+          final color = isPomodoro ? AppColors.danger : AppColors.success;
+          final timeStr = DateFormat('dd MMM, HH:mm', 'it_IT').format(s.data);
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: color, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s.titolo,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            timeStr,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white60 : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '+${s.durataEffettiva ?? 0}m',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isLast)
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  indent: 52, // Allineato col testo
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.groupedDivider,
+                ),
+            ],
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -206,22 +345,22 @@ class _StatsScreenState extends State<StatsScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        _SectionLabel(title: 'Tempo di Studio per Corso'),
+        const _SectionLabel(title: 'Tempo di Studio per Corso'),
         const SizedBox(height: 12),
         _buildPieChart(provider, isDark),
         const SizedBox(height: 24),
 
-        _SectionLabel(title: 'Andamento Settimanale'),
+        const _SectionLabel(title: 'Andamento Settimanale'),
         const SizedBox(height: 12),
         _buildBarChart(provider, isDark),
         const SizedBox(height: 24),
 
-        _SectionLabel(title: 'Stima Tempi (Obiettivi)'),
+        const _SectionLabel(title: 'Stima Tempi (Obiettivi)'),
         const SizedBox(height: 12),
         _buildTempoComparison(provider, isDark),
         const SizedBox(height: 24),
 
-        _SectionLabel(title: 'Focus Obiettivi per Corso'),
+        const _SectionLabel(title: 'Focus Obiettivi per Corso'),
         const SizedBox(height: 12),
         _buildCorsiAttivita(provider, isDark),
       ],
@@ -257,7 +396,7 @@ class _StatsScreenState extends State<StatsScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        _SectionLabel(title: 'Simulatore Voto di Laurea'),
+        const _SectionLabel(title: 'Simulatore Voto di Laurea'),
         const SizedBox(height: 12),
 
         // Box situazione attuale
@@ -340,7 +479,6 @@ class _StatsScreenState extends State<StatsScreen>
             label: isLode ? '30L' : _votoIpotetico.toInt().toString(),
             onChanged: (v) => setState(() => _votoIpotetico = v),
           ),
-          isDark: isDark,
         ),
         const SizedBox(height: 8),
 
@@ -357,7 +495,6 @@ class _StatsScreenState extends State<StatsScreen>
             label: '$_cfuIpotetici CFU',
             onChanged: (v) => setState(() => _cfuIpotetici = v.toInt()),
           ),
-          isDark: isDark,
         ),
         const SizedBox(height: 24),
 
@@ -366,10 +503,8 @@ class _StatsScreenState extends State<StatsScreen>
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isLode && votoSim >= 110
-                  ? [Colors.amber.shade700, Colors.amber.shade400]
-                  : [AppColors.statsDeep, AppColors.stats],
+            gradient: const LinearGradient(
+              colors: [AppColors.statsDeep, AppColors.stats],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -416,7 +551,6 @@ class _StatsScreenState extends State<StatsScreen>
     required String label,
     required String valueLabel,
     required Widget slider,
-    required bool isDark,
   }) {
     return Column(
       children: [
@@ -468,7 +602,7 @@ class _StatsScreenState extends State<StatsScreen>
     }
 
     if (minutiPerCorso.isEmpty) {
-      return _EmptyCard(text: 'Nessuna sessione registrata.');
+      return const _EmptyCard(text: 'Nessuna sessione registrata.');
     }
 
     final entries = minutiPerCorso.entries.toList();
@@ -553,7 +687,7 @@ class _StatsScreenState extends State<StatsScreen>
     final maxT = minuti.reduce((a, b) => a > b ? a : b);
 
     if (maxT == 0) {
-      return _EmptyCard(text: 'Nessuna sessione questa settimana.');
+      return const _EmptyCard(text: 'Nessuna sessione questa settimana.');
     }
 
     return _Card(
@@ -598,7 +732,7 @@ class _StatsScreenState extends State<StatsScreen>
                 barRods: [
                   BarChartRodData(
                     toY: entry.value,
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       colors: [AppColors.statsDeep, AppColors.stats],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
@@ -622,7 +756,7 @@ class _StatsScreenState extends State<StatsScreen>
         .toList();
 
     if (tasks.isEmpty) {
-      return _EmptyCard(text: 'Nessuna attività con tempo registrato.');
+      return const _EmptyCard(text: 'Nessuna attività con tempo registrato.');
     }
 
     final stimato = tasks.fold(0, (sum, t) => sum + t.tempoStimato!);
@@ -692,7 +826,7 @@ class _StatsScreenState extends State<StatsScreen>
     }
 
     if (map.isEmpty) {
-      return _EmptyCard(
+      return const _EmptyCard(
           text: 'Nessun obiettivo aperto collegato a un corso.');
     }
 
@@ -745,7 +879,7 @@ class _StatsScreenState extends State<StatsScreen>
       ..sort((a, b) => a.data.compareTo(b.data));
 
     if (imminenti.isEmpty) {
-      return _EmptyCard(text: 'Nessuna scadenza nei prossimi 7 giorni.');
+      return const _EmptyCard(text: 'Nessuna scadenza nei prossimi 7 giorni.');
     }
 
     return Column(
@@ -875,6 +1009,65 @@ class _StatsScreenState extends State<StatsScreen>
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WIDGET CARD STATISTICHE FOCUS (Glassmorphism)
+// ═══════════════════════════════════════════════════════════════
+class _FocusStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final bool isDark;
+
+  const _FocusStatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: isDark ? 0.3 : 0.2),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -0.5,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
       ),
     );
   }

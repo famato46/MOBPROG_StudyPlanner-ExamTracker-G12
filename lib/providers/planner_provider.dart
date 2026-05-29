@@ -145,8 +145,6 @@ class PlannerProvider extends ChangeNotifier {
     final index = _exams.indexWhere((e) => e.id == exam.id);
     if (index != -1) {
       _exams[index] = exam;
-      // Il cambio di stato del corso (verbalizzazione) viene ora gestito 
-      // manualmente dall'utente per rispettare il pattern "Libretto vs Prove parziali".
       notifyListeners();
     }
   }
@@ -171,11 +169,6 @@ class PlannerProvider extends ChangeNotifier {
     return _exams.where((e) => e.courseId == courseId).toList();
   }
 
-  /// Calcola la media matematica semplice dei voti di tutti gli esami completati 
-  /// e associati ad uno specifico corso. Ritorna null se non ci sono voti validi.
-  /// NOTA: La condizione `e.voto != null` assicura che qualsiasi esame
-  /// (comprese le 'consegne' o prove intercorso opzionali lasciate senza voto)
-  /// non venga conteggiato al denominatore per il calcolo della media parziale.
   double? getAverageExamsGrade(String courseId) {
     final completedExams = _exams.where((e) => 
         e.courseId == courseId && 
@@ -234,7 +227,7 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ========== FUNZIONE SPECIALE POMODORO =======
+  // ========== FUNZIONI SPECIALI POMODORO/PAUSA =======
 
   Future<void> savePomodoroSession({
     required String titolo,
@@ -258,6 +251,24 @@ class PlannerProvider extends ChangeNotifier {
 
     await _db.saveSessionAndUpdateTaskTime(newSession, taskId);
     await loadData();
+  }
+
+  Future<void> savePausaSession({
+    required int durataEffettiva,
+  }) async {
+    final newSession = StudySession(
+      id: _uuid.v4(),
+      titolo: 'Pausa Focus',
+      data: DateTime.now(),
+      durataPianificata: durataEffettiva,
+      durataEffettiva: durataEffettiva,
+      completata: true,
+      tipo: 'pausa',
+    );
+
+    await _db.insertStudySession(newSession);
+    _studySessions.add(newSession);
+    notifyListeners();
   }
 
   StudySession? getStudySessionById(String id) {
@@ -360,7 +371,23 @@ class PlannerProvider extends ChangeNotifier {
   }
 
   // =============================================
-  // ========== STATISTICHE ======================
+  // ========== STATISTICHE TECNICA POMODORO =====
+  // =============================================
+
+  int get pomodoriCompletati => _studySessions
+      .where((s) => s.completata && s.tipo == 'pomodoro')
+      .length;
+
+  int get pauseCompletate => _studySessions
+      .where((s) => s.completata && s.tipo == 'pausa')
+      .length;
+
+  int get minutiTotaliFocus => _studySessions
+      .where((s) => s.completata && s.tipo == 'pomodoro')
+      .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0));
+
+  // =============================================
+  // ========== STATISTICHE GENERALI =============
   // =============================================
 
   int get totalCourses => _courses.length;
@@ -387,11 +414,9 @@ class PlannerProvider extends ChangeNotifier {
 
   int get totalCfu => _courses.fold(0, (sum, c) => sum + c.cfu);
   
-  // Garantisce il prelievo ESCLUSIVO dai corsi superati nel Libretto
   int get earnedCfu =>
       _courses.where((c) => c.stato == 'superato').fold(0, (sum, c) => sum + c.cfu);
 
-  // Garantisce il calcolo ESCLUSIVO della media ponderata basata sul Libretto consolidato
   double get weightedAverage {
     final passedWithGrade = _courses
         .where((c) => c.stato == 'superato' && c.votoOttenuto != null);
@@ -450,7 +475,7 @@ class PlannerProvider extends ChangeNotifier {
 
       if (giorniMancanti <= 3) {
         suggerimenti
-            .add('!! URGENZA: Fai una simulazione per ${course.nome}!');
+            .add('URGENZA: Fai una simulazione per ${course.nome}!');
       } else if (giorniMancanti <= 7) {
         suggerimenti
             .add('Ripasso intensivo consigliato per ${course.nome}');

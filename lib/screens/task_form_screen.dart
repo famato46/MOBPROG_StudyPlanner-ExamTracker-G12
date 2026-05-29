@@ -72,6 +72,25 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
+  // Helper per mostrare una stringa pulita nel selettore dell'esame
+  String _formatTipologia(String t) {
+    switch (t.toLowerCase()) {
+      case 'scritto':
+        return 'Scritto';
+      case 'orale':
+        return 'Orale';
+      case 'intercorso':
+        return 'Intercorso';
+      case 'consegna':
+        return 'Consegna';
+      case 'progetto':
+        return 'Progetto';
+      default:
+        if (t.isEmpty) return t;
+        return t[0].toUpperCase() + t.substring(1).toLowerCase();
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final provider = context.read<PlannerProvider>();
@@ -119,7 +138,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
       .$2;
 
-  // AGGIORNATO AL MODELLO MASTER CON TEMA VERDE PASTELLO
   Future<void> _pickScadenza() async {
     DateTime tempDate = _scadenza ?? DateTime.now().add(const Duration(days: 3));
     await showModalBottomSheet(
@@ -180,7 +198,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   Theme(
                     data: Theme.of(ctx).copyWith(
                       colorScheme: Theme.of(ctx).colorScheme.copyWith(
-                        primary: AppColors.pastelGreen, // VERDE PASTELLO
+                        primary: AppColors.pastelGreen,
                       ),
                     ),
                     child: CalendarDatePicker(
@@ -259,7 +277,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         child: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            // ─── GRUPPO DATI PRINCIPALI ─────────────────────
             _GroupHeader(label: 'Attività'),
             _SettingsGroup(
               isDark: isDark,
@@ -279,8 +296,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
               ],
             ),
-
-            // ─── GRUPPO COLLEGAMENTI (corso / esame opzionali) ───
             const SizedBox(height: 24),
             _GroupHeader(label: 'Collegamenti'),
             _SettingsGroup(
@@ -300,16 +315,19 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   label: 'Esame',
                   value: _examId == null
                       ? 'Nessuno'
-                      : (provider.getExamById(_examId!)?.titolo ??
-                          'Nessuno'),
+                      : (() {
+                          final ex = provider.getExamById(_examId!);
+                          if (ex == null) return 'Nessuno';
+                          final tipo = _formatTipologia(ex.tipologia);
+                          final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(ex.data);
+                          return '$tipo ($dataStr)';
+                        })(),
                   onTap: () => _showExamPicker(
                       context, isDark, provider.exams),
                   isDark: isDark,
                 ),
               ],
             ),
-
-            // ─── GRUPPO PIANIFICAZIONE ──────────────────────
             const SizedBox(height: 24),
             _GroupHeader(label: 'Pianificazione'),
             _SettingsGroup(
@@ -347,8 +365,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
               ],
             ),
-
-            // ─── GRUPPO STATO ───────────────────────────────
             const SizedBox(height: 24),
             _GroupHeader(label: 'Stato'),
             _SettingsGroup(
@@ -362,8 +378,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
               ],
             ),
-
-            // ─── GRUPPO NOTE ────────────────────────────────
             const SizedBox(height: 24),
             _GroupHeader(label: 'Note'),
             _SettingsGroup(
@@ -377,10 +391,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: 32),
-
-            // ─── CTA principale ─────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
@@ -415,7 +426,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     );
   }
 
-  // ─── BOTTOM SHEET PICKER iOS-style ─────────────────────────
   void _showCoursePicker(
       BuildContext context, bool isDark, List<Course> courses) {
     _showIosPicker<String?>(
@@ -427,7 +437,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         ...courses.map((c) => (c.id, c.nome)),
       ],
       current: _courseId,
-      onSelected: (v) => setState(() => _courseId = v),
+      onSelected: (v) {
+        setState(() {
+          _courseId = v;
+          _examId = null; // Resetta l'esame se cambia il corso
+        });
+      },
     );
   }
 
@@ -442,7 +457,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       title: 'Esame',
       options: [
         (null, 'Nessuno'),
-        ...filteredExams.map((e) => (e.id, e.titolo)),
+        ...filteredExams.map((e) {
+          final tipo = _formatTipologia(e.tipologia);
+          final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(e.data);
+          return (e.id, '$tipo ($dataStr)');
+        }),
       ],
       current: _examId,
       onSelected: (v) => setState(() => _examId = v),
