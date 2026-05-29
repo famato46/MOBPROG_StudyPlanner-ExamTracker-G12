@@ -11,7 +11,6 @@ import 'task_form_screen.dart';
 import 'session_form_screen.dart';
 
 /// Tipo di sessione del timer Focus.
-/// Replica il pattern `enum SessionType { pomodoro, pausa }` del prof.
 enum FocusType { pomodoro, pausa }
 
 /// PlanningScreen — "Pianifica" in stile Apple moderno.
@@ -20,12 +19,6 @@ enum FocusType { pomodoro, pausa }
 ///  1. Oggi          — impegni di oggi (sessioni + task) con "+ Attività"
 ///  2. Pianificatore — calendario giorno/settimana + filtri + CRUD sessioni
 ///  3. Focus         — timer con Tecnica Pomodoro (Pomodoro / Pausa + reset)
-///
-/// Pattern del prof rispettati:
-///  - setState per stato effimero (tab, timer, filtri)
-///  - Provider per App State (sessioni, task, corsi)
-///  - Timer.periodic + dispose() per il countdown
-///  - enum FocusType per il tipo di sessione (come SessionType del prof)
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -36,6 +29,7 @@ class PlanningScreen extends StatefulWidget {
 class _PlanningScreenState extends State<PlanningScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
+
   // 0 = Oggi, 1 = Pianificatore, 2 = Focus
   int _currentSegment = 0;
 
@@ -46,46 +40,38 @@ class _PlanningScreenState extends State<PlanningScreen>
   String _filtroTipoAttivita = 'Tutti';
   bool _isVistaSettimanale = false;
   bool _filtriEspansi = false;
-  // Tab Oggi: mostra o nasconde le attività future (prossimi 7 giorni)
-  bool _mostraFuture = false;
 
   // ─── Stato Timer Focus (Pomodoro / Pausa) ───
-  // Durate (in secondi). Come il prof: due durate diverse.
   static const int _pomodoroSeconds = 25 * 60;
   static const int _pausaSeconds = 5 * 60;
 
-  // ─────────────────────────── TIMER ───────────────────────────
-  // Usiamo un ValueNotifier per i secondi rimanenti: questo garantisce
-  // che il cerchio del timer si aggiorni a ogni tick in real-time anche
-  // dentro un IndexedStack (che talvolta ottimizza i rebuild delle tab
-  // non in primo piano). Il resto dello stato (isRunning, focusType)
-  // resta in setState normale.
-  final ValueNotifier<int> _secondsNotifier =
-      ValueNotifier(_pomodoroSeconds);
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this)
-      ..addListener(() {
-        if (_tabController.indexIsChanging) return;
-        if (_currentSegment != _tabController.index) {
-          if (_tabController.index != 2 && _isTimerRunning) _pauseTimer();
-          setState(() => _currentSegment = _tabController.index);
-        }
-      });
-  }
-
-  // Alias per compatibilità con il resto del codice.
-  int get _secondsRemaining => _secondsNotifier.value;
+  final ValueNotifier<int> _secondsNotifier = ValueNotifier(_pomodoroSeconds);
 
   FocusType _focusType = FocusType.pomodoro;
   Timer? _focusTimer;
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
+  int get _secondsRemaining => _secondsNotifier.value;
+
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
+
+  @override
+  void initState() {
+    super.initState();
+    // Unico TabController — _focusTabController rimosso per evitare
+    // LateInitializationError causato da IndexedStack che costruisce
+    // tutti i tab al primo frame prima che initState sia completato.
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (_currentSegment != _tabController.index) {
+        if (_tabController.index != 2 && _isTimerRunning) _pauseTimer();
+        setState(() => _currentSegment = _tabController.index);
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -95,28 +81,18 @@ class _PlanningScreenState extends State<PlanningScreen>
     super.dispose();
   }
 
-  void _onSegmentChanged(int index) {
-    if (index != 2 && _isTimerRunning) _pauseTimer();
-    setState(() => _currentSegment = index);
-  }
-
   // ─────────────────────────── TIMER ───────────────────────────
   void _startTimer() {
-    // Solo per il Pomodoro serve un obiettivo selezionato; la pausa no.
-    if (_focusType == FocusType.pomodoro &&
-        _selectedTaskForPomodoro == null) {
+    if (_focusType == FocusType.pomodoro && _selectedTaskForPomodoro == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content:
-                Text('Seleziona un obiettivo prima di avviare il Pomodoro!')),
+            content: Text('Seleziona un obiettivo prima di avviare il Pomodoro!')),
       );
       return;
     }
     setState(() => _isTimerRunning = true);
     _focusTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsNotifier.value > 0) {
-        // Aggiorniamo il ValueNotifier: il cerchio si ridisegna in real-time
-        // senza dover ricostruire l'intero albero di widget.
         _secondsNotifier.value--;
       } else {
         _completaSessione();
@@ -129,14 +105,12 @@ class _PlanningScreenState extends State<PlanningScreen>
     setState(() => _isTimerRunning = false);
   }
 
-  // Reset: ferma e riporta al valore pieno del tipo corrente.
   void _resetTimer() {
     _focusTimer?.cancel();
     _secondsNotifier.value = _currentTotal;
     setState(() => _isTimerRunning = false);
   }
 
-  // Cambia tipo (Pomodoro/Pausa): ferma il timer e resetta i secondi.
   void _switchFocusType(FocusType type) {
     _focusTimer?.cancel();
     _secondsNotifier.value =
@@ -150,9 +124,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   Future<void> _completaSessione() async {
     _focusTimer?.cancel();
 
-    // Salviamo nello storico solo i Pomodoro (lavoro vero), non le pause.
-    if (_focusType == FocusType.pomodoro &&
-        _selectedTaskForPomodoro != null) {
+    if (_focusType == FocusType.pomodoro && _selectedTaskForPomodoro != null) {
       await Provider.of<PlannerProvider>(context, listen: false)
           .savePomodoroSession(
         titolo: 'Focus: ${_selectedTaskForPomodoro!.titolo}',
@@ -163,9 +135,7 @@ class _PlanningScreenState extends State<PlanningScreen>
       );
     }
 
-    setState(() {
-      _isTimerRunning = false;
-    });
+    setState(() => _isTimerRunning = false);
     _secondsNotifier.value = _currentTotal;
     if (mounted) _mostraDialogFine();
   }
@@ -175,8 +145,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(isPomodoro ? 'Pomodoro completato!' : 'Pausa finita!'),
         content: Text(isPomodoro
             ? 'I tuoi 25 minuti di focus sono stati registrati. Fai una pausa!'
@@ -210,8 +179,7 @@ class _PlanningScreenState extends State<PlanningScreen>
         DateTime(reference.year, reference.month, reference.day)
             .subtract(Duration(days: reference.weekday - 1));
     final fineSettimana = inizioSettimana.add(const Duration(days: 7));
-    return !date.isBefore(inizioSettimana) &&
-        date.isBefore(fineSettimana);
+    return !date.isBefore(inizioSettimana) && date.isBefore(fineSettimana);
   }
 
   String _formatGiornoPianificatore() {
@@ -220,17 +188,14 @@ class _PlanningScreenState extends State<PlanningScreen>
           .subtract(Duration(days: _giornoPianificatore.weekday - 1));
       return 'Settimana del ${DateFormat('dd MMMM', 'it_IT').format(inizio)}';
     }
-    return DateFormat('EEEE dd MMMM', 'it_IT')
-        .format(_giornoPianificatore);
+    return DateFormat('EEEE dd MMMM', 'it_IT').format(_giornoPianificatore);
   }
 
-  // Apre il form a tutto schermo per creare/modificare una sessione.
   void _apriFormSessione({StudySession? sessione}) {
     final provider = context.read<PlannerProvider>();
     if (provider.courses.isEmpty && sessione == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content:
-              Text('Inserisci prima un Corso nell\'apposita schermata!')));
+          content: Text('Inserisci prima un Corso nell\'apposita schermata!')));
       return;
     }
     Navigator.push(
@@ -244,7 +209,6 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // Apre il form a tutto schermo per creare/modificare un Task.
   void _apriFormTask({Task? task}) {
     Navigator.push(
       context,
@@ -313,8 +277,7 @@ class _PlanningScreenState extends State<PlanningScreen>
                       index: _currentSegment,
                       children: [
                         _buildTabOggi(sessioniOggi, taskOggi, provider),
-                        _buildTabPianificatore(
-                            sessioniPianificatore, provider),
+                        _buildTabPianificatore(sessioniPianificatore, provider),
                         _buildTabFocus(provider.getPendingTasks()),
                       ],
                     ),
@@ -326,12 +289,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // FAB dipendente dalla tab:
-  //  - Oggi          → niente FAB (i "+" sono inline nelle sezioni)
-  //  - Pianificatore → "+ Pianifica" (crea sessione)
-  //  - Focus         → niente FAB
   Widget? _buildFab() {
-    // Tab Pianificatore → FAB verde "+ Sessione"
     if (_currentSegment == 1) {
       return Container(
         decoration: BoxDecoration(
@@ -356,7 +314,6 @@ class _PlanningScreenState extends State<PlanningScreen>
         ),
       );
     }
-    // Tab Oggi → FAB identico al Pianificatore, apre form Task
     if (_currentSegment == 0) {
       return Container(
         decoration: BoxDecoration(
@@ -438,8 +395,7 @@ class _PlanningScreenState extends State<PlanningScreen>
             ),
             const SizedBox(height: 24),
           ],
-          if (taskCompletati.isNotEmpty ||
-              sessioniCompletate.isNotEmpty) ...[
+          if (taskCompletati.isNotEmpty || sessioniCompletate.isNotEmpty) ...[
             _SectionLabel(
                 label: 'Completate',
                 isDark: isDark,
@@ -485,14 +441,12 @@ class _PlanningScreenState extends State<PlanningScreen>
     final filtriAttivi =
         _filtroCorso != null || _filtroTipoAttivita != 'Tutti';
 
-    // Tutti i giorni che hanno almeno una sessione (per i marker)
     final giorniConSessioni = provider.studySessions
         .map((s) => DateTime(s.data.year, s.data.month, s.data.day))
         .toSet();
 
     return CustomScrollView(
       slivers: [
-        // ── Calendario a griglia ──
         SliverToBoxAdapter(
           child: _CalendarGrid(
             selectedDay: _giornoPianificatore,
@@ -501,8 +455,6 @@ class _PlanningScreenState extends State<PlanningScreen>
             isDark: isDark,
           ),
         ),
-
-        // ── Toggle Giornaliera/Settimanale ──
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
@@ -515,22 +467,25 @@ class _PlanningScreenState extends State<PlanningScreen>
                       setState(() => _isVistaSettimanale = i == 1),
                   isDark: isDark,
                 ),
-                const Spacer(),
-                Text(
-                  _formatGiornoPianificatore(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white70 : AppColors.textSecondary,
-                    letterSpacing: -0.2,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    _formatGiornoPianificatore(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
+                      letterSpacing: -0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    textAlign: TextAlign.end,
                   ),
                 ),
               ],
             ),
           ),
         ),
-
-        // ── Filtri ──
         SliverToBoxAdapter(
           child: _FilterSection(
             espanso: _filtriEspansi,
@@ -548,10 +503,7 @@ class _PlanningScreenState extends State<PlanningScreen>
             isDark: isDark,
           ),
         ),
-
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-        // ── Lista sessioni ──
         if (sessioni.isEmpty)
           SliverFillRemaining(
             child: _EmptyState(
@@ -574,7 +526,8 @@ class _PlanningScreenState extends State<PlanningScreen>
                                 s.copyWith(completata: !s.completata)),
                             onEdit: () => _apriFormSessione(sessione: s),
                             onDelete: () async {
-                              final c = await _confirmDeleteSessione(context, s);
+                              final c =
+                                  await _confirmDeleteSessione(context, s);
                               if (c == true && context.mounted) {
                                 await provider.deleteStudySession(s.id);
                               }
@@ -610,7 +563,8 @@ class _PlanningScreenState extends State<PlanningScreen>
                                 s.copyWith(completata: !s.completata)),
                             onEdit: () => _apriFormSessione(sessione: s),
                             onDelete: () async {
-                              final c = await _confirmDeleteSessione(context, s);
+                              final c =
+                                  await _confirmDeleteSessione(context, s);
                               if (c == true && context.mounted) {
                                 await provider.deleteStudySession(s.id);
                               }
@@ -653,8 +607,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Elimina',
-                style: TextStyle(color: AppColors.danger)),
+            child: Text('Elimina', style: TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -662,7 +615,9 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // TAB 3 — FOCUS (Tecnica Pomodoro: Pomodoro / Pausa + reset)
+  // TAB 3 — FOCUS (Tecnica Pomodoro)
+  // Usa _MiniSegment al posto di TabBar+TabController per evitare
+  // LateInitializationError con IndexedStack.
   // ═══════════════════════════════════════════════════════════════
   Widget _buildTabFocus(List<Task> pendingTasks) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -692,18 +647,19 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 20),
 
-          // ── Selettore Pomodoro / Pausa (SENZA emoji) ──
+          // ── Selettore Pomodoro / Pausa — _MiniSegment (no TabController) ──
           _MiniSegment(
-            options: const ['Pomodoro', 'Pausa'],
+            options: const ['🍅  Pomodoro', '☕  Pausa'],
             selectedIndex: isPomodoro ? 0 : 1,
-            onChanged: (i) =>
-                _switchFocusType(i == 0 ? FocusType.pomodoro : FocusType.pausa),
+            onChanged: (i) => _switchFocusType(
+              i == 0 ? FocusType.pomodoro : FocusType.pausa,
+            ),
             isDark: isDark,
             fullWidth: true,
           ),
           const SizedBox(height: 24),
 
-          // ── Selettore obiettivo (solo Pomodoro). Usa bottom sheet iOS. ──
+          // ── Selettore obiettivo (solo Pomodoro) ──
           SizedBox(
             height: 56,
             child: isPomodoro
@@ -719,13 +675,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          // ── Cerchio timer con ValueListenableBuilder ──
-          // ValueListenableBuilder si iscrive al ValueNotifier<int> e
-          // ricostruisce SOLO il cerchio a ogni tick del timer (60fps
-          // percepiti, senza ricostruire l'intero tab). Questo risolve
-          // il problema "il timer va ma il numero non si aggiorna in
-          // tempo reale" causato dall'IndexedStack che ottimizzava i
-          // rebuild dei widget non in primo piano.
+          // ── Cerchio timer ──
           ValueListenableBuilder<int>(
             valueListenable: _secondsNotifier,
             builder: (context, seconds, _) {
@@ -758,9 +708,7 @@ class _PlanningScreenState extends State<PlanningScreen>
                           style: TextStyle(
                             fontSize: 52,
                             fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textPrimary,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
                             letterSpacing: -1,
                           ),
                         ),
@@ -835,7 +783,7 @@ class _PlanningScreenState extends State<PlanningScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════
-// HEADER — large title iOS
+// HEADER
 // ═══════════════════════════════════════════════════════════════
 class _Header extends StatelessWidget {
   final bool isDark;
@@ -865,8 +813,7 @@ class _Header extends StatelessWidget {
               'Organizza studio e sessioni di focus',
               style: TextStyle(
                 fontSize: 15,
-                color:
-                    isDark ? Colors.white70 : AppColors.textSecondary,
+                color: isDark ? Colors.white70 : AppColors.textSecondary,
               ),
             ),
           ],
@@ -876,8 +823,9 @@ class _Header extends StatelessWidget {
   }
 }
 
-// TAB BAR PLANNING — TabBar nativo Flutter = hardware-accelerated, fluido.
-// Stesso pattern di _ExamTabBar in exams_screen.dart e courses_screen.dart.
+// ═══════════════════════════════════════════════════════════════
+// TAB BAR PLANNING
+// ═══════════════════════════════════════════════════════════════
 class _PlanningTabBar extends StatelessWidget {
   final TabController controller;
   final bool isDark;
@@ -943,12 +891,7 @@ class _PlanningTabBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MINI SEGMENT (Giornaliera/Settimanale, Pomodoro/Pausa)
-// ═══════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════
-// CALENDAR GRID — Griglia mensile 7 colonne (pattern del prof)
-// Ogni cella è un GestureDetector. I giorni con sessioni mostrano
-// un pallino verde (marker). Il giorno selezionato ha sfondo verde.
+// CALENDAR GRID
 // ═══════════════════════════════════════════════════════════════
 class _CalendarGrid extends StatefulWidget {
   final DateTime selectedDay;
@@ -968,14 +911,12 @@ class _CalendarGrid extends StatefulWidget {
 }
 
 class _CalendarGridState extends State<_CalendarGrid> {
-  // Mese correntemente visualizzato
   late DateTime _viewMonth;
 
   @override
   void initState() {
     super.initState();
-    _viewMonth =
-        DateTime(widget.selectedDay.year, widget.selectedDay.month);
+    _viewMonth = DateTime(widget.selectedDay.year, widget.selectedDay.month);
   }
 
   void _prevMonth() {
@@ -996,17 +937,16 @@ class _CalendarGridState extends State<_CalendarGrid> {
     final oggi = DateTime.now();
     final oggiNorm = DateTime(oggi.year, oggi.month, oggi.day);
 
-    // Primo giorno del mese e offset (lun=0)
     final primoDelMese = DateTime(_viewMonth.year, _viewMonth.month, 1);
-    final offset = (primoDelMese.weekday - 1) % 7; // lun=0 ... dom=6
+    final offset = (primoDelMese.weekday - 1) % 7;
     final giorniNelMese =
         DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
     final totalCells = offset + giorniNelMese;
     final rows = (totalCells / 7).ceil();
 
-    // Nome mese in italiano
     const mesi = [
-      '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+      '',
+      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
       'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
     ];
     const giorniSettimana = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
@@ -1022,7 +962,6 @@ class _CalendarGridState extends State<_CalendarGrid> {
       ),
       child: Column(
         children: [
-          // ── Header mese ──
           Row(
             children: [
               GestureDetector(
@@ -1049,8 +988,6 @@ class _CalendarGridState extends State<_CalendarGrid> {
             ],
           ),
           const SizedBox(height: 10),
-
-          // ── Intestazione giorni L M M G V S D ──
           Row(
             children: giorniSettimana
                 .map((g) => Expanded(
@@ -1069,8 +1006,6 @@ class _CalendarGridState extends State<_CalendarGrid> {
                 .toList(),
           ),
           const SizedBox(height: 6),
-
-          // ── Griglia giorni (GridView del prof) ──
           GridView.count(
             crossAxisCount: 7,
             shrinkWrap: true,
@@ -1080,20 +1015,17 @@ class _CalendarGridState extends State<_CalendarGrid> {
             childAspectRatio: 1.0,
             children: List.generate(rows * 7, (index) {
               final dayNumber = index - offset + 1;
-              final isValidDay =
-                  dayNumber >= 1 && dayNumber <= giorniNelMese;
+              final isValidDay = dayNumber >= 1 && dayNumber <= giorniNelMese;
 
-              if (!isValidDay) {
-                return const SizedBox.shrink();
-              }
+              if (!isValidDay) return const SizedBox.shrink();
 
-              final thisDay = DateTime(
-                  _viewMonth.year, _viewMonth.month, dayNumber);
+              final thisDay =
+                  DateTime(_viewMonth.year, _viewMonth.month, dayNumber);
               final thisDayNorm =
                   DateTime(thisDay.year, thisDay.month, thisDay.day);
               final isSelected = thisDayNorm ==
-                  DateTime(widget.selectedDay.year,
-                      widget.selectedDay.month, widget.selectedDay.day);
+                  DateTime(widget.selectedDay.year, widget.selectedDay.month,
+                      widget.selectedDay.day);
               final isOggi = thisDayNorm == oggiNorm;
               final hasSession =
                   widget.giorniConSessioni.contains(thisDayNorm);
@@ -1128,7 +1060,6 @@ class _CalendarGridState extends State<_CalendarGrid> {
                                       : AppColors.textPrimary),
                         ),
                       ),
-                      // Pallino marker se ci sono sessioni
                       if (hasSession && !isSelected)
                         Container(
                           width: 5,
@@ -1162,6 +1093,8 @@ class _CalendarGridState extends State<_CalendarGrid> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MINI SEGMENT
+// ═══════════════════════════════════════════════════════════════
 class _MiniSegment extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -1185,8 +1118,7 @@ class _MiniSegment extends StatelessWidget {
         final selected = i == selectedIndex;
         final chip = AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: selected
                 ? (isDark ? const Color(0xFF3A3A3C) : Colors.white)
@@ -1235,7 +1167,7 @@ class _MiniSegment extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PILL BUTTON ("Data")
+// PILL BUTTON
 // ═══════════════════════════════════════════════════════════════
 class _PillButton extends StatelessWidget {
   final IconData icon;
@@ -1258,8 +1190,7 @@ class _PillButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.06)
@@ -1293,7 +1224,7 @@ class _PillButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FILTER SECTION (espandibile)
+// FILTER SECTION
 // ═══════════════════════════════════════════════════════════════
 class _FilterSection extends StatelessWidget {
   final bool espanso;
@@ -1338,8 +1269,8 @@ class _FilterSection extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               onTap: onToggle,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Icon(Icons.filter_list_rounded,
@@ -1350,9 +1281,7 @@ class _FilterSection extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.textPrimary,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
                     const Spacer(),
@@ -1399,8 +1328,7 @@ class _FilterSection extends StatelessWidget {
                       if (v == '__tutti__') {
                         onCorsoChanged(null);
                       } else {
-                        onCorsoChanged(
-                            corsi.firstWhere((c) => c.id == v));
+                        onCorsoChanged(corsi.firstWhere((c) => c.id == v));
                       }
                     },
                     isDark: isDark,
@@ -1431,16 +1359,12 @@ class _FilterSection extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FILTER PICKER ROW — iOS bottom sheet (niente DropdownButton Material)
+// FILTER PICKER ROW
 // ═══════════════════════════════════════════════════════════════
-// Il DropdownButton di Flutter si apre dall'alto con stile Material
-// e non è conforme allo stile iOS. Lo sostituiamo con un tasto
-// che apre un showModalBottomSheet con lista di opzioni — stesso
-// pattern usato in task_form_screen e course_form_screen.
 class _FilterPickerRow extends StatelessWidget {
   final String label;
   final String displayValue;
-  final List<(String, String)> options; // (valore, etichetta)
+  final List<(String, String)> options;
   final String currentValue;
   final ValueChanged<String> onSelected;
   final bool isDark;
@@ -1466,15 +1390,12 @@ class _FilterPickerRow extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle bar
             Container(
               margin: const EdgeInsets.only(top: 12, bottom: 8),
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white24
-                    : Colors.black12,
+                color: isDark ? Colors.white24 : Colors.black12,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1540,8 +1461,7 @@ class _FilterPickerRow extends StatelessWidget {
         onTap: () => _openPicker(context),
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.06)
@@ -1560,9 +1480,7 @@ class _FilterPickerRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? Colors.white70
-                      : AppColors.textSecondary,
+                  color: isDark ? Colors.white70 : AppColors.textSecondary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1590,7 +1508,7 @@ class _FilterPickerRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION TITLE con azione "+ ..." (per "Le mie attività")
+// SECTION TITLE WITH ACTION
 // ═══════════════════════════════════════════════════════════════
 class _SectionTitleWithAction extends StatelessWidget {
   final String title;
@@ -1627,8 +1545,8 @@ class _SectionTitleWithAction extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               onTap: onAction,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1677,8 +1595,7 @@ class _SectionLabel extends StatelessWidget {
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w700,
-          color: color ??
-              (isDark ? Colors.white : AppColors.textPrimary),
+          color: color ?? (isDark ? Colors.white : AppColors.textPrimary),
           letterSpacing: -0.2,
         ),
       ),
@@ -1757,8 +1674,7 @@ class _TaskRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
               GestureDetector(
@@ -1775,9 +1691,7 @@ class _TaskRow extends StatelessWidget {
                     border: Border.all(
                       color: task.completata
                           ? AppColors.iosBlue
-                          : (isDark
-                              ? Colors.white38
-                              : AppColors.textMuted),
+                          : (isDark ? Colors.white38 : AppColors.textMuted),
                       width: 2,
                     ),
                   ),
@@ -1797,9 +1711,8 @@ class _TaskRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.textPrimary,
+                        color:
+                            isDark ? Colors.white : AppColors.textPrimary,
                         decoration: task.completata
                             ? TextDecoration.lineThrough
                             : null,
@@ -1822,8 +1735,8 @@ class _TaskRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: priorityColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -1929,9 +1842,8 @@ class _SessionRow extends StatelessWidget {
                   sottotitolo,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary,
+                    color:
+                        isDark ? Colors.white60 : AppColors.textSecondary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1943,8 +1855,8 @@ class _SessionRow extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: const EdgeInsets.all(4),
-              child: Icon(Icons.edit_outlined,
-                  size: 18, color: AppColors.iosBlue),
+              child:
+                  Icon(Icons.edit_outlined, size: 18, color: AppColors.iosBlue),
             ),
           ),
         ],
@@ -1973,7 +1885,7 @@ class _SessionRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CIRCLE CONTROL (reset timer)
+// CIRCLE CONTROL
 // ═══════════════════════════════════════════════════════════════
 class _CircleControl extends StatelessWidget {
   final IconData icon;
@@ -2004,16 +1916,15 @@ class _CircleControl extends StatelessWidget {
                 : AppColors.border,
           ),
         ),
-        child: Icon(icon,
-            color: isDark ? Colors.white : AppColors.textPrimary),
+        child:
+            Icon(icon, color: isDark ? Colors.white : AppColors.textPrimary),
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TASK PICKER BUTTON — Bottom sheet iOS per selezionare il task
-// nel Focus Pomodoro. Coerente con _FilterPickerRow.
+// TASK PICKER BUTTON
 // ═══════════════════════════════════════════════════════════════
 class _TaskPickerButton extends StatelessWidget {
   final Task? selectedTask;
@@ -2133,8 +2044,7 @@ class _TaskPickerButton extends StatelessWidget {
         onTap: enabled ? () => _openPicker(context) : null,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withValues(alpha: enabled ? 0.05 : 0.02)
@@ -2157,7 +2067,9 @@ class _TaskPickerButton extends StatelessWidget {
               ),
               Icon(
                 Icons.unfold_more_rounded,
-                color: enabled ? AppColors.textMuted : AppColors.textMuted.withValues(alpha: 0.4),
+                color: enabled
+                    ? AppColors.textMuted
+                    : AppColors.textMuted.withValues(alpha: 0.4),
                 size: 20,
               ),
             ],
