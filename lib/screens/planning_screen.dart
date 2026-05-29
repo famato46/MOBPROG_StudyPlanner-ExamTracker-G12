@@ -29,6 +29,10 @@ class PlanningScreen extends StatefulWidget {
 class _PlanningScreenState extends State<PlanningScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
+  // TabController dedicato al selettore Pomodoro/Pausa dentro Focus.
+  // Inizializzato in initState insieme a _tabController per evitare
+  // LateInitializationError con IndexedStack.
+  late final TabController _focusTabController;
 
   // 0 = Oggi, 1 = Pianificatore, 2 = Focus
   int _currentSegment = 0;
@@ -60,9 +64,6 @@ class _PlanningScreenState extends State<PlanningScreen>
   @override
   void initState() {
     super.initState();
-    // Unico TabController — _focusTabController rimosso per evitare
-    // LateInitializationError causato da IndexedStack che costruisce
-    // tutti i tab al primo frame prima che initState sia completato.
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
@@ -71,12 +72,24 @@ class _PlanningScreenState extends State<PlanningScreen>
         setState(() => _currentSegment = _tabController.index);
       }
     });
+
+    // TabController per il selettore Pomodoro/Pausa nel Focus.
+    // Inizializzato qui (non come late final separato) per garantire
+    // che sia pronto prima che IndexedStack costruisca il tab Focus.
+    _focusTabController = TabController(length: 2, vsync: this);
+    _focusTabController.addListener(() {
+      if (_focusTabController.indexIsChanging) return;
+      _switchFocusType(
+        _focusTabController.index == 0 ? FocusType.pomodoro : FocusType.pausa,
+      );
+    });
   }
 
   @override
   void dispose() {
     _focusTimer?.cancel();
     _tabController.dispose();
+    _focusTabController.dispose();
     _secondsNotifier.dispose();
     super.dispose();
   }
@@ -119,6 +132,11 @@ class _PlanningScreenState extends State<PlanningScreen>
       _focusType = type;
       _isTimerRunning = false;
     });
+    // Mantiene il TabController in sincronia se chiamato programmaticamente.
+    final targetIndex = type == FocusType.pomodoro ? 0 : 1;
+    if (_focusTabController.index != targetIndex) {
+      _focusTabController.animateTo(targetIndex);
+    }
   }
 
   Future<void> _completaSessione() async {
@@ -468,7 +486,9 @@ class _PlanningScreenState extends State<PlanningScreen>
                   isDark: isDark,
                 ),
                 const SizedBox(width: 8),
-                Flexible(
+                // Expanded (non Flexible) → il testo occupa esattamente lo
+                // spazio rimanente senza eccedere, eliminando l'overflow right.
+                Expanded(
                   child: Text(
                     _formatGiornoPianificatore(),
                     style: TextStyle(
@@ -505,7 +525,10 @@ class _PlanningScreenState extends State<PlanningScreen>
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
         if (sessioni.isEmpty)
+          // hasScrollBody: false → il widget si restringe al suo contenuto
+          // invece di espandersi fino all'overflow quando il filtro è espanso.
           SliverFillRemaining(
+            hasScrollBody: false,
             child: _EmptyState(
               icon: Icons.event_busy_outlined,
               text: 'Nessun impegno corrisponde ai criteri.',
@@ -647,15 +670,46 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 20),
 
-          // ── Selettore Pomodoro / Pausa — _MiniSegment (no TabController) ──
-          _MiniSegment(
-            options: const ['🍅  Pomodoro', '☕  Pausa'],
-            selectedIndex: isPomodoro ? 0 : 1,
-            onChanged: (i) => _switchFocusType(
-              i == 0 ? FocusType.pomodoro : FocusType.pausa,
+          // ── Selettore Pomodoro / Pausa — TabBar nativo (stesso stile di
+          // exams_screen.dart e courses_screen.dart, hardware-accelerated) ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : Colors.black.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: TabBar(
+                controller: _focusTabController,
+                indicator: BoxDecoration(
+                  color: isPomodoro ? AppColors.danger : AppColors.success,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: Colors.white,
+                unselectedLabelColor:
+                    isDark ? Colors.white70 : AppColors.textSecondary,
+                labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2),
+                unselectedLabelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2),
+                splashFactory: NoSplash.splashFactory,
+                overlayColor:
+                    WidgetStateProperty.all(Colors.transparent),
+                tabs: const [
+                  Tab(text: 'Pomodoro'),
+                  Tab(text: 'Pausa'),
+                ],
+              ),
             ),
-            isDark: isDark,
-            fullWidth: true,
           ),
           const SizedBox(height: 24),
 
