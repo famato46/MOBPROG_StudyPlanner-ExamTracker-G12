@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/exam.dart';
@@ -10,8 +11,9 @@ import '../utils/app_colors.dart';
 /// Layout:
 ///  1. Large title "Dashboard" + sottotitolo + avatar profilo
 ///  2. Grid 2x2 di stat card pastello (Corsi, Esami, Attività, CFU)
-///  3. Card prossimo esame con countdown
-///  4. Lista suggerimenti automatici (dal Provider)
+///  3. Flashcard Motivazionale (Spunto del Giorno)
+///  4. Card prossimo esame con countdown
+///  5. Lista suggerimenti automatici (dal Provider)
 class HomeScreen extends StatelessWidget {
   /// Callback per cambiare tab nella BottomNavigationBar del MainScreen.
   /// Permette alle card della dashboard di portare alle sezioni:
@@ -31,12 +33,6 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
-          // Non mostriamo nessuna rotella di caricamento: il provider
-          // inizia con liste vuote (non null), quindi la home può
-          // renderizzare immediatamente con contatori a 0.
-          // Il caricamento in background aggiorna i widget tramite
-          // notifyListeners() senza flash di loading intermedi.
-
           // ── Calcolo dati dinamici per il prossimo esame ────────
           final prossimoEsame = _findProssimoEsame(provider);
           final suggerimentiUnici =
@@ -54,6 +50,18 @@ class HomeScreen extends StatelessWidget {
                   onNavigateToTab: onNavigateToTab,
                 ),
                 const SizedBox(height: 28),
+
+                // ─── NUOVA FEATURE: FLASHCARD MOTIVAZIONALE ───────────
+                _SectionLabel(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'Spunto del giorno',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 12),
+                const MotivationalFlashcard(),
+                const SizedBox(height: 28),
+                // ──────────────────────────────────────────────────────
+
                 if (prossimoEsame != null) ...[
                   _SectionLabel(
                     icon: Icons.timer_outlined,
@@ -95,6 +103,159 @@ class HomeScreen extends StatelessWidget {
         .toList()
       ..sort((a, b) => a.data.compareTo(b.data));
     return futuri.isEmpty ? null : futuri.first;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MOTIVATIONAL FLASHCARD
+// ═══════════════════════════════════════════════════════════════
+class MotivationalFlashcard extends StatefulWidget {
+  const MotivationalFlashcard({super.key});
+
+  @override
+  State<MotivationalFlashcard> createState() => _MotivationalFlashcardState();
+}
+
+class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
+  bool _flipped = false;
+  late final String _front;
+  late final String _back;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lista di frasi motivazionali hardcoded (NO EMOJI)
+    final pairs = [
+      (
+        "Qual e' il segreto per superare questo esame difficile?",
+        "La costanza. Un piccolo passo ogni giorno ti portera' al successo. Inizia ora!"
+      ),
+      (
+        "Ti senti bloccato su un argomento?",
+        "Fai una pausa, respira profondo e riparti dalle basi. Nessun concetto e' impossibile da capire."
+      ),
+      (
+        "Perche' studiare proprio oggi?",
+        "Perche' lo studio di oggi costruisce la liberta' del tuo domani. Continua a investire in te stesso."
+      ),
+      (
+        "La stanchezza si fa sentire?",
+        "Ricorda perche' hai iniziato. Ogni pagina letta ti avvicina al traguardo della laurea."
+      ),
+      (
+        "Hai paura di non farcela?",
+        "Il fallimento fa parte del percorso. Affronta l'esame con coraggio, hai tutte le capacita' per superarlo."
+      ),
+      (
+        "Ti sembra di non ricordare nulla?",
+        "E' normale. Ripeti a voce alta o spiega il concetto a qualcun altro, vedrai che i pezzi si incastreranno."
+      ),
+    ];
+
+    // Selezione random al caricamento della schermata
+    final random = Random();
+    final selectedPair = pairs[random.nextInt(pairs.length)];
+    _front = selectedPair.$1;
+    _back = selectedPair.$2;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Colori Apple-style coerenti con la nostra palette AppColors
+    final frontBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surface;
+    final backBg = AppColors.pastelBlueDeep;
+
+    final bgColor = _flipped ? backBg : frontBg;
+    final borderColor = _flipped
+        ? Colors.transparent
+        : (isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border);
+    final textColor = _flipped
+        ? Colors.white
+        : (isDark ? Colors.white : AppColors.textPrimary);
+    final hintColor = _flipped ? Colors.white70 : AppColors.textMuted;
+    final labelColor = _flipped ? Colors.white70 : AppColors.pastelBlueDeep;
+
+    return GestureDetector(
+      onTap: () => setState(() => _flipped = !_flipped),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        height: 180, // Altezza compatta e proporzionata
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            if (!isDark && !_flipped)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Etichetta in alto a sinistra
+            Positioned(
+              top: 16,
+              left: 20,
+              child: Text(
+                _flipped ? 'MOTIVAZIONE' : 'SPUNTO',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  color: labelColor,
+                ),
+              ),
+            ),
+            // Testo centrale
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                child: Text(
+                  _flipped ? _back : _front,
+                  style: TextStyle(
+                    fontSize: _flipped ? 15 : 17,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                    height: 1.4,
+                    letterSpacing: -0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            // Suggerimento in basso
+            Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.touch_app_rounded, size: 14, color: hintColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tocca per girare',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: hintColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -143,11 +304,6 @@ class _HeaderSection extends StatelessWidget {
         ),
         Consumer<ThemeProvider>(
           builder: (context, themeProvider, _) {
-            // Toggle Dark Mode VISIBILE — risponde al problema 7 della
-            // chat tecnica. Prima era nascosto su onLongPress dell'avatar
-            // e il prof non lo avrebbe mai trovato. Ora è un IconButton
-            // esplicito con tooltip, ben visibile in alto a destra,
-            // proprio come dichiarato nella scaletta (sezione E. Dark Mode).
             return Container(
               width: 44,
               height: 44,
@@ -237,10 +393,6 @@ class _StatGrid extends StatelessWidget {
         ),
         _GlowStatCard(
           title: 'CFU',
-          // CFU ottenuti su 180 (totale laurea triennale).
-          // Mostriamo l'avanzamento rispetto al traguardo complessivo,
-          // non rispetto ai soli corsi inseriti, così il valore ha
-          // senso anche se l'utente ha caricato pochi corsi.
           value: '${provider.earnedCfu}/180',
           icon: Icons.school_rounded,
           pastel: AppColors.pastelYellow,
@@ -568,7 +720,6 @@ class _SuggestionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Detect urgency from emoji prefix
     final isUrgent = text.startsWith('!!');
     final color = isUrgent
         ? AppColors.pastelRedDeep
