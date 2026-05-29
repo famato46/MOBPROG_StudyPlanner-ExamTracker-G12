@@ -22,7 +22,9 @@ class ExamFormScreen extends StatefulWidget {
 class _ExamFormScreenState extends State<ExamFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  late final TextEditingController _titoloCtrl;
+  // Il titolo dell'esame è sempre il nome del corso:
+  // non ha senso avere un titolo separato perché l'esame
+  // è identificato dal corso + tipologia.
   late final TextEditingController _noteCtrl;
   late final TextEditingController _votoCtrl;
 
@@ -37,7 +39,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   static const List<(String, String)> _tipologie = [
     ('esame', 'Esame'),
     ('intercorso', 'Intercorso'),
-    ('orale', 'Orale'),
     ('consegna', 'Consegna'),
     ('progetto', 'Progetto'),
   ];
@@ -54,24 +55,17 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     ('annullato', 'Annullato'),
   ];
 
-  // ─── HELPER VOTO (supporto 30L) ────────────────────────────────
-  // Internamente memorizziamo il voto come int: 18..30 + 31 per la lode.
-  // In UI accettiamo sia "30L" sia "31" e mostriamo "30L" quando voto == 31.
   int? _parseVoto(String input) {
     final cleaned = input.trim().toLowerCase();
-    if (cleaned.isEmpty) return null;
-    if (cleaned == '30l' ||
-        cleaned == '30 l' ||
-        cleaned == '30 e lode' ||
-        cleaned == '30elode') {
-      return 31;
-    }
+    if (cleaned.isEmpty) { return null; }
+    if (cleaned == '30l' || cleaned == '30 l' ||
+        cleaned == '30 e lode' || cleaned == '30elode') { return 31; }
     return int.tryParse(cleaned);
   }
 
   String _formatVoto(int? voto) {
-    if (voto == null) return '';
-    if (voto >= 31) return '30L';
+    if (voto == null) { return ''; }
+    if (voto >= 31) { return '30L'; }
     return voto.toString();
   }
 
@@ -79,7 +73,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   void initState() {
     super.initState();
     final e = widget.exam;
-    _titoloCtrl = TextEditingController(text: e?.titolo ?? '');
     _noteCtrl = TextEditingController(text: e?.note ?? '');
     _votoCtrl = TextEditingController(text: _formatVoto(e?.voto));
     _courseId = e?.courseId;
@@ -91,20 +84,84 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
   @override
   void dispose() {
-    _titoloCtrl.dispose();
     _noteCtrl.dispose();
     _votoCtrl.dispose();
     super.dispose();
   }
 
+  // Date picker iOS minimale: CalendarDatePicker inline dentro un
+  // bottom-sheet stile iOS, senza il popup Material standard.
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    DateTime tempDate = _data;
+    await showModalBottomSheet(
       context: context,
-      initialDate: _data,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 730)),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : AppColors.groupedSurface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Annulla',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue, fontSize: 16)),
+                        ),
+                        Text('Data esame',
+                            style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            )),
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _data = tempDate);
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('OK',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  CalendarDatePicker(
+                    initialDate: tempDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 730)),
+                    onDateChanged: (d) => setSheet(() => tempDate = d),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
-    if (picked != null) setState(() => _data = picked);
   }
 
   Future<void> _save() async {
@@ -118,6 +175,8 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     }
 
     final provider = context.read<PlannerProvider>();
+    // Il titolo è il nome del corso — non è un campo libero.
+    final nomeCorso = provider.getCourseById(_courseId!)?.nome ?? 'Esame';
 
     final votoFinale = _stato == 'completato' && _votoCtrl.text.isNotEmpty
         ? _parseVoto(_votoCtrl.text)
@@ -125,7 +184,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
     if (_isEditing) {
       final updated = widget.exam!.copyWith(
-        titolo: _titoloCtrl.text.trim(),
+        titolo: nomeCorso,
         courseId: _courseId!,
         data: _data,
         tipologia: _tipologia,
@@ -137,7 +196,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       await provider.updateExam(updated);
     } else {
       await provider.addExam(
-        titolo: _titoloCtrl.text.trim(),
+        titolo: nomeCorso,
         courseId: _courseId!,
         data: _data,
         tipologia: _tipologia,
@@ -153,9 +212,8 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
 
   String _tipologiaLabel(String t) =>
       _tipologie.firstWhere((e) => e.$1 == t, orElse: () => (t, t)).$2;
-  String _prioritaLabel(String p) => _prioritaOptions
-      .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
-      .$2;
+  String _prioritaLabel(String p) =>
+      _prioritaOptions.firstWhere((e) => e.$1 == p, orElse: () => (p, p)).$2;
   String _statoLabel(String s) =>
       _stati.firstWhere((e) => e.$1 == s, orElse: () => (s, s)).$2;
 
@@ -164,7 +222,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor =
         isDark ? const Color(0xFF000000) : AppColors.groupedBackground;
-
     final provider = context.watch<PlannerProvider>();
 
     return Scaffold(
@@ -211,24 +268,10 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         child: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            // ─── GRUPPO DATI PRINCIPALI ─────────────────────
+            // ─── GRUPPO CORSO, TIPOLOGIA, DATA ──────────────────
+            // Il titolo dell'esame è il nome del corso (automatico).
+            // La tipologia appare subito sotto il corso, come richiesto.
             const _GroupHeader(label: 'Esame'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-                _TextFieldRow(
-                  label: 'Titolo',
-                  controller: _titoloCtrl,
-                  hint: 'es. Analisi 1',
-                  required: true,
-                  isDark: isDark,
-                ),
-              ],
-            ),
-
-            // ─── GRUPPO CORSO E DATA ─────────────────────
-            const SizedBox(height: 24),
-            const _GroupHeader(label: 'Collegamento'),
             _SettingsGroup(
               isDark: isDark,
               children: [
@@ -240,6 +283,12 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                           'Seleziona...'),
                   valueColor: _courseId == null ? AppColors.danger : null,
                   onTap: () => _showCoursePicker(context, isDark, provider.courses),
+                  isDark: isDark,
+                ),
+                _PickerRow(
+                  label: 'Tipologia',
+                  value: _tipologiaLabel(_tipologia),
+                  onTap: () => _showTipologiaPicker(context, isDark),
                   isDark: isDark,
                 ),
                 _PickerRow(
@@ -257,12 +306,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
             _SettingsGroup(
               isDark: isDark,
               children: [
-                _PickerRow(
-                  label: 'Tipologia',
-                  value: _tipologiaLabel(_tipologia),
-                  onTap: () => _showTipologiaPicker(context, isDark),
-                  isDark: isDark,
-                ),
                 _PickerRow(
                   label: 'Priorità',
                   value: _prioritaLabel(_priorita),
@@ -326,10 +369,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // PICKER BOTTOM SHEETS (stile iOS Settings)
-  // ═══════════════════════════════════════════════════════════════
-
   void _showCoursePicker(
       BuildContext context, bool isDark, List<Course> courses) {
     if (courses.isEmpty) {
@@ -381,7 +420,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       onSelected: (v) {
         setState(() {
           _stato = v;
-          // Se l'utente cambia stato e non è completato, svuotiamo il voto.
           if (_stato != 'completato') _votoCtrl.clear();
         });
       },
@@ -500,7 +538,7 @@ class _GroupHeader extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SETTINGS GROUP (card grigio chiaro con righe + divider)
+// SETTINGS GROUP
 // ═══════════════════════════════════════════════════════════════
 class _SettingsGroup extends StatelessWidget {
   final List<Widget> children;
@@ -542,13 +580,12 @@ class _SettingsGroup extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TEXT FIELD ROW (label sx, input dx allineato a destra)
+// TEXT FIELD ROW
 // ═══════════════════════════════════════════════════════════════
 class _TextFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String? hint;
-  final bool required;
   final String? Function(String?)? validator;
   final bool isDark;
 
@@ -556,7 +593,6 @@ class _TextFieldRow extends StatelessWidget {
     required this.label,
     required this.controller,
     this.hint,
-    this.required = false,
     this.validator,
     required this.isDark,
   });
@@ -591,10 +627,7 @@ class _TextFieldRow extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textMuted,
-                ),
+                hintStyle: TextStyle(fontSize: 16, color: AppColors.textMuted),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 border: InputBorder.none,
@@ -608,12 +641,7 @@ class _TextFieldRow extends StatelessWidget {
                   height: 0.8,
                 ),
               ),
-              validator: validator ??
-                  (required
-                      ? (v) => (v == null || v.isEmpty)
-                          ? 'Campo obbligatorio'
-                          : null
-                      : null),
+              validator: validator,
             ),
           ),
         ],
@@ -623,7 +651,7 @@ class _TextFieldRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TEXT AREA ROW (per Note: label sopra, area multiline sotto)
+// TEXT AREA ROW
 // ═══════════════════════════════════════════════════════════════
 class _TextAreaRow extends StatelessWidget {
   final String label;
@@ -667,10 +695,7 @@ class _TextAreaRow extends StatelessWidget {
             ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(
-                fontSize: 15,
-                color: AppColors.textMuted,
-              ),
+              hintStyle: TextStyle(fontSize: 15, color: AppColors.textMuted),
               isDense: true,
               contentPadding: EdgeInsets.zero,
               border: InputBorder.none,
@@ -685,7 +710,7 @@ class _TextAreaRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PICKER ROW (label sx, valore + chevron dx, tap apre bottom sheet)
+// PICKER ROW
 // ═══════════════════════════════════════════════════════════════
 class _PickerRow extends StatelessWidget {
   final String label;
@@ -730,9 +755,7 @@ class _PickerRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     color: valueColor ??
-                        (isDark
-                            ? Colors.white60
-                            : AppColors.textSecondary),
+                        (isDark ? Colors.white60 : AppColors.textSecondary),
                     letterSpacing: -0.3,
                     fontWeight: valueColor != null
                         ? FontWeight.w600

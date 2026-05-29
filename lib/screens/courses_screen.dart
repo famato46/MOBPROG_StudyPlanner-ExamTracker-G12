@@ -14,7 +14,8 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen> {
+class _CoursesScreenState extends State<CoursesScreen>
+    with TickerProviderStateMixin {
   String _searchQuery = '';
   String _filterStato = 'tutti';
   String _filterSemestre = 'tutti_sem';
@@ -22,8 +23,38 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   final TextEditingController _searchController = TextEditingController();
 
+  // Le 6 voci dello stato-tab — lista statica usata sia dal TabController
+  // che dalle label del TabBar. Identico pattern di exams_screen.dart.
+  static const List<(String, String)> _statiTab = [
+    ('tutti', 'Tutti'),
+    ('da_iniziare', 'Da iniziare'),
+    ('in_corso', 'In corso'),
+    ('da_ripassare', 'Da ripassare'),
+    ('completato', 'Completato'),
+    ('superato', 'Superato'),
+  ];
+
+  late final TabController _statoTabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _statoTabController = TabController(
+      length: _statiTab.length,
+      vsync: this,
+    )..addListener(() {
+        // Aggiorna _filterStato quando l'utente cambia tab.
+        // indexIsChanging == true durante l'animazione: aspettiamo
+        // che sia finita per non chiamare setState più volte.
+        if (_statoTabController.indexIsChanging) return;
+        setState(() =>
+            _filterStato = _statiTab[_statoTabController.index].$1);
+      });
+  }
+
   @override
   void dispose() {
+    _statoTabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -60,8 +91,12 @@ class _CoursesScreenState extends State<CoursesScreen> {
         return 'Da iniziare';
       case 'in_corso':
         return 'In corso';
+      case 'da_ripassare':
+        return 'Da ripassare';
       case 'completato':
         return 'Completato';
+      case 'superato':
+        return 'Superato';
       default:
         return stato;
     }
@@ -105,26 +140,60 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
-                _StatoSegmentedTab(
-                  options: const [
-                    ('tutti', 'Tutti'),
-                    ('da_iniziare', 'Da iniziare'),
-                    ('in_corso', 'In corso'),
-                    ('completato', 'Completato'),
-                  ],
-                  current: _filterStato,
-                  onSelected: (v) => setState(() => _filterStato = v),
-                  isDark: isDark,
+                // TabBar nativo Flutter con isScrollable: true.
+                // Hardware-accelerated, fluido come exams_screen.dart.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: TabBar(
+                      controller: _statoTabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      indicator: BoxDecoration(
+                        color: AppColors.pastelRed,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      labelColor: Colors.white,
+                      unselectedLabelColor: isDark
+                          ? Colors.white70
+                          : AppColors.textSecondary,
+                      labelStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2),
+                      unselectedLabelStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2),
+                      splashFactory: NoSplash.splashFactory,
+                      overlayColor: WidgetStateProperty.all(
+                          Colors.transparent),
+                      tabs: _statiTab
+                          .map((s) => Tab(text: s.$2))
+                          .toList(),
+                    ),
+                  ),
                 ),
                 // GAP più ampio tra le due righe di filtri
                 const SizedBox(height: 12),
                 _FilterRow(
                   options: const [
-                    ('tutti_sem', 'Tutti i semestri'),
-                    ('Primo semestre 2024/25', '1° sem 24/25'),
-                    ('Secondo semestre 2024/25', '2° sem 24/25'),
-                    ('Primo semestre 2025/26', '1° sem 25/26'),
-                    ('Secondo semestre 2025/26', '2° sem 25/26'),
+                    ('tutti_sem', 'Tutti'),
+                    ('1° Semestre · Anno I', '1° Sem · Anno I'),
+                    ('2° Semestre · Anno I', '2° Sem · Anno I'),
+                    ('1° Semestre · Anno II', '1° Sem · Anno II'),
+                    ('2° Semestre · Anno II', '2° Sem · Anno II'),
+                    ('1° Semestre · Anno III', '1° Sem · Anno III'),
+                    ('2° Semestre · Anno III', '2° Sem · Anno III'),
                   ],
                   current: _filterSemestre,
                   onSelected: (v) => setState(() => _filterSemestre = v),
@@ -498,79 +567,6 @@ class _FilterPill extends StatelessWidget {
               color: fg,
               letterSpacing: -0.2,
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SEGMENTED TAB STATO (stile coerente con il TabBar di Esami)
-// Contenitore grigio arrotondato + pillola pastello sull'elemento
-// attivo. Scrollabile orizzontalmente perché gli stati sono 6 e non
-// entrerebbero in un segmented a larghezza fissa.
-// ═══════════════════════════════════════════════════════════════
-class _StatoSegmentedTab extends StatelessWidget {
-  final List<(String, String)> options;
-  final String current;
-  final ValueChanged<String> onSelected;
-  final bool isDark;
-
-  const _StatoSegmentedTab({
-    required this.options,
-    required this.current,
-    required this.onSelected,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.all(4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: options.map((opt) {
-              final selected = opt.$1 == current;
-              return GestureDetector(
-                onTap: () => onSelected(opt.$1),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color:
-                        selected ? AppColors.pastelRed : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    opt.$2,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w600,
-                      color: selected
-                          ? Colors.white
-                          : (isDark
-                              ? Colors.white70
-                              : AppColors.textSecondary),
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
           ),
         ),
       ),
