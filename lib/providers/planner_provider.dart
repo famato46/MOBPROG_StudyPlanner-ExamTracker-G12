@@ -173,6 +173,9 @@ class PlannerProvider extends ChangeNotifier {
 
   /// Calcola la media matematica semplice dei voti di tutti gli esami completati 
   /// e associati ad uno specifico corso. Ritorna null se non ci sono voti validi.
+  /// NOTA: La condizione `e.voto != null` assicura che qualsiasi esame
+  /// (comprese le 'consegne' o prove intercorso opzionali lasciate senza voto)
+  /// non venga conteggiato al denominatore per il calcolo della media parziale.
   double? getAverageExamsGrade(String courseId) {
     final completedExams = _exams.where((e) => 
         e.courseId == courseId && 

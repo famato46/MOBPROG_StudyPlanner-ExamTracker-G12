@@ -21,10 +21,10 @@ class ExamDetailScreen extends StatelessWidget {
 
   String _formatTipologia(String t) {
     switch (t) {
-      case 'esame':
-        return 'Esame';
+      case 'scritto': // <-- SOSTITUITO "esame" CON "scritto"
+        return 'Scritto';
       case 'orale':
-        return 'Orale'; // <-- NUOVA TIPOLOGIA
+        return 'Orale';
       case 'intercorso':
         return 'Intercorso';
       case 'consegna':

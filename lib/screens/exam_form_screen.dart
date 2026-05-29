@@ -7,10 +7,6 @@ import '../models/course.dart';
 import '../utils/app_colors.dart';
 
 /// ExamFormScreen — Form Apple-style.
-///
-/// Riscritto per essere coerente con CourseFormScreen e TaskFormScreen:
-/// layout iOS Settings con gruppi grigi arrotondati, righe label/valore,
-/// picker bottom-sheet per i campi non testuali.
 class ExamFormScreen extends StatefulWidget {
   final Exam? exam;
   const ExamFormScreen({super.key, this.exam});
@@ -22,23 +18,20 @@ class ExamFormScreen extends StatefulWidget {
 class _ExamFormScreenState extends State<ExamFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Il titolo dell'esame è sempre il nome del corso:
-  // non ha senso avere un titolo separato perché l'esame
-  // è identificato dal corso + tipologia.
   late final TextEditingController _noteCtrl;
   late final TextEditingController _votoCtrl;
 
   String? _courseId;
   DateTime _data = DateTime.now().add(const Duration(days: 7));
-  String _tipologia = 'esame';
+  String _tipologia = 'scritto';
   String _priorita = 'media';
   String _stato = 'programmato';
 
   bool get _isEditing => widget.exam != null;
 
   static const List<(String, String)> _tipologie = [
-    ('esame', 'Esame'),
-    ('orale', 'Orale'), // <-- NUOVA TIPOLOGIA AGGIUNTA QUI
+    ('scritto', 'Scritto'),
+    ('orale', 'Orale'),
     ('intercorso', 'Intercorso'),
     ('consegna', 'Consegna'),
     ('progetto', 'Progetto'),
@@ -78,7 +71,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     _votoCtrl = TextEditingController(text: _formatVoto(e?.voto));
     _courseId = e?.courseId;
     _data = e?.data ?? DateTime.now().add(const Duration(days: 7));
-    _tipologia = e?.tipologia ?? 'esame';
+    _tipologia = e?.tipologia ?? 'scritto';
     _priorita = e?.priorita ?? 'media';
     _stato = e?.stato ?? 'programmato';
   }
@@ -90,8 +83,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     super.dispose();
   }
 
-  // Date picker iOS minimale: CalendarDatePicker inline dentro un
-  // bottom-sheet stile iOS, senza il popup Material standard.
   Future<void> _pickDate() async {
     DateTime tempDate = _data;
     await showModalBottomSheet(
@@ -176,7 +167,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     }
 
     final provider = context.read<PlannerProvider>();
-    // Il titolo è il nome del corso — non è un campo libero.
     final nomeCorso = provider.getCourseById(_courseId!)?.nome ?? 'Esame';
 
     final votoFinale = _stato == 'completato' && _votoCtrl.text.isNotEmpty
@@ -192,6 +182,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         priorita: _priorita,
         stato: _stato,
         voto: votoFinale,
+        clearVoto: votoFinale == null, // <-- FIX 2: Forza l'azzeramento se votoFinale è null
         note: _noteCtrl.text.isEmpty ? '' : _noteCtrl.text.trim(),
       );
       await provider.updateExam(updated);
@@ -242,7 +233,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         ),
         leadingWidth: 88,
         title: Text(
-          _isEditing ? 'Modifica Esame' : 'Nuovo Esame',
+          _isEditing ? 'Modifica Prova' : 'Nuova Prova',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
@@ -269,9 +260,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         child: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            // ─── GRUPPO CORSO, TIPOLOGIA, DATA ──────────────────
-            // Il titolo dell'esame è il nome del corso (automatico).
-            // La tipologia appare subito sotto il corso, come richiesto.
             const _GroupHeader(label: 'Esame'),
             _SettingsGroup(
               isDark: isDark,
@@ -300,8 +288,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                 ),
               ],
             ),
-
-            // ─── GRUPPO CLASSIFICAZIONE ─────────────────────
             const SizedBox(height: 24),
             const _GroupHeader(label: 'Classificazione'),
             _SettingsGroup(
@@ -322,8 +308,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                 ),
               ],
             ),
-
-            // ─── VOTO (solo se completato) ─────────────────────
             if (_stato == 'completato') ...[
               const SizedBox(height: 24),
               const _GroupHeader(label: 'Risultato'),
@@ -333,12 +317,16 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                   _TextFieldRow(
                     label: 'Voto',
                     controller: _votoCtrl,
-                    hint: 'es. 28 o 30L',
+                    hint: _tipologia == 'consegna' ? 'es. 28 (opzionale)' : 'es. 28 o 30L',
                     isDark: isDark,
                     validator: (v) {
                       if (v == null || v.isEmpty) {
+                        if (_tipologia == 'consegna') {
+                          return null; 
+                        }
                         return 'Inserisci il voto';
                       }
+                      
                       final n = _parseVoto(v);
                       if (n == null || n < 18 || n > 31) {
                         return 'Tra 18 e 30 (o 30L)';
@@ -349,8 +337,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                 ],
               ),
             ],
-
-            // ─── NOTE ─────────────────────
             const SizedBox(height: 24),
             const _GroupHeader(label: 'Note'),
             _SettingsGroup(
@@ -396,7 +382,12 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       title: 'Tipologia',
       current: _tipologia,
       options: _tipologie,
-      onSelected: (v) => setState(() => _tipologia = v),
+      onSelected: (v) {
+        setState(() {
+          _tipologia = v;
+          _formKey.currentState?.validate();
+        });
+      },
     );
   }
 
@@ -514,9 +505,6 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// GROUP HEADER
-// ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;
   const _GroupHeader({required this.label});
@@ -538,9 +526,6 @@ class _GroupHeader extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SETTINGS GROUP
-// ═══════════════════════════════════════════════════════════════
 class _SettingsGroup extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -580,9 +565,6 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT FIELD ROW
-// ═══════════════════════════════════════════════════════════════
 class _TextFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -651,9 +633,6 @@ class _TextFieldRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT AREA ROW
-// ═══════════════════════════════════════════════════════════════
 class _TextAreaRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -710,9 +689,6 @@ class _TextAreaRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PICKER ROW
-// ═══════════════════════════════════════════════════════════════
 class _PickerRow extends StatelessWidget {
   final String label;
   final String value;

@@ -3,7 +3,7 @@ class Exam {
   final String titolo;
   final String courseId; // FK verso Course (obbligatorio)
   final DateTime data;
-  final String tipologia; // 'esame' | 'appello' | 'consegna' | 'progetto'
+  final String tipologia; // 'scritto' | 'orale' | 'intercorso' | 'consegna' | 'progetto'
   final String priorita; // 'alta' | 'media' | 'bassa'
   final String stato; // 'programmato' | 'completato' | 'annullato'
   final int? voto;
@@ -20,6 +20,15 @@ class Exam {
     this.voto,
     this.note,
   });
+
+  // Getter derivati (non salvati nel DB)
+  bool get isPassato => data.isBefore(DateTime.now());
+  bool get isCompletato => stato == 'completato';
+  bool get isImminente {
+    if (isCompletato || stato == 'annullato') return false;
+    final giorniRimasti = data.difference(DateTime.now()).inDays;
+    return giorniRimasti >= 0 && giorniRimasti <= 7;
+  }
 
   // Conversione da Map (dal database)
   factory Exam.fromMap(Map<String, dynamic> map) {
@@ -46,12 +55,12 @@ class Exam {
       'tipologia': tipologia,
       'priorita': priorita,
       'stato': stato,
-      'voto': voto,
+      'voto': voto, // Se voto è null, SQFlite scriverà correttamente NULL sovrascrivendo l'intero
       'note': note,
     };
   }
 
-  // Metodo copyWith
+  // Metodo copyWith aggiornato con clearVoto
   Exam copyWith({
     String? id,
     String? titolo,
@@ -61,6 +70,7 @@ class Exam {
     String? priorita,
     String? stato,
     int? voto,
+    bool clearVoto = false, // <-- FIX 1: Parametro per forzare il null
     String? note,
   }) {
     return Exam(
@@ -71,21 +81,9 @@ class Exam {
       tipologia: tipologia ?? this.tipologia,
       priorita: priorita ?? this.priorita,
       stato: stato ?? this.stato,
-      voto: voto ?? this.voto,
+      // <-- FIX 1: Applica esplicitamente null se richiesto
+      voto: clearVoto ? null : (voto ?? this.voto), 
       note: note ?? this.note,
     );
   }
-
-  // Helper per verificare se è completato
-  bool get isCompletato => stato == 'completato';
-  
-  // Helper per verificare se è imminente (entro 7 giorni)
-  bool get isImminente {
-    final oggi = DateTime.now();
-    final differenza = data.difference(oggi).inDays;
-    return differenza >= 0 && differenza <= 7;
-  }
-  
-  // Helper per verificare se è passato
-  bool get isPassato => data.isBefore(DateTime.now());
 }
