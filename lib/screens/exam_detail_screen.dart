@@ -19,9 +19,10 @@ class ExamDetailScreen extends StatelessWidget {
   final Exam exam;
   const ExamDetailScreen({super.key, required this.exam});
 
+  // FIX APLICATO: Aggiunto toLowerCase() e fallback generico come in course_detail
   String _formatTipologia(String t) {
-    switch (t) {
-      case 'scritto': // <-- SOSTITUITO "esame" CON "scritto"
+    switch (t.toLowerCase()) {
+      case 'scritto': 
         return 'Scritto';
       case 'orale':
         return 'Orale';
@@ -32,7 +33,8 @@ class ExamDetailScreen extends StatelessWidget {
       case 'progetto':
         return 'Progetto';
       default:
-        return t;
+        if (t.isEmpty) return t;
+        return t[0].toUpperCase() + t.substring(1).toLowerCase();
     }
   }
 

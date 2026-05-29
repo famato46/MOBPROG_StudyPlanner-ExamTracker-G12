@@ -38,18 +38,23 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
+  // FIX APLICATO: Gestione di tutte le tipologie e capitalizzazione robusta
   String _formatTipologia(String t) {
-    switch (t) {
-      case 'esame':
-        return 'Esame';
-      case 'appello':
-        return 'Appello';
+    switch (t.toLowerCase()) {
+      case 'scritto':
+        return 'Scritto';
+      case 'orale':
+        return 'Orale';
+      case 'intercorso':
+        return 'Intercorso';
       case 'consegna':
         return 'Consegna';
       case 'progetto':
         return 'Progetto';
       default:
-        return t;
+        // Fallback robusto per future aggiunte nel database
+        if (t.isEmpty) return t;
+        return t[0].toUpperCase() + t.substring(1).toLowerCase();
     }
   }
 
@@ -178,7 +183,7 @@ class CourseDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (exams.isEmpty)
-                _EmptyCard(text: 'Nessun esame collegato', isDark: isDark)
+                _EmptyCard(text: 'Nessuna prova collegata', isDark: isDark)
               else
                 _ItemsContainer(
                   isDark: isDark,
@@ -189,7 +194,7 @@ class CourseDetailScreen extends StatelessWidget {
                             data: e.data,
                             isCompletato: e.isCompletato,
                             isDark: isDark,
-                            // <-- FIX: Navigazione verso il dettaglio dell'esame
+                            // <-- Navigazione verso il dettaglio dell'esame
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -783,7 +788,7 @@ class _ExamRow extends StatelessWidget {
   final DateTime data;
   final bool isCompletato;
   final bool isDark;
-  final VoidCallback onTap; // <-- Aggiunto il callback
+  final VoidCallback onTap;
 
   const _ExamRow({
     required this.titolo,
@@ -799,7 +804,6 @@ class _ExamRow extends StatelessWidget {
     final dateStr =
         '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
 
-    // Aggiunto il Material + InkWell per far funzionare l'onTap con il feedback tattile
     return Material(
       color: Colors.transparent,
       child: InkWell(
