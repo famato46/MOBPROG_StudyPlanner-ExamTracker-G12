@@ -167,7 +167,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                   options: const [
                     ('tutti', 'Tutti'),
                     ('esame', 'Esami'),
-                    ('intercorso', 'Intercorsi'),
+                    ('intercorso', 'Intercorso'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
                   ],
