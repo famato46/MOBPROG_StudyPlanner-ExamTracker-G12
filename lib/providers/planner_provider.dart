@@ -145,22 +145,8 @@ class PlannerProvider extends ChangeNotifier {
     final index = _exams.indexWhere((e) => e.id == exam.id);
     if (index != -1) {
       _exams[index] = exam;
-
-      // FIX: rimosso il controllo != null su courseId (è già non-nullable)
-      // e rimosso il ! su exam.voto (già gestito dal controllo != null)
-      if (exam.stato == 'completato' && exam.voto != null) {
-        final corsoCorrispondente = getCourseById(exam.courseId);
-
-        if (corsoCorrispondente != null &&
-            corsoCorrispondente.stato != 'superato') {
-          final corsoAggiornato = corsoCorrispondente.copyWith(
-            stato: 'superato',
-            votoOttenuto: exam.voto, // FIX: tolto il .toInt() e il !
-          );
-          await updateCourse(corsoAggiornato);
-        }
-      }
-
+      // Il cambio di stato del corso (verbalizzazione) viene ora gestito 
+      // manualmente dall'utente per rispettare il pattern "Libretto vs Prove parziali".
       notifyListeners();
     }
   }
@@ -183,6 +169,20 @@ class PlannerProvider extends ChangeNotifier {
 
   List<Exam> getExamsByCourse(String courseId) {
     return _exams.where((e) => e.courseId == courseId).toList();
+  }
+
+  /// Calcola la media matematica semplice dei voti di tutti gli esami completati 
+  /// e associati ad uno specifico corso. Ritorna null se non ci sono voti validi.
+  double? getAverageExamsGrade(String courseId) {
+    final completedExams = _exams.where((e) => 
+        e.courseId == courseId && 
+        e.stato == 'completato' && 
+        e.voto != null).toList();
+
+    if (completedExams.isEmpty) return null;
+
+    final sum = completedExams.fold<int>(0, (total, current) => total + current.voto!);
+    return sum / completedExams.length;
   }
 
   // =============================================
@@ -366,9 +366,6 @@ class PlannerProvider extends ChangeNotifier {
   int get passedCourses => _courses.where((c) => c.isSuperato).length;
 
   int get totalExams => _exams.length;
-  // Confrontiamo solo anno/mese/giorno, non l'orario.
-  // Senza questo un esame "oggi" risulta già "isPassato" nel pomeriggio
-  // e scompare dal contatore home prima di fine giornata.
   int get upcomingExams {
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
@@ -386,9 +383,12 @@ class PlannerProvider extends ChangeNotifier {
   int get completedTasksCount => _tasks.where((t) => t.completata).length;
 
   int get totalCfu => _courses.fold(0, (sum, c) => sum + c.cfu);
+  
+  // Garantisce il prelievo ESCLUSIVO dai corsi superati nel Libretto
   int get earnedCfu =>
-      _courses.where((c) => c.isSuperato).fold(0, (sum, c) => sum + c.cfu);
+      _courses.where((c) => c.stato == 'superato').fold(0, (sum, c) => sum + c.cfu);
 
+  // Garantisce il calcolo ESCLUSIVO della media ponderata basata sul Libretto consolidato
   double get weightedAverage {
     final passedWithGrade = _courses
         .where((c) => c.stato == 'superato' && c.votoOttenuto != null);
@@ -431,9 +431,7 @@ class PlannerProvider extends ChangeNotifier {
 
     final esamiImminenti = _exams.where((e) {
       final course = getCourseById(e.courseId);
-      // FIX: rimosso il controllo == null ridondante,
-      // getCourseById restituisce già null se non trovato
-      if (course == null || course.isSuperato) return false;
+      if (course == null || course.stato == 'superato') return false;
       return e.data.isAfter(oggi) &&
           e.data.isBefore(scadenzaCritica) &&
           e.stato == 'programmato';

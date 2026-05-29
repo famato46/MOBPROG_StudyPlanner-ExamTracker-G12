@@ -32,14 +32,14 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
 
   bool get _isEditing => widget.courseToEdit != null;
 
-static const List<String> _semestri = [
-  '1° Semestre · Anno I',
-  '2° Semestre · Anno I',
-  '1° Semestre · Anno II',
-  '2° Semestre · Anno II',
-  '1° Semestre · Anno III',
-  '2° Semestre · Anno III',
-];
+  static const List<String> _semestri = [
+    '1° Semestre · Anno I',
+    '2° Semestre · Anno I',
+    '1° Semestre · Anno II',
+    '2° Semestre · Anno II',
+    '1° Semestre · Anno III',
+    '2° Semestre · Anno III',
+  ];
 
   static const List<(String, String)> _stati = [
     ('da_iniziare', 'Da iniziare'),
@@ -285,9 +285,6 @@ static const List<String> _semestri = [
                 _TextFieldRow(
                   label: 'Voto desiderato',
                   controller: _votoDesideratoCtrl,
-                  // FIX 30L: ora accettiamo anche "30L" (oltre a "31" che è
-                  // la rappresentazione interna). Il validator normalizza
-                  // entrambe le forme e accetta range 18-30 più la lode.
                   hint: '18-30 o 30L',
                   keyboardType: TextInputType.text,
                   validator: (v) {
@@ -402,7 +399,22 @@ static const List<String> _semestri = [
       title: 'Stato',
       options: _stati,
       current: _stato,
-      onSelected: (v) => setState(() => _stato = v),
+      onSelected: (v) {
+        setState(() {
+          _stato = v;
+          // Automazione Smart Pre-fill: se lo stato passa a 'superato' e il voto ottenuto è vuoto
+          if (_stato == 'superato' && 
+              _votoOttenutoCtrl.text.isEmpty && 
+              _isEditing && 
+              widget.courseToEdit != null) {
+            
+            final averageGrade = context.read<PlannerProvider>().getAverageExamsGrade(widget.courseToEdit!.id);
+            if (averageGrade != null) {
+              _votoOttenutoCtrl.text = _formatVoto(averageGrade.round());
+            }
+          }
+        });
+      },
     );
   }
 }
