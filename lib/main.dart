@@ -40,6 +40,11 @@ class StudyPlannerApp extends StatelessWidget {
               ),
               useMaterial3: true,
               scaffoldBackgroundColor: AppColors.background,
+              // NoSplash globale: elimina l'onda grigia stile Android
+              // su TUTTI i widget tap-able (bottom bar, pulsanti, liste, ecc.)
+              splashFactory: NoSplash.splashFactory,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,
@@ -65,6 +70,10 @@ class StudyPlannerApp extends StatelessWidget {
               ),
               useMaterial3: true,
               scaffoldBackgroundColor: const Color(0xFF121212),
+              // Stessa cosa per il dark theme
+              splashFactory: NoSplash.splashFactory,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
               appBarTheme: const AppBarTheme(
                 centerTitle: true,
                 elevation: 0,

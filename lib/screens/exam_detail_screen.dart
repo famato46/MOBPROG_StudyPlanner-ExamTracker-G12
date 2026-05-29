@@ -23,8 +23,8 @@ class ExamDetailScreen extends StatelessWidget {
     switch (t) {
       case 'esame':
         return 'Esame';
-      case 'appello':
-        return 'Appello';
+      case 'intercorso':
+        return 'Intercorso';
       case 'consegna':
         return 'Consegna';
       case 'progetto':

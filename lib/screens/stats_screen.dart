@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/planner_provider.dart';
-import '../providers/theme_provider.dart';
 import '../utils/app_colors.dart';
 
 class StatsScreen extends StatefulWidget {
@@ -12,13 +11,28 @@ class StatsScreen extends StatefulWidget {
   State<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
-  // 0 = Riepilogo, 1 = Grafici, 2 = Simulatore
-  int _currentSegment = 0;
+class _StatsScreenState extends State<StatsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
   // Ephemeral state simulatore
   double _votoIpotetico = 24;
   int _cfuIpotetici = 6;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted && !_tabController.indexIsChanging) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   // ─── Helper ore settimana ──────────────────────────────────────
   int _orePianificateSettimana(PlannerProvider provider) {
@@ -372,7 +386,7 @@ class _StatsScreenState extends State<StatsScreen> {
               const SizedBox(height: 10),
               Text(
                 votoSim >= 110
-                    ? '110 / 110${isLode ? ' L' : ''} 🎓'
+                    ? '110 / 110${isLode ? ' L' : ''}'
                     : '${votoSim.toStringAsFixed(1)} / 110',
                 style: const TextStyle(
                     fontSize: 42,
@@ -454,7 +468,7 @@ class _StatsScreenState extends State<StatsScreen> {
     }
 
     if (minutiPerCorso.isEmpty) {
-      return _EmptyCard(text: 'Nessuna sessione registrata. 📚');
+      return _EmptyCard(text: 'Nessuna sessione registrata.');
     }
 
     final entries = minutiPerCorso.entries.toList();
@@ -650,7 +664,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     style: TextStyle(
                         fontSize: 13, fontWeight: FontWeight.w500)),
                 Text(
-                  diff >= 0 ? '+$diff min 🐢' : '$diff min ⚡',
+                  diff >= 0 ? '+$diff min (in ritardo)' : '$diff min (in anticipo)',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: diff > 0
@@ -731,7 +745,7 @@ class _StatsScreenState extends State<StatsScreen> {
       ..sort((a, b) => a.data.compareTo(b.data));
 
     if (imminenti.isEmpty) {
-      return _EmptyCard(text: 'Nessuna scadenza nei prossimi 7 giorni. 🎉');
+      return _EmptyCard(text: 'Nessuna scadenza nei prossimi 7 giorni.');
     }
 
     return Column(
@@ -740,7 +754,7 @@ class _StatsScreenState extends State<StatsScreen> {
         final d = DateTime(e.data.year, e.data.month, e.data.day);
         final giorni = d.difference(oggiDate).inDays;
         final testo = giorni == 0
-            ? 'Oggi! 🚨'
+            ? 'Oggi!'
             : giorni == 1
                 ? 'Domani'
                 : 'In $giorni gg';
@@ -798,75 +812,58 @@ class _StatsScreenState extends State<StatsScreen> {
         child: Consumer<PlannerProvider>(
           builder: (context, provider, _) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Header ──
+                // ── Header — allineato a sinistra come le altre schermate ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 16, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Statistiche',
-                              style: TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -1.2,
-                                height: 1.05,
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Il tuo andamento accademico',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: isDark
-                                    ? Colors.white70
-                                    : AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Statistiche',
+                          style: TextStyle(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.2,
+                            height: 1.05,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      Consumer<ThemeProvider>(
-                        builder: (context, themeProvider, _) =>
-                            IconButton(
-                          icon: Icon(
-                            themeProvider.isDarkMode
-                                ? Icons.light_mode_rounded
-                                : Icons.dark_mode_rounded,
-                            color: themeProvider.isDarkMode
-                                ? Colors.amber
+                        const SizedBox(height: 4),
+                        Text(
+                          'Il tuo andamento accademico',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: isDark
+                                ? Colors.white70
                                 : AppColors.textSecondary,
                           ),
-                          onPressed: () => themeProvider.toggleTheme(),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 // ── Segmented control ──
-                _SegmentedControl(
-                  current: _currentSegment,
-                  onChanged: (i) => setState(() => _currentSegment = i),
+                // Tab bar con icone + testo, animazione nativa fluida
+                _StatsTabBar(
+                  controller: _tabController,
                   isDark: isDark,
                 ),
                 const SizedBox(height: 8),
 
-                // ── Contenuto tab ──
                 Expanded(
                   child: provider.isLoading
                       ? const Center(child: CircularProgressIndicator())
-                      : IndexedStack(
-                          index: _currentSegment,
+                      : TabBarView(
+                          controller: _tabController,
+                          physics: const NeverScrollableScrollPhysics(),
                           children: [
                             _buildTabRiepilogo(provider, isDark),
                             _buildTabGrafici(provider, isDark),
@@ -884,28 +881,24 @@ class _StatsScreenState extends State<StatsScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SEGMENTED CONTROL
+// STATS TAB BAR — TabBar nativo con icona sopra e testo sotto,
+// identico al planning screen. Animazione fluida con sliding
+// indicator giallo pastel.
 // ═══════════════════════════════════════════════════════════════
-class _SegmentedControl extends StatelessWidget {
-  final int current;
-  final ValueChanged<int> onChanged;
+class _StatsTabBar extends StatelessWidget {
+  final TabController controller;
   final bool isDark;
 
-  const _SegmentedControl({
-    required this.current,
-    required this.onChanged,
+  const _StatsTabBar({
+    required this.controller,
     required this.isDark,
   });
 
-  static const _labels = ['Riepilogo', 'Grafici', 'Simulatore'];
-  static const _icons = [
-    Icons.grid_view_rounded,
-    Icons.bar_chart_rounded,
-    Icons.school_rounded,
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final textUnsel =
+        isDark ? Colors.white70 : AppColors.textSecondary;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -916,54 +909,72 @@ class _SegmentedControl extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
-        child: Row(
-          children: List.generate(3, (i) {
-            final selected = i == current;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(i),
-                behavior: HitTestBehavior.opaque,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.statsDeep
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(_icons[i],
-                          size: 18,
-                          color: selected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white70
-                                  : AppColors.textSecondary)),
-                      const SizedBox(height: 2),
-                      Text(
-                        _labels[i],
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: selected
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          color: selected
-                              ? Colors.white
-                              : (isDark
-                                  ? Colors.white70
-                                  : AppColors.textSecondary),
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
+        child: TabBar(
+          controller: controller,
+          indicator: BoxDecoration(
+            color: AppColors.pastelYellow,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          // Colore testo/icona: scuro su sfondo giallo chiaro.
+          labelColor: AppColors.statsDeep,
+          unselectedLabelColor: textUnsel,
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: [
+            _IconTab(
+              icon: Icons.grid_view_rounded,
+              label: 'Riepilogo',
+              isDark: isDark,
+            ),
+            _IconTab(
+              icon: Icons.bar_chart_rounded,
+              label: 'Grafici',
+              isDark: isDark,
+            ),
+            _IconTab(
+              icon: Icons.school_rounded,
+              label: 'Voto di Laurea',
+              isDark: isDark,
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// Tab con icona sopra e testo sotto — riutilizzato da Stats e Planning.
+class _IconTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isDark;
+
+  const _IconTab({
+    required this.icon,
+    required this.label,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Il colore arriva dal labelColor/unselectedLabelColor del TabBar.
+    return Tab(
+      height: 48,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 11, letterSpacing: -0.2),
+            ),
+          ),
+        ],
       ),
     );
   }

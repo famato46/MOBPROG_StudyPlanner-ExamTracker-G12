@@ -13,7 +13,7 @@ import 'exam_detail_screen.dart';
 /// Differenze rispetto a CoursesScreen:
 ///  - Tab orizzontale (Programmati / Completati / Annullati) sopra
 ///    i filtri per separare gli stati temporali richiesti dalla traccia.
-///  - Filtri pill per tipologia (esame/appello/consegna/progetto).
+///  - Filtri pill per tipologia (esame/intercorso/consegna/progetto).
 ///  - FAB pastel blu invece di pastel rosso.
 class ExamsScreen extends StatefulWidget {
   const ExamsScreen({super.key});
@@ -167,7 +167,7 @@ class _ExamsScreenState extends State<ExamsScreen>
                   options: const [
                     ('tutti', 'Tutti'),
                     ('esame', 'Esami'),
-                    ('appello', 'Appelli'),
+                    ('intercorso', 'Intercorsi'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
                   ],
@@ -712,7 +712,7 @@ class _ExamCard extends StatelessWidget {
     switch (tipologia.toLowerCase()) {
       case 'esame':
         return Icons.school_rounded;
-      case 'appello':
+      case 'intercorso':
         return Icons.rate_review_rounded;
       case 'consegna':
         return Icons.alarm_rounded;

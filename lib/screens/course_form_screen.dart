@@ -27,18 +27,18 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   late final TextEditingController _votoDesideratoCtrl;
   late final TextEditingController _votoOttenutoCtrl;
 
-  String _semestre = 'Primo semestre 2024/25';
+  String _semestre = 'I Semestre · Anno I';
   String _stato = 'da_iniziare';
 
   bool get _isEditing => widget.courseToEdit != null;
 
 static const List<String> _semestri = [
-  'Primo semestre 2024/25',
-  'Secondo semestre 2024/25',
-  'Primo semestre 2025/26',
-  'Secondo semestre 2025/26',
-  'Primo semestre 2026/27',
-  'Secondo semestre 2026/27',
+  'I Semestre · Anno I',
+  'II Semestre · Anno I',
+  'I Semestre · Anno II',
+  'II Semestre · Anno II',
+  'I Semestre · Anno III',
+  'II Semestre · Anno III',
 ];
 
   static const List<(String, String)> _stati = [
@@ -63,7 +63,7 @@ static const List<String> _semestri = [
         text: _formatVoto(c?.votoDesiderato));
     _votoOttenutoCtrl = TextEditingController(
         text: _formatVoto(c?.votoOttenuto));
-    _semestre = c?.semestre ?? 'Primo semestre 2024/25';
+    _semestre = c?.semestre ?? 'I Semestre · Anno I';
     _stato = c?.stato ?? 'da_iniziare';
   }
 

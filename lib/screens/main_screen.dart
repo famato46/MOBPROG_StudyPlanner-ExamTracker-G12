@@ -50,74 +50,42 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1C1C1E)
-              : AppColors.surface,
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : AppColors.border,
-              width: 0.5,
-            ),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            // Stile Apple: blu iOS standard quando selezionato
-            selectedItemColor: AppColors.iosBlue,
-            unselectedItemColor: isDark
-                ? Colors.grey[500]
-                : AppColors.textMuted,
-            selectedLabelStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.1,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -0.1,
-            ),
-            iconSize: 24,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home_rounded),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.book_outlined),
-                activeIcon: Icon(Icons.book_rounded),
-                label: 'Corsi',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_today_outlined),
-                activeIcon: Icon(Icons.calendar_today_rounded),
-                label: 'Esami',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.event_note_outlined),
-                activeIcon: Icon(Icons.event_note_rounded),
-                label: 'Pianifica',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart_outlined),
-                activeIcon: Icon(Icons.bar_chart_rounded),
-                label: 'Stats',
-              ),
-            ],
-          ),
-        ),
+      // NavigationBar (Material 3) — nessun ripple grigio Android,
+      // nessuna transizione aggiunta.
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _currentIndex = index),
+        backgroundColor: isDark
+            ? const Color(0xFF1C1C1E)
+            : AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        elevation: 0,
+        indicatorColor: Colors.transparent,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        animationDuration: Duration.zero,
+        destinations: [
+          _dest(Icons.home_outlined, Icons.home_rounded, 'Home'),
+          _dest(Icons.book_outlined, Icons.book_rounded, 'Corsi'),
+          _dest(Icons.calendar_today_outlined,
+              Icons.calendar_today_rounded, 'Esami'),
+          _dest(Icons.event_note_outlined,
+              Icons.event_note_rounded, 'Pianifica'),
+          _dest(Icons.bar_chart_outlined,
+              Icons.bar_chart_rounded, 'Stats'),
+        ],
       ),
+    );
+  }
+
+  NavigationDestination _dest(
+      IconData outline, IconData filled, String label) {
+    return NavigationDestination(
+      icon: Icon(outline),
+      selectedIcon: Icon(filled, color: AppColors.iosBlue),
+      label: label,
     );
   }
 }

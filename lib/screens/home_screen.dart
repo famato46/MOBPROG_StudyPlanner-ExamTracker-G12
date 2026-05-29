@@ -31,9 +31,11 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          // Non mostriamo nessuna rotella di caricamento: il provider
+          // inizia con liste vuote (non null), quindi la home può
+          // renderizzare immediatamente con contatori a 0.
+          // Il caricamento in background aggiorna i widget tramite
+          // notifyListeners() senza flash di loading intermedi.
 
           // ── Calcolo dati dinamici per il prossimo esame ────────
           final prossimoEsame = _findProssimoEsame(provider);
