@@ -60,7 +60,6 @@ class _PlanningScreenState extends State<PlanningScreen> {
       ValueNotifier(_pomodoroSeconds);
 
   // Alias per compatibilità con il resto del codice.
-  int get _secondsRemaining => _secondsNotifier.value;
 
   FocusType _focusType = FocusType.pomodoro;
   Timer? _focusTimer;
@@ -1234,61 +1233,6 @@ class _MiniSegment extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // PILL BUTTON ("Data")
 // ═══════════════════════════════════════════════════════════════
-class _PillButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _PillButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : AppColors.border,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: AppColors.planningDeep),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════
 // FILTER SECTION (espandibile)
 // ═══════════════════════════════════════════════════════════════
@@ -1589,68 +1533,6 @@ class _FilterPickerRow extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 // SECTION TITLE con azione "+ ..." (per "Le mie attività")
 // ═══════════════════════════════════════════════════════════════
-class _SectionTitleWithAction extends StatelessWidget {
-  final String title;
-  final String actionLabel;
-  final VoidCallback onAction;
-  final bool isDark;
-
-  const _SectionTitleWithAction({
-    required this.title,
-    required this.actionLabel,
-    required this.onAction,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-            ),
-          ),
-          const Spacer(),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: onAction,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_rounded,
-                        size: 18, color: AppColors.planningDeep),
-                    const SizedBox(width: 2),
-                    Text(
-                      actionLabel,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.planningDeep,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ═══════════════════════════════════════════════════════════════
 // SECTION LABEL
 // ═══════════════════════════════════════════════════════════════

@@ -723,6 +723,16 @@ class _ExamCard extends StatelessWidget {
     }
   }
 
+  String _formatTipologia(String tipologia) {
+    switch (tipologia.toLowerCase()) {
+      case 'esame':      return 'Esame';
+      case 'intercorso': return 'Intercorso';
+      case 'consegna':   return 'Consegna';
+      case 'progetto':   return 'Progetto';
+      default:           return tipologia;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryColor =
@@ -783,7 +793,7 @@ class _ExamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        exam.titolo,
+                        _formatTipologia(exam.tipologia),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,

@@ -55,7 +55,14 @@ class Course {
     };
   }
 
-  // Metodo copyWith per modifiche immutabili
+  // Metodo copyWith per modifiche immutabili.
+  // Per i campi nullable usiamo un sentinel Object() come default
+  // così distinguiamo "parametro omesso" (mantieni il valore attuale)
+  // da "passato null" (azzera il campo). Senza questo, quando si
+  // cambia stato da 'superato' ad altro e si salva con votoOttenuto:null,
+  // il ?? mantiene il voto precedente invece di azzerarlo.
+  static const _unset = Object();
+
   Course copyWith({
     String? id,
     String? nome,
@@ -63,10 +70,10 @@ class Course {
     int? cfu,
     String? semestre,
     String? stato,
-    int? votoOttenuto,
-    int? votoDesiderato,
-    String? note,
-    String? materialeAssociato,
+    Object? votoOttenuto = _unset,
+    Object? votoDesiderato = _unset,
+    Object? note = _unset,
+    Object? materialeAssociato = _unset,
   }) {
     return Course(
       id: id ?? this.id,
@@ -75,10 +82,16 @@ class Course {
       cfu: cfu ?? this.cfu,
       semestre: semestre ?? this.semestre,
       stato: stato ?? this.stato,
-      votoOttenuto: votoOttenuto ?? this.votoOttenuto,
-      votoDesiderato: votoDesiderato ?? this.votoDesiderato,
-      note: note ?? this.note,
-      materialeAssociato: materialeAssociato ?? this.materialeAssociato,
+      votoOttenuto: identical(votoOttenuto, _unset)
+          ? this.votoOttenuto
+          : votoOttenuto as int?,
+      votoDesiderato: identical(votoDesiderato, _unset)
+          ? this.votoDesiderato
+          : votoDesiderato as int?,
+      note: identical(note, _unset) ? this.note : note as String?,
+      materialeAssociato: identical(materialeAssociato, _unset)
+          ? this.materialeAssociato
+          : materialeAssociato as String?,
     );
   }
 

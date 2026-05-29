@@ -366,8 +366,19 @@ class PlannerProvider extends ChangeNotifier {
   int get passedCourses => _courses.where((c) => c.isSuperato).length;
 
   int get totalExams => _exams.length;
-  int get upcomingExams =>
-      _exams.where((e) => !e.isPassato && e.stato == 'programmato').length;
+  // Confrontiamo solo anno/mese/giorno, non l'orario.
+  // Senza questo un esame "oggi" risulta già "isPassato" nel pomeriggio
+  // e scompare dal contatore home prima di fine giornata.
+  int get upcomingExams {
+    final oggi = DateTime.now();
+    final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
+    return _exams
+        .where((e) =>
+            e.stato == 'programmato' &&
+            !DateTime(e.data.year, e.data.month, e.data.day)
+                .isBefore(oggiDate))
+        .length;
+  }
   int get completedExams => _exams.where((e) => e.isCompletato).length;
 
   int get totalTasks => _tasks.length;
