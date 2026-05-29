@@ -8,17 +8,6 @@ import '../models/exam.dart';
 import '../utils/app_colors.dart';
 
 /// TaskFormScreen — Form per creare/modificare un'Attività.
-///
-/// Stile iOS Settings coerente con course_form_screen:
-///  - sfondo grouped grigio chiaro
-///  - gruppi arrotondati con righe label/valore
-///  - picker bottom-sheet per i campi non testuali
-///
-/// Il form supporta:
-///  - modalità inserimento (taskToEdit == null)
-///  - modalità modifica (taskToEdit != null)
-///  - pre-selezione corso (defaultCourseId) quando aperto da
-///    course_detail_screen, così il corso è già impostato.
 class TaskFormScreen extends StatefulWidget {
   final Task? taskToEdit;
   final String? defaultCourseId;
@@ -130,15 +119,85 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
       .$2;
 
+  // AGGIORNATO AL MODELLO MASTER CON TEMA VERDE PASTELLO
   Future<void> _pickScadenza() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
+    DateTime tempDate = _scadenza ?? DateTime.now().add(const Duration(days: 3));
+    await showModalBottomSheet(
       context: context,
-      initialDate: _scadenza ?? now.add(const Duration(days: 3)),
-      firstDate: now.subtract(const Duration(days: 30)),
-      lastDate: now.add(const Duration(days: 730)),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : AppColors.groupedSurface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Annulla',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue, fontSize: 16)),
+                        ),
+                        Text('Data scadenza',
+                            style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            )),
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _scadenza = tempDate);
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('OK',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                        primary: AppColors.pastelGreen, // VERDE PASTELLO
+                      ),
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: tempDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 730)),
+                      onDateChanged: (d) => setSheet(() => tempDate = d),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
-    if (picked != null) setState(() => _scadenza = picked);
   }
 
   @override
@@ -374,7 +433,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   void _showExamPicker(
       BuildContext context, bool isDark, List<Exam> exams) {
-    // Se è selezionato un corso, filtriamo gli esami per quel corso.
     final filteredExams = _courseId == null
         ? exams
         : exams.where((e) => e.courseId == _courseId).toList();
@@ -404,7 +462,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// IOS-STYLE BOTTOM SHEET PICKER (uguale a course_form_screen)
+// IOS-STYLE BOTTOM SHEET PICKER 
 // ═══════════════════════════════════════════════════════════════
 void _showIosPicker<T>({
   required BuildContext context,
@@ -480,9 +538,7 @@ void _showIosPicker<T>({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COMPONENTI UI iOS-Settings — copia minimale da course_form_screen
-// (li ridichiariamo qui per non creare dipendenze incrociate tra
-// schermate e mantenere ogni form autocontenuto)
+// COMPONENTI UI iOS-Settings
 // ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;

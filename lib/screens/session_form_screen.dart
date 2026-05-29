@@ -7,8 +7,7 @@ import '../models/course.dart';
 import '../utils/app_colors.dart';
 
 /// SessionFormScreen — Form a tutto schermo per creare/modificare una
-/// sessione di studio (StudySession). Stile iOS Settings coerente con
-/// CourseFormScreen / ExamFormScreen / TaskFormScreen.
+/// sessione di studio (StudySession).
 class SessionFormScreen extends StatefulWidget {
   final StudySession? sessione; // null = creazione
   final DateTime? dataIniziale; // pre-compila la data se passata
@@ -58,14 +57,85 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     super.dispose();
   }
 
+  // AGGIORNATO AL MODELLO MASTER CON TEMA VERDE PASTELLO
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
+    DateTime tempDate = _data;
+    await showModalBottomSheet(
       context: context,
-      initialDate: _data,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 730)),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1C1C1E) : AppColors.groupedSurface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 36, height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.textMuted.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('Annulla',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue, fontSize: 16)),
+                        ),
+                        Text('Data sessione',
+                            style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            )),
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _data = tempDate);
+                            Navigator.pop(ctx);
+                          },
+                          child: Text('OK',
+                              style: TextStyle(
+                                  color: AppColors.iosBlue,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                        primary: AppColors.pastelGreen, // VERDE PASTELLO
+                      ),
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: tempDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 730)),
+                      onDateChanged: (d) => setSheet(() => tempDate = d),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
-    if (picked != null) setState(() => _data = picked);
   }
 
   Future<void> _save() async {
@@ -332,7 +402,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// WIDGET CONDIVISI (stessa estetica di exam_form_screen)
+// WIDGET CONDIVISI 
 // ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;

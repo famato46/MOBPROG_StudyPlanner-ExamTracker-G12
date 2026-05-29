@@ -83,6 +83,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     super.dispose();
   }
 
+  // RIPRISTINATO IL MODELLO MASTER CON TEMA BLU PASTELLO
   Future<void> _pickDate() async {
     DateTime tempDate = _data;
     await showModalBottomSheet(
@@ -140,11 +141,18 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                       ],
                     ),
                   ),
-                  CalendarDatePicker(
-                    initialDate: tempDate,
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                    lastDate: DateTime.now().add(const Duration(days: 730)),
-                    onDateChanged: (d) => setSheet(() => tempDate = d),
+                  Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: Theme.of(ctx).colorScheme.copyWith(
+                        primary: AppColors.pastelBlue, // BLU PASTELLO
+                      ),
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: tempDate,
+                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                      lastDate: DateTime.now().add(const Duration(days: 730)),
+                      onDateChanged: (d) => setSheet(() => tempDate = d),
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -182,7 +190,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
         priorita: _priorita,
         stato: _stato,
         voto: votoFinale,
-        clearVoto: votoFinale == null, // <-- FIX 2: Forza l'azzeramento se votoFinale è null
+        clearVoto: votoFinale == null,
         note: _noteCtrl.text.isEmpty ? '' : _noteCtrl.text.trim(),
       );
       await provider.updateExam(updated);
