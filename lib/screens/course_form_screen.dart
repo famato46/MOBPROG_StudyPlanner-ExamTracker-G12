@@ -27,18 +27,18 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   late final TextEditingController _votoDesideratoCtrl;
   late final TextEditingController _votoOttenutoCtrl;
 
-  String _semestre = 'Primo semestre 2024/25';
+  String _semestre = '1° Semestre · Anno I';
   String _stato = 'da_iniziare';
 
   bool get _isEditing => widget.courseToEdit != null;
 
 static const List<String> _semestri = [
-  'Primo semestre 2024/25',
-  'Secondo semestre 2024/25',
-  'Primo semestre 2025/26',
-  'Secondo semestre 2025/26',
-  'Primo semestre 2026/27',
-  'Secondo semestre 2026/27',
+  '1° Semestre · Anno I',
+  '2° Semestre · Anno I',
+  '1° Semestre · Anno II',
+  '2° Semestre · Anno II',
+  '1° Semestre · Anno III',
+  '2° Semestre · Anno III',
 ];
 
   static const List<(String, String)> _stati = [
@@ -63,7 +63,7 @@ static const List<String> _semestri = [
         text: _formatVoto(c?.votoDesiderato));
     _votoOttenutoCtrl = TextEditingController(
         text: _formatVoto(c?.votoOttenuto));
-    _semestre = c?.semestre ?? 'Primo semestre 2024/25';
+    _semestre = c?.semestre ?? '1° Semestre · Anno I';
     _stato = c?.stato ?? 'da_iniziare';
   }
 
@@ -239,15 +239,14 @@ static const List<String> _semestri = [
                 _TextFieldRow(
                   label: 'CFU',
                   controller: _cfuCtrl,
-                  hint: '1-30',
+                  hint: '9',
                   keyboardType: TextInputType.number,
                   required: true,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Campo obbligatorio';
-                    final n = int.tryParse(v);
-                    if (n == null) return 'Numero non valido';
-                    if (n < 1) return 'I CFU devono essere almeno 1';
-                    if (n > 30) return 'I CFU non possono superare 30';
+                    if (v == null || v.isEmpty) {
+                      return 'Campo obbligatorio';
+                    }
+                    if (int.tryParse(v) == null) return 'Numero non valido';
                     return null;
                   },
                   isDark: isDark,

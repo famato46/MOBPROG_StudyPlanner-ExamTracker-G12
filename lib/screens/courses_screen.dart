@@ -14,43 +14,16 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen>
-    with SingleTickerProviderStateMixin {
+class _CoursesScreenState extends State<CoursesScreen> {
   String _searchQuery = '';
   String _filterStato = 'tutti';
   String _filterSemestre = 'tutti_sem';
   String _sortBy = 'nome';
 
-  // Gli stati possibili — indice 0 = "tutti"
-  static const _statoValues = [
-    'tutti',
-    'da_iniziare',
-    'in_corso',
-    'da_ripassare',
-    'completato',
-    'superato',
-  ];
-
-  // TabController per il filtro stato: animazione fluida identica a Esami.
-  late final TabController _statoTabController;
-
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    _statoTabController =
-        TabController(length: _statoValues.length, vsync: this);
-    _statoTabController.addListener(() {
-      if (mounted && !_statoTabController.indexIsChanging) {
-        setState(() => _filterStato = _statoValues[_statoTabController.index]);
-      }
-    });
-  }
-
-  @override
   void dispose() {
-    _statoTabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -136,19 +109,30 @@ class _CoursesScreenState extends State<CoursesScreen>
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
-                _CoursesStatoTabBar(
-                  controller: _statoTabController,
+                _StatoSegmentedTab(
+                  options: const [
+                    ('tutti', 'Tutti'),
+                    ('da_iniziare', 'Da iniziare'),
+                    ('in_corso', 'In corso'),
+                    ('da_ripassare', 'Da ripassare'),
+                    ('completato', 'Completato'),
+                    ('superato', 'Superato'),
+                  ],
+                  current: _filterStato,
+                  onSelected: (v) => setState(() => _filterStato = v),
                   isDark: isDark,
                 ),
                 // GAP più ampio tra le due righe di filtri
                 const SizedBox(height: 12),
                 _FilterRow(
                   options: const [
-                    ('tutti_sem', 'Tutti i semestri'),
-                    ('Primo semestre 2024/25', '1° sem 24/25'),
-                    ('Secondo semestre 2024/25', '2° sem 24/25'),
-                    ('Primo semestre 2025/26', '1° sem 25/26'),
-                    ('Secondo semestre 2025/26', '2° sem 25/26'),
+                    ('tutti_sem', 'Tutti'),
+                    ('1° Semestre · Anno I', '1° Sem · Anno I'),
+                    ('2° Semestre · Anno I', '2° Sem · Anno I'),
+                    ('1° Semestre · Anno II', '1° Sem · Anno II'),
+                    ('2° Semestre · Anno II', '2° Sem · Anno II'),
+                    ('1° Semestre · Anno III', '1° Sem · Anno III'),
+                    ('2° Semestre · Anno III', '2° Sem · Anno III'),
                   ],
                   current: _filterSemestre,
                   onSelected: (v) => setState(() => _filterSemestre = v),
@@ -530,18 +514,21 @@ class _FilterPill extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// COURSES STATO TAB BAR — TabBar nativo scorrevole
-// Identico al pattern di ExamsScreen e PlanningScreen.
-// Il TabBar è standalone (non ha un TabBarView associato):
-// il cambio di tab aggiorna _filterStato via listener, e la lista
-// viene ricalcolata da _filteredCourses().
+// SEGMENTED TAB STATO (stile coerente con il TabBar di Esami)
+// Contenitore grigio arrotondato + pillola pastello sull'elemento
+// attivo. Scrollabile orizzontalmente perché gli stati sono 6 e non
+// entrerebbero in un segmented a larghezza fissa.
 // ═══════════════════════════════════════════════════════════════
-class _CoursesStatoTabBar extends StatelessWidget {
-  final TabController controller;
+class _StatoSegmentedTab extends StatelessWidget {
+  final List<(String, String)> options;
+  final String current;
+  final ValueChanged<String> onSelected;
   final bool isDark;
 
-  const _CoursesStatoTabBar({
-    required this.controller,
+  const _StatoSegmentedTab({
+    required this.options,
+    required this.current,
+    required this.onSelected,
     required this.isDark,
   });
 
@@ -557,38 +544,42 @@ class _CoursesStatoTabBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
-        child: TabBar(
-          controller: controller,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          indicator: BoxDecoration(
-            color: AppColors.pastelRed,
-            borderRadius: BorderRadius.circular(10),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: options.map((opt) {
+              final selected = opt.$1 == current;
+              return GestureDetector(
+                onTap: () => onSelected(opt.$1),
+                behavior: HitTestBehavior.opaque,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:
+                        selected ? AppColors.pastelRed : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    opt.$2,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w600,
+                      color: selected
+                          ? Colors.white
+                          : (isDark
+                              ? Colors.white70
+                              : AppColors.textSecondary),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelColor: Colors.white,
-          unselectedLabelColor:
-              isDark ? Colors.white70 : AppColors.textSecondary,
-          labelStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2),
-          unselectedLabelStyle: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.2),
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: WidgetStateProperty.all(Colors.transparent),
-          padding: EdgeInsets.zero,
-          tabs: const [
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Tutti'))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Da iniziare'))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('In corso'))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Da ripassare'))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Completato'))),
-            Tab(child: FittedBox(fit: BoxFit.scaleDown, child: Text('Superato'))),
-          ],
         ),
       ),
     );
