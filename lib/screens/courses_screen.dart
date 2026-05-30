@@ -31,15 +31,15 @@ class _CoursesScreenState extends State<CoursesScreen>
     ('superato', 'Superato'),
   ];
 
-  static const List<(String, String)> _semestriOptions = [
-    ('tutti_sem', 'Tutti i semestri'),
-    ('Primo semestre 2024/25', '1° sem 24/25'),
-    ('Secondo semestre 2024/25', '2° sem 24/25'),
-    ('Primo semestre 2025/26', '1° sem 25/26'),
-    ('Secondo semestre 2025/26', '2° sem 25/26'),
-    ('Primo semestre 2026/27', '1° sem 26/27'),
-    ('Secondo semestre 2026/27', '2° sem 26/27'),
-  ];
+static const List<(String, String)> _semestriOptions = [
+  ('tutti_sem', 'Tutti i semestri'),
+  ('1° Semestre · Anno I', '1° sem · Anno I'),
+  ('2° Semestre · Anno I', '2° sem · Anno I'),
+  ('1° Semestre · Anno II', '1° sem · Anno II'),
+  ('2° Semestre · Anno II', '2° sem · Anno II'),
+  ('1° Semestre · Anno III', '1° sem · Anno III'),
+  ('2° Semestre · Anno III', '2° sem · Anno III'),
+];
 
   late final TabController _statoTabController;
 

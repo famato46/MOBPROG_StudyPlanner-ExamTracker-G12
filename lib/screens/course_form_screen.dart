@@ -33,12 +33,12 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
   bool get _isEditing => widget.courseToEdit != null;
 
 static const List<String> _semestri = [
-  'Primo semestre 2024/25',
-  'Secondo semestre 2024/25',
-  'Primo semestre 2025/26',
-  'Secondo semestre 2025/26',
-  'Primo semestre 2026/27',
-  'Secondo semestre 2026/27',
+  '1° Semestre · Anno I',
+  '2° Semestre · Anno I',
+  '1° Semestre · Anno II',
+  '2° Semestre · Anno II',
+  '1° Semestre · Anno III',
+  '2° Semestre · Anno III',
 ];
 
   static const List<(String, String)> _stati = [
@@ -242,10 +242,11 @@ static const List<String> _semestri = [
                   keyboardType: TextInputType.number,
                   required: true,
                   validator: (v) {
-                    if (v == null || v.isEmpty) {
-                      return 'Campo obbligatorio';
-                    }
-                    if (int.tryParse(v) == null) return 'Numero non valido';
+                    if (v == null || v.isEmpty) return 'Campo obbligatorio';
+                    final n = int.tryParse(v);
+                    if (n == null) return 'Numero non valido';
+                    if (n < 1) return 'Minimo 1 CFU';
+                    if (n > 30) return 'Massimo 30 CFU';
                     return null;
                   },
                   isDark: isDark,

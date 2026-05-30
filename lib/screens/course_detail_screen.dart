@@ -6,6 +6,7 @@ import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'course_form_screen.dart';
 import 'task_form_screen.dart';
+import 'exam_detail_screen.dart';
 
 /// CourseDetailScreen — Stile Apple moderno, minimalista.
 ///
@@ -194,6 +195,12 @@ class CourseDetailScreen extends StatelessWidget {
                             data: e.data,
                             isCompletato: e.isCompletato,
                             isDark: isDark,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ExamDetailScreen(exam: e),
+                              ),
+                            ),
                           ))
                       .toList(),
                 ),
@@ -790,6 +797,7 @@ class _ExamRow extends StatelessWidget {
   final DateTime data;
   final bool isCompletato;
   final bool isDark;
+  final VoidCallback? onTap;
 
   const _ExamRow({
     required this.titolo,
@@ -797,6 +805,7 @@ class _ExamRow extends StatelessWidget {
     required this.data,
     required this.isCompletato,
     required this.isDark,
+    this.onTap, 
   });
 
   @override
@@ -804,9 +813,14 @@ class _ExamRow extends StatelessWidget {
     final dateStr =
         '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
         children: [
           Container(
             width: 32,
@@ -857,6 +871,8 @@ class _ExamRow extends StatelessWidget {
               color: isDark ? Colors.white38 : Colors.black26,
             ),
         ],
+      ),
+    ),
       ),
     );
   }
