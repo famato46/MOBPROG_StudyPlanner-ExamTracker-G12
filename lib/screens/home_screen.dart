@@ -33,7 +33,7 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
-          // ── Calcolo dati dinamici per il prossimo esame ────────
+          // Calcolo dati dinamici per il prossimo esame 
           final prossimoEsame = _findProssimoEsame(provider);
           final suggerimentiUnici =
               provider.suggerimentiAutomatici.toSet().toList();
@@ -51,7 +51,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
 
-                // ─── NUOVA FEATURE: FLASHCARD MOTIVAZIONALE ───────────
+                // FEATURE: FLASHCARD MOTIVAZIONALE 
                 _SectionLabel(
                   icon: Icons.auto_awesome_rounded,
                   label: 'Spunto del giorno',
@@ -60,7 +60,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 const MotivationalFlashcard(),
                 const SizedBox(height: 28),
-                // ──────────────────────────────────────────────────────
+                
 
                 if (prossimoEsame != null) ...[
                   _SectionLabel(
@@ -106,9 +106,9 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // MOTIVATIONAL FLASHCARD
-// ═══════════════════════════════════════════════════════════════
+
 class MotivationalFlashcard extends StatefulWidget {
   const MotivationalFlashcard({super.key});
 
@@ -124,19 +124,19 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
   @override
   void initState() {
     super.initState();
-    // Lista di frasi motivazionali hardcoded (NO EMOJI)
+    // Lista di frasi motivazionali hardcoded 
     final pairs = [
       (
-        "Qual e' il segreto per superare questo esame difficile?",
-        "La costanza. Un piccolo passo ogni giorno ti portera' al successo. Inizia ora!"
+        "Qual è il segreto per superare questo esame difficile?",
+        "La costanza. Un piccolo passo ogni giorno ti porterà al successo. Inizia ora!"
       ),
       (
         "Ti senti bloccato su un argomento?",
-        "Fai una pausa, respira profondo e riparti dalle basi. Nessun concetto e' impossibile da capire."
+        "Fai una pausa, respira profondo e riparti dalle basi. Nessun concetto è impossibile da capire."
       ),
       (
-        "Perche' studiare proprio oggi?",
-        "Perche' lo studio di oggi costruisce la liberta' del tuo domani. Continua a investire in te stesso."
+        "Perchè studiare proprio oggi?",
+        "Perchè lo studio di oggi costruisce la libertà del tuo domani. Continua a investire in te stesso."
       ),
       (
         "La stanchezza si fa sentire?",
@@ -144,11 +144,11 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
       ),
       (
         "Hai paura di non farcela?",
-        "Il fallimento fa parte del percorso. Affronta l'esame con coraggio, hai tutte le capacita' per superarlo."
+        "Il fallimento fa parte del percorso. Affronta l'esame con coraggio, hai tutte le capacità per superarlo."
       ),
       (
         "Ti sembra di non ricordare nulla?",
-        "E' normale. Ripeti a voce alta o spiega il concetto a qualcun altro, vedrai che i pezzi si incastreranno."
+        " È normale. Ripeti a voce alta o spiega il concetto a qualcun altro, vedrai che i pezzi si incastreranno."
       ),
     ];
 
@@ -259,9 +259,8 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // HEADER: Large title iOS-style + Avatar
-// ═══════════════════════════════════════════════════════════════
 class _HeaderSection extends StatelessWidget {
   final bool isDark;
   const _HeaderSection({required this.isDark});
@@ -343,9 +342,8 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // GRIGLIA 2x2 STAT CARDS PASTELLO
-// ═══════════════════════════════════════════════════════════════
 class _StatGrid extends StatelessWidget {
   final PlannerProvider provider;
   final bool isDark;
@@ -404,9 +402,8 @@ class _StatGrid extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // CARD STATISTICA CON HALO PASTELLO
-// ═══════════════════════════════════════════════════════════════
 class _GlowStatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -549,9 +546,8 @@ class _ValueText extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // SECTION LABEL (icona + titolo)
-// ═══════════════════════════════════════════════════════════════
 class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -585,9 +581,8 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // CARD PROSSIMO ESAME
-// ═══════════════════════════════════════════════════════════════
 class _NextExamCard extends StatelessWidget {
   final Exam exam;
   final bool isDark;
@@ -709,9 +704,8 @@ class _NextExamCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // SUGGESTION TILE
-// ═══════════════════════════════════════════════════════════════
 class _SuggestionTile extends StatelessWidget {
   final String text;
   final bool isDark;
