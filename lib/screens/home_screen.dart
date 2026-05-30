@@ -6,18 +6,7 @@ import '../providers/planner_provider.dart';
 import '../providers/theme_provider.dart';
 import '../utils/app_colors.dart';
 
-/// HomeScreen — Dashboard Apple-style.
-///
-/// Layout:
-///  1. Large title "Dashboard" + sottotitolo + avatar profilo
-///  2. Grid 2x2 di stat card pastello (Corsi, Esami, Attività, CFU)
-///  3. Flashcard Motivazionale (Spunto del Giorno)
-///  4. Card prossimo esame con countdown
-///  5. Lista suggerimenti automatici (dal Provider)
 class HomeScreen extends StatelessWidget {
-  /// Callback per cambiare tab nella BottomNavigationBar del MainScreen.
-  /// Permette alle card della dashboard di portare alle sezioni:
-  /// 1 = Corsi, 2 = Esami, 3 = Pianifica, 4 = Stats.
   final void Function(int)? onNavigateToTab;
 
   const HomeScreen({super.key, this.onNavigateToTab});
@@ -33,7 +22,6 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
-          // Calcolo dati dinamici per il prossimo esame 
           final prossimoEsame = _findProssimoEsame(provider);
           final suggerimentiUnici =
               provider.suggerimentiAutomatici.toSet().toList();
@@ -51,7 +39,6 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
 
-                // FEATURE: FLASHCARD MOTIVAZIONALE 
                 _SectionLabel(
                   icon: Icons.auto_awesome_rounded,
                   label: 'Spunto del giorno',
@@ -60,7 +47,6 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 const MotivationalFlashcard(),
                 const SizedBox(height: 28),
-                
 
                 if (prossimoEsame != null) ...[
                   _SectionLabel(
@@ -91,8 +77,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Trova il prossimo esame in ordine cronologico (oggi o futuro,
-  /// stato 'programmato').
   Exam? _findProssimoEsame(PlannerProvider provider) {
     if (provider.exams.isEmpty) return null;
     final oggi = DateTime.now();
@@ -105,9 +89,6 @@ class HomeScreen extends StatelessWidget {
     return futuri.isEmpty ? null : futuri.first;
   }
 }
-
-
-// MOTIVATIONAL FLASHCARD
 
 class MotivationalFlashcard extends StatefulWidget {
   const MotivationalFlashcard({super.key});
@@ -152,7 +133,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
       ),
     ];
 
-    // Selezione random al caricamento della schermata
     final random = Random();
     final selectedPair = pairs[random.nextInt(pairs.length)];
     _front = selectedPair.$1;
@@ -163,7 +143,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Colori Apple-style coerenti con la nostra palette AppColors
     final frontBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surface;
     final backBg = AppColors.pastelBlueDeep;
 
@@ -182,7 +161,7 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        height: 180, // Altezza compatta e proporzionata
+        height: 180,
         width: double.infinity,
         decoration: BoxDecoration(
           color: bgColor,
@@ -199,7 +178,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
         ),
         child: Stack(
           children: [
-            // Etichetta in alto a sinistra
             Positioned(
               top: 16,
               left: 20,
@@ -213,7 +191,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
                 ),
               ),
             ),
-            // Testo centrale
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
@@ -230,7 +207,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
                 ),
               ),
             ),
-            // Suggerimento in basso
             Positioned(
               bottom: 16,
               left: 0,
@@ -259,8 +235,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
   }
 }
 
-
-// HEADER: Large title iOS-style + Avatar
 class _HeaderSection extends StatelessWidget {
   final bool isDark;
   const _HeaderSection({required this.isDark});
@@ -342,8 +316,6 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-
-// GRIGLIA 2x2 STAT CARDS PASTELLO
 class _StatGrid extends StatelessWidget {
   final PlannerProvider provider;
   final bool isDark;
@@ -402,8 +374,6 @@ class _StatGrid extends StatelessWidget {
   }
 }
 
-
-// CARD STATISTICA CON HALO PASTELLO
 class _GlowStatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -493,8 +463,6 @@ class _GlowStatCard extends StatelessWidget {
   }
 }
 
-/// Mostra il valore. Se contiene una "/" (es. "24/180"), il dopo-slash
-/// viene reso più piccolo per non rubare attenzione.
 class _ValueText extends StatelessWidget {
   final String value;
   final Color color;
@@ -546,8 +514,6 @@ class _ValueText extends StatelessWidget {
   }
 }
 
-
-// SECTION LABEL (icona + titolo)
 class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -581,8 +547,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-
-// CARD PROSSIMO ESAME
 class _NextExamCard extends StatelessWidget {
   final Exam exam;
   final bool isDark;
@@ -624,7 +588,6 @@ class _NextExamCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Cerchio countdown
           Container(
             width: 60,
             height: 60,
@@ -704,8 +667,6 @@ class _NextExamCard extends StatelessWidget {
   }
 }
 
-
-// SUGGESTION TILE
 class _SuggestionTile extends StatelessWidget {
   final String text;
   final bool isDark;

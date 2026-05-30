@@ -51,6 +51,8 @@ class _StatsScreenState extends State<StatsScreen>
     final inizio = oggi.subtract(Duration(days: oggi.weekday - 1));
     return provider.studySessions
             .where((s) =>
+                s.completata &&
+                s.tipo == 'pomodoro' &&
                 s.data.isAfter(inizio.subtract(const Duration(days: 1))) &&
                 s.durataEffettiva != null)
             .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0)) ~/
@@ -355,11 +357,6 @@ class _StatsScreenState extends State<StatsScreen>
         _buildBarChart(provider, isDark),
         const SizedBox(height: 24),
 
-        const _SectionLabel(title: 'Stima Tempi (Obiettivi)'),
-        const SizedBox(height: 12),
-        _buildTempoComparison(provider, isDark),
-        const SizedBox(height: 24),
-
         const _SectionLabel(title: 'Focus Obiettivi per Corso'),
         const SizedBox(height: 12),
         _buildCorsiAttivita(provider, isDark),
@@ -592,7 +589,7 @@ class _StatsScreenState extends State<StatsScreen>
 
     final Map<String, int> minutiPerCorso = {};
     for (final s in provider.studySessions) {
-      if (s.courseId != null && s.durataEffettiva != null) {
+      if (s.completata && s.tipo == 'pomodoro' && s.courseId != null && s.durataEffettiva != null) {
         final corso = provider.getCourseById(s.courseId!);
         if (corso != null) {
           minutiPerCorso[corso.nome] =
@@ -602,7 +599,7 @@ class _StatsScreenState extends State<StatsScreen>
     }
 
     if (minutiPerCorso.isEmpty) {
-      return const _EmptyCard(text: 'Nessuna sessione registrata.');
+      return const _EmptyCard(text: 'Nessuna sessione di studio registrata per i corsi.');
     }
 
     final entries = minutiPerCorso.entries.toList();
@@ -667,24 +664,40 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── Grafico a barre ──────────────────────────────────────────
+  // ─── Grafico a barre (Stacked) ─────────────────────────────────
   Widget _buildBarChart(PlannerProvider provider, bool isDark) {
     final oggi = DateTime.now();
     final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
-    final List<double> minuti = List.generate(7, (i) {
+    // Calcoliamo i minuti di Pomodoro e Pausa separatamente per ogni giorno
+    final List<Map<String, double>> minutiSettimana = List.generate(7, (i) {
       final g = oggi.subtract(Duration(days: oggi.weekday - 1 - i));
-      return provider.studySessions
-          .where((s) =>
-              s.data.year == g.year &&
-              s.data.month == g.month &&
-              s.data.day == g.day &&
-              s.durataEffettiva != null)
-          .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0))
-          .toDouble();
+      
+      final sessioniGiorno = provider.studySessions.where((s) =>
+          s.completata &&
+          s.durataEffettiva != null &&
+          s.data.year == g.year &&
+          s.data.month == g.month &&
+          s.data.day == g.day);
+
+      double pomodoro = 0;
+      double pausa = 0;
+      
+      for (var s in sessioniGiorno) {
+        if (s.tipo == 'pomodoro') {
+          pomodoro += s.durataEffettiva!;
+        } else if (s.tipo == 'pausa') {
+          pausa += s.durataEffettiva!;
+        }
+      }
+
+      return {'pomodoro': pomodoro, 'pausa': pausa};
     });
 
-    final maxT = minuti.reduce((a, b) => a > b ? a : b);
+    final maxT = minutiSettimana.fold(0.0, (m, e) {
+      final sum = e['pomodoro']! + e['pausa']!;
+      return sum > m ? sum : m;
+    });
 
     if (maxT == 0) {
       return const _EmptyCard(text: 'Nessuna sessione questa settimana.');
@@ -692,120 +705,109 @@ class _StatsScreenState extends State<StatsScreen>
 
     return _Card(
       isDark: isDark,
-      child: SizedBox(
-        height: 180,
-        child: BarChart(
-          BarChartData(
-            maxY: maxT * 1.15,
-            gridData: const FlGridData(show: false),
-            borderData: FlBorderData(show: false),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
-              leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false)),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= giorni.length ||
-                        value.toInt() < 0) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(giorni[value.toInt()],
-                          style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w600)),
-                    );
-                  },
-                ),
-              ),
-            ),
-            barGroups: minuti.asMap().entries.map((entry) {
-              return BarChartGroupData(
-                x: entry.key,
-                barRods: [
-                  BarChartRodData(
-                    toY: entry.value,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.statsDeep, AppColors.stats],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                    ),
-                    width: 14,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── Tempo stimato vs effettivo ───────────────────────────────
-  Widget _buildTempoComparison(PlannerProvider provider, bool isDark) {
-    final tasks = provider.tasks
-        .where((t) => t.tempoStimato != null && t.tempoEffettivo != null)
-        .toList();
-
-    if (tasks.isEmpty) {
-      return const _EmptyCard(text: 'Nessuna attività con tempo registrato.');
-    }
-
-    final stimato = tasks.fold(0, (sum, t) => sum + t.tempoStimato!);
-    final effettivo = tasks.fold(0, (sum, t) => sum + t.tempoEffettivo!);
-    final diff = effettivo - stimato;
-
-    return _Card(
-      isDark: isDark,
       child: Column(
         children: [
+          // Legenda del grafico
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _MiniStat(
-                  label: 'Stimato',
-                  value: '$stimato min',
-                  color: Colors.blueGrey),
-              _MiniStat(
-                  label: 'Effettivo',
-                  value: '$effettivo min',
-                  color: AppColors.statsDeep),
+              Container(
+                width: 10, 
+                height: 10,
+                decoration: const BoxDecoration(color: AppColors.danger, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              const Text('Focus', style: TextStyle(fontSize: 12)),
+              const SizedBox(width: 16),
+              Container(
+                width: 10, 
+                height: 10,
+                decoration: const BoxDecoration(color: AppColors.success, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              const Text('Pausa', style: TextStyle(fontSize: 12)),
             ],
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: (diff > 0 ? AppColors.danger : AppColors.success)
-                  .withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Scostamento:',
-                    style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w500)),
-                Text(
-                  diff >= 0 ? '+$diff min (in ritardo)' : '$diff min (in anticipo)',
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: diff > 0
-                          ? AppColors.danger
-                          : AppColors.success),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 180,
+            child: BarChart(
+              BarChartData(
+                maxY: maxT * 1.15,
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => isDark ? const Color(0xFF2A2A2C) : Colors.white,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final dayData = minutiSettimana[group.x.toInt()];
+                      return BarTooltipItem(
+                        '${giorni[group.x.toInt()]}\n',
+                        TextStyle(
+                          color: isDark ? Colors.white : Colors.black, 
+                          fontWeight: FontWeight.bold
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Focus: ${dayData['pomodoro']!.toInt()} min\n',
+                            style: const TextStyle(color: AppColors.danger, fontWeight: FontWeight.w500),
+                          ),
+                          TextSpan(
+                            text: 'Pausa: ${dayData['pausa']!.toInt()} min',
+                            style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
-              ],
+                titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= giorni.length || value.toInt() < 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(giorni[value.toInt()],
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w600)),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: minutiSettimana.asMap().entries.map((entry) {
+                  final pom = entry.value['pomodoro']!;
+                  final pau = entry.value['pausa']!;
+                  final total = pom + pau;
+
+                  return BarChartGroupData(
+                    x: entry.key,
+                    barRods: [
+                      BarChartRodData(
+                        toY: total,
+                        width: 14,
+                        color: Colors.transparent, // Lo sfondo del rod intero è trasparente
+                        borderRadius: BorderRadius.circular(6),
+                        rodStackItems: [
+                          if (pom > 0)
+                            BarChartRodStackItem(0, pom, AppColors.danger),
+                          if (pau > 0)
+                            BarChartRodStackItem(pom, total, AppColors.success),
+                        ],
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -1074,9 +1076,7 @@ class _FocusStatCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// STATS TAB BAR — TabBar nativo con icona sopra e testo sotto,
-// identico al planning screen. Animazione fluida con sliding
-// indicator giallo pastel.
+// STATS TAB BAR — TabBar nativo con icona sopra e testo sotto
 // ═══════════════════════════════════════════════════════════════
 class _StatsTabBar extends StatelessWidget {
   final TabController controller;
@@ -1138,7 +1138,6 @@ class _StatsTabBar extends StatelessWidget {
   }
 }
 
-/// Tab con icona sopra e testo sotto — riutilizzato da Stats e Planning.
 class _IconTab extends StatelessWidget {
   final IconData icon;
   final String label;

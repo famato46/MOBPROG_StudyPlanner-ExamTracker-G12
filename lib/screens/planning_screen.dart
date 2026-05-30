@@ -44,8 +44,8 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _filtriEspansi = false;
 
   // ─── Stato Timer Focus (Pomodoro / Pausa) ───
-  static const int _pomodoroSeconds = 25 * 60;
-  static const int _pausaSeconds = 5 * 60;
+  static const int _pomodoroSeconds = 1 * 60;
+  static const int _pausaSeconds = 1 * 60;
 
   final ValueNotifier<int> _secondsNotifier = ValueNotifier(_pomodoroSeconds);
 
@@ -202,8 +202,8 @@ class _PlanningScreenState extends State<PlanningScreen>
     return !date.isBefore(inizioSettimana) && date.isBefore(fineSettimana);
   }
 
-  String _formatGiornoPianificatoreText(bool isWeekly) {
-    if (isWeekly) {
+  String _formatGiornoPianificatore() {
+    if (_isVistaSettimanale) {
       final inizio = _giornoPianificatore
           .subtract(Duration(days: _giornoPianificatore.weekday - 1));
       return 'Settimana del ${DateFormat('dd MMMM', 'it_IT').format(inizio)}';
@@ -255,6 +255,21 @@ class _PlanningScreenState extends State<PlanningScreen>
     return corso;
   }
 
+  String _sottotitoloSessioneAttivita(StudySession s, PlannerProvider provider) {
+    final corso = provider.getCourseById(s.courseId ?? '')?.nome ?? 'Generico';
+    final d = s.data;
+    final oggi = DateTime.now();
+    final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
+    final sDate = DateTime(d.year, d.month, d.day);
+
+    if (sDate.isBefore(oggiDate)) {
+      return 'Scaduta il ${DateFormat('dd/MM', 'it_IT').format(d)} · $corso · ${s.tipo}';
+    } else if (sDate.isAfter(oggiDate)) {
+      return '${DateFormat('EE dd/MM', 'it_IT').format(d)} · $corso · ${s.tipo}';
+    }
+    return '$corso · ${s.tipo}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -262,16 +277,27 @@ class _PlanningScreenState extends State<PlanningScreen>
         isDark ? Theme.of(context).colorScheme.surface : AppColors.background;
     final provider = Provider.of<PlannerProvider>(context);
 
-    // Dati Base Sessioni pre-filtrati da Corso e Tipo
-    var baseSessions = provider.studySessions.toList();
+    // ===== DATI TAB SESSIONI (Tab 2) =====
+    var sessioniPianificatore = provider.studySessions.where((s) {
+      final tipo = s.tipo.toLowerCase();
+      // Escludiamo le sessioni generate dai timer per la schermata pianificatore
+      if (tipo == 'pomodoro' || tipo == 'pausa') return false;
+
+      return _isVistaSettimanale
+          ? _isSameWeek(s.data, _giornoPianificatore)
+          : DateUtils.isSameDay(s.data, _giornoPianificatore);
+    }).toList()
+      ..sort((a, b) => a.data.compareTo(b.data));
+
     if (_filtroCorso != null) {
-      baseSessions = baseSessions
+      sessioniPianificatore = sessioniPianificatore
           .where((s) => s.courseId == _filtroCorso!.id)
           .toList();
     }
     if (_filtroTipoAttivita != 'Tutti') {
-      baseSessions = baseSessions
-          .where((s) => s.tipo.toLowerCase() == _filtroTipoAttivita.toLowerCase())
+      sessioniPianificatore = sessioniPianificatore
+          .where((s) =>
+              s.tipo.toLowerCase() == _filtroTipoAttivita.toLowerCase())
           .toList();
     }
 
@@ -293,8 +319,8 @@ class _PlanningScreenState extends State<PlanningScreen>
                   : IndexedStack(
                       index: _currentSegment,
                       children: [
-                        _buildTabAttivita(provider),
-                        _buildTabSessioni(baseSessions, provider),
+                        _buildTabOggi(provider),
+                        _buildTabPianificatore(sessioniPianificatore, provider),
                         _buildTabFocus(provider.getPendingTasks()),
                       ],
                     ),
@@ -382,7 +408,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   // ═══════════════════════════════════════════════════════════════
   // TAB 1 — ATTIVITÀ (Esclusivamente Task: Oggi + Scaduti e Futuri)
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildTabAttivita(PlannerProvider provider) {
+  Widget _buildTabOggi(PlannerProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
@@ -485,33 +511,63 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // TAB 2 — SESSIONI (NestedScrollView + TabBarView)
+  // TAB 2 — PIANIFICATORE (Sessioni)
   // ═══════════════════════════════════════════════════════════════
-  Widget _buildTabSessioni(List<StudySession> baseSessions, PlannerProvider provider) {
+  Widget _buildTabPianificatore(
+      List<StudySession> sessioni, PlannerProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final filtriAttivi = _filtroCorso != null || _filtroTipoAttivita != 'Tutti';
+    final sessioniInCorso = sessioni.where((s) => !s.completata).toList();
+    final sessioniCompletate = sessioni.where((s) => s.completata).toList();
+    final filtriAttivi =
+        _filtroCorso != null || _filtroTipoAttivita != 'Tutti';
 
     final giorniConSessioni = provider.studySessions
+        .where((s) {
+          final t = s.tipo.toLowerCase();
+          return t != 'pomodoro' && t != 'pausa';
+        })
         .map((s) => DateTime(s.data.year, s.data.month, s.data.day))
         .toSet();
 
-    // Filtraggio quotidiano e settimanale
-    final dailySessions = baseSessions
-        .where((s) => DateUtils.isSameDay(s.data, _giornoPianificatore))
-        .toList()..sort((a, b) => a.data.compareTo(b.data));
-
-    final weeklySessions = baseSessions
-        .where((s) => _isSameWeek(s.data, _giornoPianificatore))
-        .toList()..sort((a, b) => a.data.compareTo(b.data));
-
-    return NestedScrollView(
-      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+    return CustomScrollView(
+      slivers: [
         SliverToBoxAdapter(
           child: _CalendarGrid(
             selectedDay: _giornoPianificatore,
             giorniConSessioni: giorniConSessioni,
             onDaySelected: (d) => setState(() => _giornoPianificatore = d),
             isDark: isDark,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+            child: Row(
+              children: [
+                _MiniSegment(
+                  options: const ['Giornaliera', 'Settimanale'],
+                  selectedIndex: _isVistaSettimanale ? 1 : 0,
+                  onChanged: (i) =>
+                      setState(() => _isVistaSettimanale = i == 1),
+                  isDark: isDark,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _formatGiornoPianificatore(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : AppColors.textSecondary,
+                      letterSpacing: -0.2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -531,54 +587,13 @@ class _PlanningScreenState extends State<PlanningScreen>
             isDark: isDark,
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 12)),
-        SliverToBoxAdapter(
-          child: _SubTabBar(
-            controller: _sessioniTabController,
-            isDark: isDark,
-          ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
-      ],
-      body: TabBarView(
-        controller: _sessioniTabController,
-        children: [
-          _buildSessioniListView(dailySessions, false, provider),
-          _buildSessioniListView(weeklySessions, true, provider),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSessioniListView(List<StudySession> sessioni, bool isWeekly, PlannerProvider provider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final sessioniInCorso = sessioni.where((s) => !s.completata).toList();
-    final sessioniCompletate = sessioni.where((s) => s.completata).toList();
-
-    return CustomScrollView(
-      key: PageStorageKey<String>('sessioni_list_${isWeekly ? "weekly" : "daily"}'),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            child: Text(
-              _formatGiornoPianificatoreText(isWeekly),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white70 : AppColors.textSecondary,
-                letterSpacing: -0.2,
-              ),
-              textAlign: TextAlign.left,
-            ),
-          ),
-        ),
         if (sessioni.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: _EmptyState(
               icon: Icons.event_busy_outlined,
-              text: 'Nessuna sessione corrisponde ai criteri.',
+              text: 'Nessun impegno corrisponde ai criteri.',
             ),
           )
         else ...[
@@ -588,19 +603,23 @@ class _PlanningScreenState extends State<PlanningScreen>
               sliver: SliverToBoxAdapter(
                 child: _CardGroup(
                   isDark: isDark,
-                  children: sessioniInCorso.map((s) => _SessionRow(
-                    session: s,
-                    sottotitolo: _sottotitoloSessionePianificatore(s, provider, isWeekly),
-                    onToggle: () => provider.updateStudySession(s.copyWith(completata: !s.completata)),
-                    onEdit: () => _apriFormSessione(sessione: s),
-                    onDelete: () async {
-                      final c = await _confirmDeleteSessione(context, s);
-                      if (c == true && context.mounted) {
-                        await provider.deleteStudySession(s.id);
-                      }
-                    },
-                    isDark: isDark,
-                  )).toList(),
+                  children: sessioniInCorso
+                      .map((s) => _SessionRow(
+                            session: s,
+                            sottotitolo: _sottotitoloSessioneAttivita(s, provider),
+                            onToggle: () => provider.updateStudySession(
+                                s.copyWith(completata: !s.completata)),
+                            onEdit: () => _apriFormSessione(sessione: s),
+                            onDelete: () async {
+                              final c =
+                                  await _confirmDeleteSessione(context, s);
+                              if (c == true && context.mounted) {
+                                await provider.deleteStudySession(s.id);
+                              }
+                            },
+                            isDark: isDark,
+                          ))
+                      .toList(),
                 ),
               ),
             ),
@@ -610,10 +629,9 @@ class _PlanningScreenState extends State<PlanningScreen>
               padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverToBoxAdapter(
                 child: _SectionLabel(
-                  label: 'Completate',
-                  isDark: isDark,
-                  color: AppColors.success,
-                ),
+                    label: 'Completate',
+                    isDark: isDark,
+                    color: AppColors.success),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -622,19 +640,23 @@ class _PlanningScreenState extends State<PlanningScreen>
               sliver: SliverToBoxAdapter(
                 child: _CardGroup(
                   isDark: isDark,
-                  children: sessioniCompletate.map((s) => _SessionRow(
-                    session: s,
-                    sottotitolo: _sottotitoloSessionePianificatore(s, provider, isWeekly),
-                    onToggle: () => provider.updateStudySession(s.copyWith(completata: !s.completata)),
-                    onEdit: () => _apriFormSessione(sessione: s),
-                    onDelete: () async {
-                      final c = await _confirmDeleteSessione(context, s);
-                      if (c == true && context.mounted) {
-                        await provider.deleteStudySession(s.id);
-                      }
-                    },
-                    isDark: isDark,
-                  )).toList(),
+                  children: sessioniCompletate
+                      .map((s) => _SessionRow(
+                            session: s,
+                            sottotitolo: _sottotitoloSessioneAttivita(s, provider),
+                            onToggle: () => provider.updateStudySession(
+                                s.copyWith(completata: !s.completata)),
+                            onEdit: () => _apriFormSessione(sessione: s),
+                            onDelete: () async {
+                              final c =
+                                  await _confirmDeleteSessione(context, s);
+                              if (c == true && context.mounted) {
+                                await provider.deleteStudySession(s.id);
+                              }
+                            },
+                            isDark: isDark,
+                          ))
+                      .toList(),
                 ),
               ),
             ),
@@ -645,19 +667,13 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  String _sottotitoloSessionePianificatore(StudySession s, PlannerProvider provider, bool isWeekly) {
-    final prefisso = isWeekly
-        ? '${DateFormat('EE dd/MM', 'it_IT').format(s.data)} · '
-        : '';
-    final corso = provider.getCourseById(s.courseId ?? '')?.nome ?? 'Generico';
-    return '$prefisso$corso · ${s.tipo}';
-  }
-
-  Future<bool?> _confirmDeleteSessione(BuildContext context, StudySession s) {
+  Future<bool?> _confirmDeleteSessione(
+      BuildContext context, StudySession s) {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Elimina sessione'),
         content: Text('Eliminare "${s.titolo}"?'),
         actions: [
@@ -738,6 +754,7 @@ class _PlanningScreenState extends State<PlanningScreen>
                 splashFactory: NoSplash.splashFactory,
                 overlayColor:
                     WidgetStateProperty.all(Colors.transparent),
+                // FIX EMOJI REMOVED
                 tabs: const [
                   Tab(
                     icon: Icon(Icons.timer_outlined, size: 20),
@@ -1211,57 +1228,75 @@ class _CalendarGridState extends State<_CalendarGrid> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUB TAB BAR (Giornaliera / Settimanale)
+// MINI SEGMENT
 // ═══════════════════════════════════════════════════════════════
-class _SubTabBar extends StatelessWidget {
-  final TabController controller;
+class _MiniSegment extends StatelessWidget {
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
   final bool isDark;
+  final bool fullWidth;
 
-  const _SubTabBar({required this.controller, required this.isDark});
+  const _MiniSegment({
+    required this.options,
+    required this.selectedIndex,
+    required this.onChanged,
+    required this.isDark,
+    this.fullWidth = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        height: 38,
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        padding: const EdgeInsets.all(3),
-        child: TabBar(
-          controller: controller,
-          indicator: BoxDecoration(
-            color: isDark ? const Color(0xFF3A3A3C) : Colors.white,
+    final row = Row(
+      mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+      children: List.generate(options.length, (i) {
+        final selected = i == selectedIndex;
+        final chip = AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFF3A3A3C) : Colors.white)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(7),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                )
-            ],
           ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelColor: isDark ? Colors.white : AppColors.textPrimary,
-          unselectedLabelColor: AppColors.textMuted,
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.2),
-          unselectedLabelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.2),
-          splashFactory: NoSplash.splashFactory,
-          overlayColor: WidgetStateProperty.all(Colors.transparent),
-          tabs: const [
-            Tab(text: 'Giornaliera'),
-            Tab(text: 'Settimanale'),
-          ],
-        ),
+          alignment: Alignment.center,
+          child: Text(
+            options[i],
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected
+                  ? (isDark ? Colors.white : AppColors.textPrimary)
+                  : AppColors.textMuted,
+            ),
+          ),
+        );
+        return fullWidth
+            ? Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: chip,
+                ),
+              )
+            : GestureDetector(
+                onTap: () => onChanged(i),
+                behavior: HitTestBehavior.opaque,
+                child: chip,
+              );
+      }),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(9),
       ),
+      padding: const EdgeInsets.all(3),
+      child: row,
     );
   }
 }

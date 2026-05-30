@@ -6,8 +6,6 @@ import '../models/study_session.dart';
 import '../models/course.dart';
 import '../utils/app_colors.dart';
 
-/// SessionFormScreen — Form a tutto schermo per creare/modificare una
-/// sessione di studio (StudySession).
 class SessionFormScreen extends StatefulWidget {
   final StudySession? sessione; // null = creazione
   final DateTime? dataIniziale; // pre-compila la data se passata
@@ -57,7 +55,6 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     super.dispose();
   }
 
-  // AGGIORNATO AL MODELLO MASTER CON TEMA VERDE PASTELLO
   Future<void> _pickDate() async {
     DateTime tempDate = _data;
     await showModalBottomSheet(
@@ -118,7 +115,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
                   Theme(
                     data: Theme.of(ctx).copyWith(
                       colorScheme: Theme.of(ctx).colorScheme.copyWith(
-                        primary: AppColors.pastelGreen, // VERDE PASTELLO
+                        primary: AppColors.pastelGreen,
                       ),
                     ),
                     child: CalendarDatePicker(
@@ -222,6 +219,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
           ),
         ],
       ),
+      // Struttura identica a exam_form_screen: Form con all'interno direttamente ListView
       body: Form(
         key: _formKey,
         child: ListView(
@@ -402,7 +400,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// WIDGET CONDIVISI 
+// WIDGET CONDIVISI
 // ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;

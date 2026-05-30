@@ -7,7 +7,6 @@ import '../models/course.dart';
 import '../models/exam.dart';
 import '../utils/app_colors.dart';
 
-/// TaskFormScreen — Form per creare/modificare un'Attività.
 class TaskFormScreen extends StatefulWidget {
   final Task? taskToEdit;
   final String? defaultCourseId;
@@ -37,7 +36,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   DateTime? _scadenza;
   String _priorita = 'media';
   bool _completata = false;
-  bool _scadenzaError = false;
 
   bool get _isEditing => widget.taskToEdit != null;
 
@@ -73,7 +71,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
-  // Helper per mostrare una stringa pulita nel selettore dell'esame
   String _formatTipologia(String t) {
     switch (t.toLowerCase()) {
       case 'scritto':
@@ -95,10 +92,21 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_scadenza == null) {
-      setState(() => _scadenzaError = true);
-      return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Devi selezionare una data di scadenza!',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return; 
     }
-    setState(() => _scadenzaError = false);
     final provider = context.read<PlannerProvider>();
 
     final tempoStimato = _tempoStimatoCtrl.text.isEmpty
@@ -278,176 +286,162 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.only(top: 8, bottom: 32),
-          children: [
-            _GroupHeader(label: 'Attività'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-                _TextFieldRow(
-                  label: 'Titolo',
-                  controller: _titoloCtrl,
-                  hint: 'es. Capitolo 3',
-                  required: true,
-                  isDark: isDark,
-                ),
-                _TextFieldRow(
-                  label: 'Descrizione',
-                  controller: _descrizioneCtrl,
-                  hint: 'opzionale',
-                  isDark: isDark,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _GroupHeader(label: 'Collegamenti'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-                _PickerRow(
-                  label: 'Corso',
-                  value: _courseId == null
-                      ? 'Nessuno'
-                      : (provider.getCourseById(_courseId!)?.nome ??
-                          'Nessuno'),
-                  onTap: () => _showCoursePicker(
-                      context, isDark, provider.courses),
-                  isDark: isDark,
-                ),
-                _PickerRow(
-                  label: 'Esame',
-                  value: _examId == null
-                      ? 'Nessuno'
-                      : (() {
-                          final ex = provider.getExamById(_examId!);
-                          if (ex == null) return 'Nessuno';
-                          final tipo = _formatTipologia(ex.tipologia);
-                          final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(ex.data);
-                          return '$tipo ($dataStr)';
-                        })(),
-                  onTap: () => _showExamPicker(
-                      context, isDark, provider.exams),
-                  isDark: isDark,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _GroupHeader(label: 'Pianificazione'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      // Struttura aggiornata per prevenire l'overflow: GestureDetector -> SafeArea -> Form -> SingleChildScrollView -> Column
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 8, bottom: 40),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _PickerRow(
-                    label: 'Scadenza',
-                    value: _scadenza == null
-                        ? 'Nessuna'
-                        : DateFormat('dd MMM yyyy', 'it_IT').format(_scadenza!),
-                    onTap: () async {
-                      await _pickScadenza();
-                      if (_scadenza != null) setState(() => _scadenzaError = false);
-                    },
+                  const _GroupHeader(label: 'Attività'),
+                  _SettingsGroup(
                     isDark: isDark,
+                    children: [
+                      _TextFieldRow(
+                        label: 'Titolo',
+                        controller: _titoloCtrl,
+                        hint: 'es. Capitolo 3',
+                        required: true,
+                        isDark: isDark,
+                      ),
+                      _TextFieldRow(
+                        label: 'Descrizione',
+                        controller: _descrizioneCtrl,
+                        hint: 'opzionale',
+                        isDark: isDark,
+                      ),
+                    ],
                   ),
-                    if (_scadenzaError)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Center(
-                          child: Text(
-                            'Campo obbligatorio',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.danger,
-                              height: 0.8,
-                            ),
+                  const SizedBox(height: 24),
+                  const _GroupHeader(label: 'Collegamenti'),
+                  _SettingsGroup(
+                    isDark: isDark,
+                    children: [
+                      _PickerRow(
+                        label: 'Corso',
+                        value: _courseId == null
+                            ? 'Nessuno'
+                            : (provider.getCourseById(_courseId!)?.nome ??
+                                'Nessuno'),
+                        onTap: () => _showCoursePicker(
+                            context, isDark, provider.courses),
+                        isDark: isDark,
+                      ),
+                      _PickerRow(
+                        label: 'Esame',
+                        value: _examId == null
+                            ? 'Nessuno'
+                            : (() {
+                                final ex = provider.getExamById(_examId!);
+                                if (ex == null) return 'Nessuno';
+                                final tipo = _formatTipologia(ex.tipologia);
+                                final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(ex.data);
+                                return '$tipo ($dataStr)';
+                              })(),
+                        onTap: () => _showExamPicker(
+                            context, isDark, provider.exams),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const _GroupHeader(label: 'Pianificazione'),
+                  _SettingsGroup(
+                    isDark: isDark,
+                    children: [
+                      _PickerRow(
+                        label: 'Scadenza',
+                        value: _scadenza == null
+                            ? 'Nessuna'
+                            : DateFormat('dd MMM yyyy', 'it_IT')
+                                .format(_scadenza!),
+                        onTap: _pickScadenza,
+                        isDark: isDark,
+                      ),
+                      _PickerRow(
+                        label: 'Priorità',
+                        value: _prioritaLabel(_priorita),
+                        valueColor: AppColors.priorita(_priorita),
+                        onTap: () => _showPrioritaPicker(context, isDark),
+                        isDark: isDark,
+                      ),
+                      _TextFieldRow(
+                        label: 'Tempo stimato',
+                        controller: _tempoStimatoCtrl,
+                        hint: 'minuti',
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          if (int.tryParse(v) == null) {
+                            return 'Numero non valido';
+                          }
+                          return null;
+                        },
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const _GroupHeader(label: 'Stato'),
+                  _SettingsGroup(
+                    isDark: isDark,
+                    children: [
+                      _SwitchRow(
+                        label: 'Completata',
+                        value: _completata,
+                        onChanged: (v) => setState(() => _completata = v),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  const _GroupHeader(label: 'Note'),
+                  _SettingsGroup(
+                    isDark: isDark,
+                    children: [
+                      _TextAreaRow(
+                        label: 'Note aggiuntive',
+                        controller: _noteCtrl,
+                        hint: 'opzionale',
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.pastelGreen,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          _isEditing ? 'Salva modifiche' : 'Aggiungi attività',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
+                    ),
+                  ),
                 ],
               ),
-                _PickerRow(
-                  label: 'Priorità',
-                  value: _prioritaLabel(_priorita),
-                  valueColor: AppColors.priorita(_priorita),
-                  onTap: () => _showPrioritaPicker(context, isDark),
-                  isDark: isDark,
-                ),
-                _TextFieldRow(
-                  label: 'Tempo stimato',
-                  controller: _tempoStimatoCtrl,
-                  hint: 'minuti',
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return null;
-                    if (int.tryParse(v) == null) {
-                      return 'Numero non valido';
-                    }
-                    return null;
-                  },
-                  isDark: isDark,
-                ),
-              ],
             ),
-            const SizedBox(height: 24),
-            _GroupHeader(label: 'Stato'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-                _SwitchRow(
-                  label: 'Completata',
-                  value: _completata,
-                  onChanged: (v) => setState(() => _completata = v),
-                  isDark: isDark,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _GroupHeader(label: 'Note'),
-            _SettingsGroup(
-              isDark: isDark,
-              children: [
-                _TextAreaRow(
-                  label: 'Note aggiuntive',
-                  controller: _noteCtrl,
-                  hint: 'opzionale',
-                  isDark: isDark,
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.pastelGreen,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    _isEditing
-                        ? 'Salva modifiche'
-                        : 'Aggiungi attività',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -467,7 +461,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       onSelected: (v) {
         setState(() {
           _courseId = v;
-          _examId = null; // Resetta l'esame se cambia il corso
+          _examId = null; 
         });
       },
     );
@@ -507,9 +501,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// IOS-STYLE BOTTOM SHEET PICKER 
-// ═══════════════════════════════════════════════════════════════
 void _showIosPicker<T>({
   required BuildContext context,
   required bool isDark,
@@ -583,9 +574,6 @@ void _showIosPicker<T>({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// COMPONENTI UI iOS-Settings
-// ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;
   const _GroupHeader({required this.label});
