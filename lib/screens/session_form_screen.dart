@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../providers/planner_provider.dart';
 import '../models/study_session.dart';
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../utils/app_colors.dart';
 
 class SessionFormScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
   late final TextEditingController _durataCtrl;
 
   String? _courseId;
+  String? _examId;  // FK verso Exam — necessario per exam_detail_screen
   DateTime _data = DateTime.now();
   String _tipo = 'studio';
 
@@ -44,6 +46,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
     _durataCtrl = TextEditingController(
         text: (s?.durataPianificata ?? 60).toString());
     _courseId = s?.courseId;
+    _examId = s?.examId;
     _data = s?.data ?? widget.dataIniziale ?? DateTime.now();
     _tipo = s?.tipo ?? 'studio';
   }
@@ -153,6 +156,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
         widget.sessione!.copyWith(
           titolo: _titoloCtrl.text.trim(),
           courseId: _courseId,
+          examId: _examId,
           data: _data,
           durataPianificata: durata,
           tipo: _tipo,
@@ -162,6 +166,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
       await provider.addStudySession(
         titolo: _titoloCtrl.text.trim(),
         courseId: _courseId,
+        examId: _examId,
         data: _data,
         durataPianificata: durata,
         tipo: _tipo,
@@ -262,6 +267,32 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
                       _showCoursePicker(context, isDark, provider.courses),
                   isDark: isDark,
                 ),
+                // Esame: disabilitato finché non è selezionato un corso.
+                // Quando cambia il corso, _examId viene resettato.
+                _PickerRow(
+                  label: 'Esame',
+                  value: _examId == null
+                      ? 'Nessuno'
+                      : (() {
+                          final ex = provider.getExamById(_examId!);
+                          if (ex == null) return 'Nessuno';
+                          final dataStr = DateFormat('dd MMM', 'it_IT')
+                              .format(ex.data);
+                          return '${_formatTipologia(ex.tipologia)} ($dataStr)';
+                        })(),
+                  disabled: _courseId == null,
+                  onTap: () {
+                    if (_courseId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Seleziona prima un corso')),
+                      );
+                      return;
+                    }
+                    _showExamPicker(context, isDark, provider.exams);
+                  },
+                  isDark: isDark,
+                ),
                 _PickerRow(
                   label: 'Data',
                   value: DateFormat('dd MMM yyyy', 'it_IT').format(_data),
@@ -297,8 +328,49 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
       title: 'Corso',
       current: _courseId,
       options: courses.map((c) => (c.id, c.nome)).toList(),
-      onSelected: (id) => setState(() => _courseId = id),
+      onSelected: (id) => setState(() {
+        _courseId = id;
+        _examId = null; // reset esame al cambio corso
+      }),
     );
+  }
+
+  void _showExamPicker(
+      BuildContext context, bool isDark, List<Exam> allExams) {
+    final filtered = _courseId == null
+        ? <Exam>[]
+        : allExams.where((e) => e.courseId == _courseId).toList();
+    if (filtered.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Nessun esame per questo corso. Crealo prima!')),
+      );
+      return;
+    }
+    _showOptionsSheet<String>(
+      context: context,
+      isDark: isDark,
+      title: 'Esame associato',
+      current: _examId,
+      options: filtered.map((e) {
+        final dataStr = DateFormat('dd MMM yyyy', 'it_IT').format(e.data);
+        return (e.id, '${_formatTipologia(e.tipologia)} - $dataStr');
+      }).toList(),
+      onSelected: (id) => setState(() => _examId = id),
+    );
+  }
+
+  String _formatTipologia(String t) {
+    switch (t.toLowerCase()) {
+      case 'scritto':    return 'Scritto';
+      case 'orale':      return 'Orale';
+      case 'intercorso': return 'Intercorso';
+      case 'consegna':   return 'Consegna';
+      case 'progetto':   return 'Progetto';
+      default:
+        if (t.isEmpty) return t;
+        return t[0].toUpperCase() + t.substring(1).toLowerCase();
+    }
   }
 
   void _showTipoPicker(BuildContext context, bool isDark) {
@@ -541,6 +613,7 @@ class _PickerRow extends StatelessWidget {
   final Color? valueColor;
   final VoidCallback onTap;
   final bool isDark;
+  final bool disabled;
 
   const _PickerRow({
     required this.label,
@@ -548,10 +621,19 @@ class _PickerRow extends StatelessWidget {
     this.valueColor,
     required this.onTap,
     required this.isDark,
+    this.disabled = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveLabelColor = disabled
+        ? AppColors.textMuted
+        : (isDark ? Colors.white : AppColors.textPrimary);
+    final effectiveValueColor = disabled
+        ? AppColors.textMuted
+        : (valueColor ??
+            (isDark ? Colors.white60 : AppColors.textSecondary));
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -567,7 +649,7 @@ class _PickerRow extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 16,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: effectiveLabelColor,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -578,12 +660,9 @@ class _PickerRow extends StatelessWidget {
                   textAlign: TextAlign.end,
                   style: TextStyle(
                     fontSize: 16,
-                    color: valueColor ??
-                        (isDark
-                            ? Colors.white60
-                            : AppColors.textSecondary),
+                    color: effectiveValueColor,
                     letterSpacing: -0.3,
-                    fontWeight: valueColor != null
+                    fontWeight: valueColor != null && !disabled
                         ? FontWeight.w600
                         : FontWeight.w400,
                   ),
