@@ -5,7 +5,7 @@ import '../models/exam.dart';
 import '../models/study_session.dart';
 import '../models/task.dart';
 
-/// DatabaseHelper - Pattern Singleton per gestire SQLite
+// DatabaseHelper - Pattern Singleton per gestire SQLite
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
   DatabaseHelper._privateConstructor();
@@ -104,8 +104,6 @@ class DatabaseHelper {
 
 
   // CRUD CORSI 
-
-
   Future<int> insertCourse(Course course) async {
     Database db = await database;
     return await db.insert('courses', course.toMap());
@@ -166,8 +164,6 @@ class DatabaseHelper {
 
 
   // CRUD ESAMI 
-
-
   Future<int> insertExam(Exam exam) async {
     Database db = await database;
     return await db.insert('exams', exam.toMap());
@@ -218,7 +214,6 @@ class DatabaseHelper {
 
 
   // CRUD SESSIONI 
-
   Future<int> insertStudySession(StudySession session) async {
     Database db = await database;
     return await db.insert('study_sessions', session.toMap());
@@ -280,8 +275,6 @@ class DatabaseHelper {
 
  
   // CRUD TASK 
-
-
   Future<int> insertTask(Task task) async {
     Database db = await database;
     return await db.insert('tasks', task.toMap());
@@ -342,14 +335,14 @@ class DatabaseHelper {
 
   // UTILITY 
 
-  /// Elimina tutto il database (per debug)
+  // Elimina tutto il database (per debug)
   Future<void> deleteDatabase() async {
     String path = join(await getDatabasesPath(), 'unipath.db');
     await databaseFactory.deleteDatabase(path);
     _database = null;
   }
 
-  /// Chiude il database
+  // Chiude il database
   Future<void> close() async {
     Database db = await database;
     await db.close();
@@ -357,8 +350,7 @@ class DatabaseHelper {
 
   // TRANSAZIONE POMODORO 
  
-  
-  /// Salva una sessione di studio e aggiorna il tempo effettivo della Task associata
+  // Salva una sessione di studio e aggiorna il tempo effettivo della Task associata
   Future<void> saveSessionAndUpdateTaskTime(StudySession session, String taskId) async {
     Database db = await database;
     
