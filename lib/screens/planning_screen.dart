@@ -54,6 +54,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
+  int get _secondsRemaining => _secondsNotifier.value;
 
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
@@ -413,28 +414,25 @@ class _PlanningScreenState extends State<PlanningScreen>
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
 
     // --- 1. LOGICA FILTRAGGIO OBIETTIVI DI OGGI (Task Oggi + Scaduti) ---
+    // Solo task NON completati con scadenza oggi o già passata.
     final taskOggi = provider.tasks.where((t) {
+      if (t.completata) return false;
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
       return !scad.isAfter(oggiDate);
     }).toList()
-      ..sort((a, b) {
-        // Completi in basso
-        if (a.completata != b.completata) return a.completata ? 1 : -1;
-        // Ordine di priorità
-        return _pesoPriorita(b.priorita).compareTo(_pesoPriorita(a.priorita));
-      });
+      ..sort((a, b) =>
+          _pesoPriorita(b.priorita).compareTo(_pesoPriorita(a.priorita)));
 
     // --- 2. LOGICA FILTRAGGIO IN PROGRAMMA (Task Futuri) ---
+    // Solo task NON completati con scadenza futura.
     final taskFuturi = provider.tasks.where((t) {
+      if (t.completata) return false;
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
       return scad.isAfter(oggiDate);
     }).toList()
-      ..sort((a, b) {
-        if (a.completata != b.completata) return a.completata ? 1 : -1;
-        return a.scadenza!.compareTo(b.scadenza!);
-      });
+      ..sort((a, b) => a.scadenza!.compareTo(b.scadenza!));
 
     final tuttoOggiVuoto = taskOggi.isEmpty;
     final tuttoFuturoVuoto = taskFuturi.isEmpty;
@@ -1234,19 +1232,20 @@ class _MiniSegment extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool isDark;
-
+  final bool fullWidth;
 
   const _MiniSegment({
     required this.options,
     required this.selectedIndex,
     required this.onChanged,
     required this.isDark,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final row = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
       children: List.generate(options.length, (i) {
         final selected = i == selectedIndex;
         final chip = AnimatedContainer(
@@ -1270,11 +1269,19 @@ class _MiniSegment extends StatelessWidget {
             ),
           ),
         );
-        return GestureDetector(
-          onTap: () => onChanged(i),
-          behavior: HitTestBehavior.opaque,
-          child: chip,
-        );
+        return fullWidth
+            ? Expanded(
+                child: GestureDetector(
+                  onTap: () => onChanged(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: chip,
+                ),
+              )
+            : GestureDetector(
+                onTap: () => onChanged(i),
+                behavior: HitTestBehavior.opaque,
+                child: chip,
+              );
       }),
     );
 
