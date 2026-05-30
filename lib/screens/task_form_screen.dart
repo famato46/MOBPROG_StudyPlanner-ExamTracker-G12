@@ -93,6 +93,22 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_scadenza == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Devi selezionare una data di scadenza!',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.danger, // Usa il rosso per l'errore
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return; // <-- Questo blocca il salvataggio se manca la data!
+    }
     final provider = context.read<PlannerProvider>();
 
     final tempoStimato = _tempoStimatoCtrl.text.isEmpty
