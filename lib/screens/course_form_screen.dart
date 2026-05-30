@@ -39,6 +39,10 @@ static const List<String> _semestri = [
   '2° Semestre · Anno II',
   '1° Semestre · Anno III',
   '2° Semestre · Anno III',
+  '1° Semestre · Anno IV', // Aggiunto
+  '2° Semestre · Anno IV', // Aggiunto
+  '1° Semestre · Anno V',  // Aggiunto
+  '2° Semestre · Anno V',  // Aggiunto
 ];
 
   static const List<(String, String)> _stati = [
@@ -436,7 +440,9 @@ void _showIosPicker<T>({
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,
+    isScrollControlled: true,
     builder: (_) => Container(
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF1C1C1E)
@@ -472,49 +478,51 @@ void _showIosPicker<T>({
                 ),
               ),
             ),
-            ...options.map((opt) {
-              final (value, label) = opt;
-              final selected = value == current;
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    onSelected(value);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final (value, label) = options[index];
+                  final selected = value == current;
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        onSelected(value);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
                         ),
-                        if (selected)
-                          Icon(
-                            Icons.check_rounded,
-                            color: AppColors.iosBlue,
-                            size: 22,
-                          ),
-                      ],
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                            if (selected)
+                              const Icon(
+                                Icons.check_rounded,
+                                color: AppColors.iosBlue,
+                                size: 22,
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }),
+                  );
+                },
+              ),
+            ),
             const SizedBox(height: 8),
           ],
         ),

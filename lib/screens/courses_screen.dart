@@ -39,6 +39,10 @@ static const List<(String, String)> _semestriOptions = [
   ('2° Semestre · Anno II', '2° sem · Anno II'),
   ('1° Semestre · Anno III', '1° sem · Anno III'),
   ('2° Semestre · Anno III', '2° sem · Anno III'),
+  ('1° Semestre · Anno IV', '1° sem · Anno IV'),
+  ('2° Semestre · Anno IV', '2° sem · Anno IV'),
+  ('1° Semestre · Anno V', '1° sem · Anno V'),
+  ('2° Semestre · Anno V', '2° sem · Anno V'),
 ];
 
   late final TabController _statoTabController;
