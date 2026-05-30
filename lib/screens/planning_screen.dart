@@ -54,7 +54,6 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
-  int get _secondsRemaining => _secondsNotifier.value;
 
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
@@ -1235,20 +1234,19 @@ class _MiniSegment extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
   final bool isDark;
-  final bool fullWidth;
+
 
   const _MiniSegment({
     required this.options,
     required this.selectedIndex,
     required this.onChanged,
     required this.isDark,
-    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final row = Row(
-      mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisSize: MainAxisSize.min,
       children: List.generate(options.length, (i) {
         final selected = i == selectedIndex;
         final chip = AnimatedContainer(
@@ -1272,19 +1270,11 @@ class _MiniSegment extends StatelessWidget {
             ),
           ),
         );
-        return fullWidth
-            ? Expanded(
-                child: GestureDetector(
-                  onTap: () => onChanged(i),
-                  behavior: HitTestBehavior.opaque,
-                  child: chip,
-                ),
-              )
-            : GestureDetector(
-                onTap: () => onChanged(i),
-                behavior: HitTestBehavior.opaque,
-                child: chip,
-              );
+        return GestureDetector(
+          onTap: () => onChanged(i),
+          behavior: HitTestBehavior.opaque,
+          child: chip,
+        );
       }),
     );
 
