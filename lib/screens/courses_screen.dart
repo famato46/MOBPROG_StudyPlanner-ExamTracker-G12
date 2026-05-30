@@ -77,7 +77,7 @@ static const List<(String, String)> _semestriOptions = [
 
     switch (_sortBy) {
       case 'nome':
-        filtered.sort((a, b) => a.nome.compareTo(b.nome));
+        filtered.sort((a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()));
         break;
       case 'cfu':
         filtered.sort((a, b) => b.cfu.compareTo(a.cfu));
