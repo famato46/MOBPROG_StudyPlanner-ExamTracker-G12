@@ -31,6 +31,16 @@ class _CoursesScreenState extends State<CoursesScreen>
     ('superato', 'Superato'),
   ];
 
+  static const List<(String, String)> _semestriOptions = [
+    ('tutti_sem', 'Tutti i semestri'),
+    ('Primo semestre 2024/25', '1° sem 24/25'),
+    ('Secondo semestre 2024/25', '2° sem 24/25'),
+    ('Primo semestre 2025/26', '1° sem 25/26'),
+    ('Secondo semestre 2025/26', '2° sem 25/26'),
+    ('Primo semestre 2026/27', '1° sem 26/27'),
+    ('Secondo semestre 2026/27', '2° sem 26/27'),
+  ];
+
   late final TabController _statoTabController;
 
   @override
@@ -132,6 +142,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
+                // ── Tab stati con TabBar nativo auto-scroll ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -165,24 +176,18 @@ class _CoursesScreenState extends State<CoursesScreen>
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.2),
                       splashFactory: NoSplash.splashFactory,
-                      overlayColor: WidgetStateProperty.all(
-                          Colors.transparent),
+                      overlayColor:
+                          WidgetStateProperty.all(Colors.transparent),
                       tabs: _statiOptions
                           .map((s) => Tab(text: s.$2))
                           .toList(),
                     ),
                   ),
                 ),
-                // GAP più ampio tra le due righe di filtri
                 const SizedBox(height: 12),
+                // ── Filtro semestri con TabBar nativo auto-scroll ──
                 _FilterRow(
-                  options: const [
-                    ('tutti_sem', 'Tutti i semestri'),
-                    ('Primo semestre 2024/25', '1° sem 24/25'),
-                    ('Secondo semestre 2024/25', '2° sem 24/25'),
-                    ('Primo semestre 2025/26', '1° sem 25/26'),
-                    ('Secondo semestre 2025/26', '2° sem 25/26'),
-                  ],
+                  options: _semestriOptions,
                   current: _filterSemestre,
                   onSelected: (v) => setState(() => _filterSemestre = v),
                   isDark: isDark,
@@ -272,201 +277,9 @@ class _CoursesScreenState extends State<CoursesScreen>
   }
 }
 
-class _CoursesHeader extends StatelessWidget {
-  final int total;
-  final int visible;
-  final String sortBy;
-  final ValueChanged<String> onSortChanged;
-  final bool isDark;
-
-  const _CoursesHeader({
-    required this.total,
-    required this.visible,
-    required this.sortBy,
-    required this.onSortChanged,
-    required this.isDark,
-  });
-
-  String _sortLabel(String s) {
-    switch (s) {
-      case 'nome':
-        return 'Nome';
-      case 'cfu':
-        return 'CFU';
-      case 'stato':
-        return 'Stato';
-      default:
-        return s;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white70 : AppColors.textSecondary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Corsi',
-                  style: TextStyle(
-                    fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.2,
-                    height: 1.05,
-                    color: primaryColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  visible == total
-                      ? '$total ${total == 1 ? "corso" : "corsi"}'
-                      : '$visible di $total visibili',
-                  style:
-                      TextStyle(fontSize: 14, color: secondaryColor),
-                ),
-              ],
-            ),
-          ),
-          PopupMenuButton<String>(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            color:
-                isDark ? const Color(0xFF2A2A2C) : AppColors.surface,
-            position: PopupMenuPosition.under,
-            onSelected: onSortChanged,
-            itemBuilder: (_) => [
-              _sortItem('nome', 'Nome A-Z', Icons.sort_by_alpha),
-              _sortItem('cfu', 'CFU (alti prima)', Icons.school_outlined),
-              _sortItem('stato', 'Stato', Icons.filter_list_rounded),
-            ],
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : AppColors.border,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.sort_rounded,
-                      size: 16, color: secondaryColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    _sortLabel(sortBy),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<String> _sortItem(
-      String value, String label, IconData icon) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Text(label),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final TextEditingController controller;
-  final bool hasQuery;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-  final bool isDark;
-
-  const _SearchBar({
-    required this.controller,
-    required this.hasQuery,
-    required this.onChanged,
-    required this.onClear,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fillColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.05);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: TextStyle(
-          fontSize: 15,
-          color: isDark ? Colors.white : AppColors.textPrimary,
-        ),
-        cursorColor: AppColors.pastelRedDeep,
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          hintText: 'Cerca per nome o docente',
-          hintStyle: TextStyle(
-              fontSize: 15, color: AppColors.textMuted),
-          prefixIcon: Icon(Icons.search_rounded,
-              color: AppColors.textMuted, size: 20),
-          suffixIcon: hasQuery
-              ? IconButton(
-                  icon: Icon(Icons.cancel_rounded,
-                      color: AppColors.textMuted, size: 18),
-                  onPressed: onClear,
-                )
-              : null,
-          filled: true,
-          fillColor: fillColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+// ═══════════════════════════════════════════════════════════════
+// FILTER ROW SEMESTRI — TabBar nativo con auto-scroll
+// ═══════════════════════════════════════════════════════════════
 class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
@@ -561,7 +374,199 @@ class _FilterRowState extends State<_FilterRow>
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════════════════════════════
+class _CoursesHeader extends StatelessWidget {
+  final int total;
+  final int visible;
+  final String sortBy;
+  final ValueChanged<String> onSortChanged;
+  final bool isDark;
 
+  const _CoursesHeader({
+    required this.total,
+    required this.visible,
+    required this.sortBy,
+    required this.onSortChanged,
+    required this.isDark,
+  });
+
+  String _sortLabel(String s) {
+    switch (s) {
+      case 'nome': return 'Nome';
+      case 'cfu': return 'CFU';
+      case 'stato': return 'Stato';
+      default: return s;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryColor = isDark ? Colors.white70 : AppColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Corsi',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.2,
+                    height: 1.05,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  visible == total
+                      ? '$total ${total == 1 ? "corso" : "corsi"}'
+                      : '$visible di $total visibili',
+                  style: TextStyle(fontSize: 14, color: secondaryColor),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
+            color: isDark ? const Color(0xFF2A2A2C) : AppColors.surface,
+            position: PopupMenuPosition.under,
+            onSelected: onSortChanged,
+            itemBuilder: (_) => [
+              _sortItem('nome', 'Nome A-Z', Icons.sort_by_alpha),
+              _sortItem('cfu', 'CFU (alti prima)', Icons.school_outlined),
+              _sortItem('stato', 'Stato', Icons.filter_list_rounded),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppColors.border,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sort_rounded, size: 16, color: secondaryColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    _sortLabel(sortBy),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _sortItem(String value, String label, IconData icon) {
+    return PopupMenuItem(
+      value: value,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Text(label),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEARCH BAR
+// ═══════════════════════════════════════════════════════════════
+class _SearchBar extends StatelessWidget {
+  final TextEditingController controller;
+  final bool hasQuery;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final bool isDark;
+
+  const _SearchBar({
+    required this.controller,
+    required this.hasQuery,
+    required this.onChanged,
+    required this.onClear,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fillColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.05);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: TextStyle(
+          fontSize: 15,
+          color: isDark ? Colors.white : AppColors.textPrimary,
+        ),
+        cursorColor: AppColors.pastelRedDeep,
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          hintText: 'Cerca per nome o docente',
+          hintStyle: TextStyle(fontSize: 15, color: AppColors.textMuted),
+          prefixIcon:
+              Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+          suffixIcon: hasQuery
+              ? IconButton(
+                  icon: Icon(Icons.cancel_rounded,
+                      color: AppColors.textMuted, size: 18),
+                  onPressed: onClear,
+                )
+              : null,
+          filled: true,
+          fillColor: fillColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DISMISSIBLE COURSE
+// ═══════════════════════════════════════════════════════════════
 class _DismissibleCourse extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -609,6 +614,9 @@ class _DismissibleCourse extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// COURSE CARD
+// ═══════════════════════════════════════════════════════════════
 class _CourseCard extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -626,10 +634,8 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor =
-        isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white60 : AppColors.textSecondary;
+    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
+    final secondaryColor = isDark ? Colors.white60 : AppColors.textSecondary;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -730,6 +736,9 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// BADGE
+// ═══════════════════════════════════════════════════════════════
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
@@ -756,14 +765,14 @@ class _Badge extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// EMPTY STATE
+// ═══════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final bool hasAnyCourse;
   final bool isDark;
 
-  const _EmptyState({
-    required this.hasAnyCourse,
-    required this.isDark,
-  });
+  const _EmptyState({required this.hasAnyCourse, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -786,9 +795,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            hasAnyCourse
-                ? 'Nessun corso trovato'
-                : 'Nessun corso aggiunto',
+            hasAnyCourse ? 'Nessun corso trovato' : 'Nessun corso aggiunto',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -803,9 +810,7 @@ class _EmptyState extends StatelessWidget {
                 : 'Premi + per aggiungere il primo',
             style: TextStyle(
               fontSize: 14,
-              color: isDark
-                  ? Colors.white60
-                  : AppColors.textSecondary,
+              color: isDark ? Colors.white60 : AppColors.textSecondary,
             ),
           ),
         ],
@@ -814,6 +819,9 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// SECTION FAB
+// ═══════════════════════════════════════════════════════════════
 class _SectionFab extends StatelessWidget {
   final Color color;
   final VoidCallback onPressed;
@@ -835,9 +843,6 @@ class _SectionFab extends StatelessWidget {
         ],
       ),
       child: FloatingActionButton(
-        // heroTag univoco: senza questo, più FAB vivi nello stesso
-        // IndexedStack (Corsi/Esami/Pianifica) condividono il tag Hero
-        // di default e Flutter lancia "multiple heroes share the same tag".
         heroTag: 'fab_courses',
         backgroundColor: color,
         foregroundColor: Colors.white,
