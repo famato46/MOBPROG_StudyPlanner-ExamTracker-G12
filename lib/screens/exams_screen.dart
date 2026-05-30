@@ -23,7 +23,7 @@ class ExamsScreen extends StatefulWidget {
 }
 
 class _ExamsScreenState extends State<ExamsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String _searchQuery = '';
   String _filterTipologia = 'tutti';
   String _sortBy = 'data';
@@ -166,9 +166,9 @@ class _ExamsScreenState extends State<ExamsScreen>
                 _FilterRow(
                   options: const [
                     ('tutti', 'Tutti'),
-                    ('scritto', 'Scritti'), // <-- SOSTITUITO "esame" CON "scritto"
+                    ('scritto', 'Scritti'),
                     ('orale', 'Orali'),
-                    ('intercorso', 'Intercorso'),
+                    ('intercorso', 'Intercorsi'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
                   ],
@@ -309,11 +309,11 @@ class _ExamsHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Esami', // <-- Titolo pagina aggiornato per coerenza logica
+                  'Esami',
                   style: TextStyle(
                     fontSize: 34,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.2,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1.5,
                     height: 1.05,
                     color: primaryColor,
                   ),
@@ -321,9 +321,9 @@ class _ExamsHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   total == 0
-                      ? 'Nessuna prova'
+                      ? 'Nessun esame'
                       : visible == total
-                          ? '$total ${total == 1 ? "prova" : "prove"}'
+                          ? '$total ${total == 1 ? "esame" : "esami"}'
                           : '$visible di $total visibili',
                   style:
                       TextStyle(fontSize: 14, color: secondaryColor),
@@ -544,7 +544,7 @@ class _ExamTabBar extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════
 // FILTER PILL ROW (orizzontale)
 // ═══════════════════════════════════════════════════════════════════
-class _FilterRow extends StatelessWidget {
+class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
   final ValueChanged<String> onSelected;
@@ -558,81 +558,80 @@ class _FilterRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final (value, label) = options[i];
-          final selected = current == value;
-          return _FilterPill(
-            label: label,
-            selected: selected,
-            onTap: () => onSelected(value),
-            isDark: isDark,
-          );
-        },
-      ),
-    );
-  }
+  State<_FilterRow> createState() => _FilterRowState();
 }
 
-class _FilterPill extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isDark;
+class _FilterRowState extends State<_FilterRow>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.isDark,
-  });
+  int get _currentIndex {
+    final i = widget.options.indexWhere((o) => o.$1 == widget.current);
+    return i < 0 ? 0 : i;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: widget.options.length,
+      vsync: this,
+      initialIndex: _currentIndex,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_FilterRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.current != widget.current) {
+      _tabController.animateTo(_currentIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected
-        ? AppColors.pastelBlue
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface);
-    final fg = selected
-        ? Colors.white
-        : (isDark ? Colors.white70 : AppColors.textSecondary);
-    final border = selected
-        ? AppColors.pastelBlue
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : AppColors.border);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: border),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          onTap: (i) => widget.onSelected(widget.options[i].$1),
+          indicator: BoxDecoration(
+            color: AppColors.pastelBlue,
+            borderRadius: BorderRadius.circular(10),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor: widget.isDark
+              ? Colors.white70
+              : AppColors.textSecondary,
+          labelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2),
+          unselectedLabelStyle: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: fg,
-              letterSpacing: -0.2,
-            ),
-          ),
+              letterSpacing: -0.2),
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: widget.options.map((o) => Tab(text: o.$2)).toList(),
         ),
       ),
     );
@@ -711,8 +710,8 @@ class _ExamCard extends StatelessWidget {
 
   IconData _iconaTipologia(String tipologia) {
     switch (tipologia.toLowerCase()) {
-      case 'scritto': // <-- AGGIORNATA ICONA PER "scritto"
-        return Icons.create_rounded; 
+      case 'scritto':
+        return Icons.edit_rounded;
       case 'orale':
         return Icons.record_voice_over_rounded;
       case 'intercorso':
@@ -723,17 +722,6 @@ class _ExamCard extends StatelessWidget {
         return Icons.analytics_rounded;
       default:
         return Icons.assignment_rounded;
-    }
-  }
-
-  String _formatTipologia(String tipologia) {
-    switch (tipologia.toLowerCase()) {
-      case 'scritto':      return 'Scritto'; // <-- SOSTITUITO "esame" CON "scritto"
-      case 'orale':        return 'Orale';
-      case 'intercorso':   return 'Intercorso';
-      case 'consegna':     return 'Consegna';
-      case 'progetto':     return 'Progetto';
-      default:             return tipologia;
     }
   }
 
@@ -797,7 +785,7 @@ class _ExamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _formatTipologia(exam.tipologia),
+                        exam.titolo,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -923,7 +911,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            hasAnyExam ? 'Nessuna prova trovata' : 'Nessuna prova aggiunta',
+            hasAnyExam ? 'Nessun esame trovato' : 'Nessun esame aggiunto',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -935,7 +923,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             hasAnyExam
                 ? 'Prova a cambiare i filtri'
-                : 'Premi + per aggiungere la prima',
+                : 'Premi + per aggiungere il primo',
             style: TextStyle(
               fontSize: 14,
               color: isDark
