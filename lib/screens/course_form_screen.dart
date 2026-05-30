@@ -401,7 +401,22 @@ static const List<String> _semestri = [
       title: 'Stato',
       options: _stati,
       current: _stato,
-      onSelected: (v) => setState(() => _stato = v),
+      onSelected: (v) {
+        setState(() => _stato = v);
+        if ((v == 'superato' || v == 'completato') &&
+            _votoOttenutoCtrl.text.isEmpty &&
+            _isEditing &&
+            widget.courseToEdit != null) {
+          final media = context
+              .read<PlannerProvider>()
+              .getAverageExamsGrade(widget.courseToEdit!.id);
+          if (media != null) {
+            final arrotondato = media.round().clamp(18, 31);
+            _votoOttenutoCtrl.text =
+                arrotondato >= 31 ? '30L' : '$arrotondato';
+          }
+        }
+      },
     );
   }
 }
