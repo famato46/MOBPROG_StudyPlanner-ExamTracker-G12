@@ -40,6 +40,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   // Filtri Tab Sessioni (stato effimero)
   Course? _filtroCorso;
   String _filtroTipoAttivita = 'Tutti';
+  bool _isVistaSettimanale = false;
   bool _filtriEspansi = false;
 
   // ─── Stato Timer Focus (Pomodoro / Pausa) ───
@@ -52,6 +53,8 @@ class _PlanningScreenState extends State<PlanningScreen>
   Timer? _focusTimer;
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
+
+  int get _secondsRemaining => _secondsNotifier.value;
 
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
@@ -144,6 +147,11 @@ class _PlanningScreenState extends State<PlanningScreen>
         examId: _selectedTaskForPomodoro!.examId,
         taskId: _selectedTaskForPomodoro!.id,
         durataEffettiva: _pomodoroSeconds ~/ 60,
+      );
+    } else if (_focusType == FocusType.pausa) {
+      await Provider.of<PlannerProvider>(context, listen: false)
+          .savePausaSession(
+        durataEffettiva: _pausaSeconds ~/ 60,
       );
     }
 
@@ -731,8 +739,14 @@ class _PlanningScreenState extends State<PlanningScreen>
                 overlayColor:
                     WidgetStateProperty.all(Colors.transparent),
                 tabs: const [
-                  Tab(text: 'Pomodoro'),
-                  Tab(text: 'Pausa'),
+                  Tab(
+                    icon: Icon(Icons.timer_outlined, size: 20),
+                    text: 'Pomodoro',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.local_cafe_outlined, size: 20),
+                    text: 'Pausa',
+                  ),
                 ],
               ),
             ),
