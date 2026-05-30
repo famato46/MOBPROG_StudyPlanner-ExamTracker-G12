@@ -513,59 +513,83 @@ void _showIosPicker<T>({
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+  builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ),
-          const Divider(height: 1),
-          ...options.map((opt) {
-            final (value, label) = opt;
-            final selected = value == current;
-            return InkWell(
-              onTap: () {
-                onSelected(value);
-                Navigator.pop(context);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.textPrimary,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    if (selected)
-                      Icon(Icons.check_rounded,
-                          color: AppColors.iosBlue, size: 20),
-                  ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
-            );
-          }),
-          const SizedBox(height: 8),
-        ],
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  ...options.map((opt) {
+                    final (value, label) = opt;
+                    final selected = value == current;
+                    return InkWell(
+                      onTap: () {
+                        onSelected(value);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                  fontWeight: selected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                            if (selected)
+                              Icon(Icons.check_rounded,
+                                  color: AppColors.iosBlue, size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );
