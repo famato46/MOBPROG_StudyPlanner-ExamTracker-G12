@@ -166,9 +166,9 @@ class _ExamsScreenState extends State<ExamsScreen>
                 _FilterRow(
                   options: const [
                     ('tutti', 'Tutti'),
-                    ('scritto', 'Scritti'),
+                    ('scritto', 'Scritti'), // <-- SOSTITUITO "esame" CON "scritto"
                     ('orale', 'Orali'),
-                    ('intercorso', 'Intercorsi'),
+                    ('intercorso', 'Intercorso'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
                   ],
@@ -309,11 +309,11 @@ class _ExamsHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Esami',
+                  'Esami', // <-- Titolo pagina aggiornato per coerenza logica
                   style: TextStyle(
                     fontSize: 34,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -1.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.2,
                     height: 1.05,
                     color: primaryColor,
                   ),
@@ -321,9 +321,9 @@ class _ExamsHeader extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   total == 0
-                      ? 'Nessun esame'
+                      ? 'Nessuna prova'
                       : visible == total
-                          ? '$total ${total == 1 ? "esame" : "esami"}'
+                          ? '$total ${total == 1 ? "prova" : "prove"}'
                           : '$visible di $total visibili',
                   style:
                       TextStyle(fontSize: 14, color: secondaryColor),
@@ -711,8 +711,8 @@ class _ExamCard extends StatelessWidget {
 
   IconData _iconaTipologia(String tipologia) {
     switch (tipologia.toLowerCase()) {
-      case 'scritto':
-        return Icons.edit_rounded;
+      case 'scritto': // <-- AGGIORNATA ICONA PER "scritto"
+        return Icons.create_rounded; 
       case 'orale':
         return Icons.record_voice_over_rounded;
       case 'intercorso':
@@ -723,6 +723,17 @@ class _ExamCard extends StatelessWidget {
         return Icons.analytics_rounded;
       default:
         return Icons.assignment_rounded;
+    }
+  }
+
+  String _formatTipologia(String tipologia) {
+    switch (tipologia.toLowerCase()) {
+      case 'scritto':      return 'Scritto'; // <-- SOSTITUITO "esame" CON "scritto"
+      case 'orale':        return 'Orale';
+      case 'intercorso':   return 'Intercorso';
+      case 'consegna':     return 'Consegna';
+      case 'progetto':     return 'Progetto';
+      default:             return tipologia;
     }
   }
 
@@ -786,7 +797,7 @@ class _ExamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        exam.titolo,
+                        _formatTipologia(exam.tipologia),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -912,7 +923,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            hasAnyExam ? 'Nessun esame trovato' : 'Nessun esame aggiunto',
+            hasAnyExam ? 'Nessuna prova trovata' : 'Nessuna prova aggiunta',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -924,7 +935,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             hasAnyExam
                 ? 'Prova a cambiare i filtri'
-                : 'Premi + per aggiungere il primo',
+                : 'Premi + per aggiungere la prima',
             style: TextStyle(
               fontSize: 14,
               color: isDark
