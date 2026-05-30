@@ -44,8 +44,8 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _filtriEspansi = false;
 
   // ─── Stato Timer Focus (Pomodoro / Pausa) ───
-  static const int _pomodoroSeconds = 1 * 60;
-  static const int _pausaSeconds = 1 * 60;
+  static const int _pomodoroSeconds = 25 * 60;
+  static const int _pausaSeconds = 5 * 60;
 
   final ValueNotifier<int> _secondsNotifier = ValueNotifier(_pomodoroSeconds);
 
