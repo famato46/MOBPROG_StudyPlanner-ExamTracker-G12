@@ -10,7 +10,6 @@ void main() async {
   // Inizializzazione necessaria prima del runApp per locale 'it_IT'
   WidgetsFlutterBinding.ensureInitialized();
   // Carica i dati di localizzazione per le date in italiano (giorni e mesi).
-  // Senza questa chiamata, DateFormat('EEEE dd MMMM') ritorna "Thursday" invece di "Giovedì".
   await initializeDateFormatting('it_IT', null);
 
   runApp(const StudyPlannerApp());
@@ -40,8 +39,6 @@ class StudyPlannerApp extends StatelessWidget {
               ),
               useMaterial3: true,
               scaffoldBackgroundColor: AppColors.background,
-              // NoSplash globale: elimina l'onda grigia stile Android
-              // su TUTTI i widget tap-able (bottom bar, pulsanti, liste, ecc.)
               splashFactory: NoSplash.splashFactory,
               splashColor: Colors.transparent,
               highlightColor: Colors.transparent,

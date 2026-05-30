@@ -7,12 +7,11 @@ import '../models/study_session.dart';
 import '../models/task.dart';
 
 /// PlannerProvider - Gestisce tutto lo stato dell'app
-/// Segue il pattern Provider del professore: interagisce col DB e notifica la UI
 class PlannerProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final Uuid _uuid = const Uuid();
 
-  // ========== STATE (Liste in memoria) ==========
+  // STATE (Liste in memoria) 
   List<Course> _courses = [];
   List<Exam> _exams = [];
   List<StudySession> _studySessions = [];
@@ -20,19 +19,19 @@ class PlannerProvider extends ChangeNotifier {
 
   bool _isLoading = false;
 
-  // ========== GETTERS PUBBLICI ==========
+  // GETTERS PUBBLICI 
   List<Course> get courses => _courses;
   List<Exam> get exams => _exams;
   List<StudySession> get studySessions => _studySessions;
   List<Task> get tasks => _tasks;
   bool get isLoading => _isLoading;
 
-  // ========== COSTRUTTORE ==========
+  // COSTRUTTORE 
   PlannerProvider() {
     loadData();
   }
 
-  // ========== CARICAMENTO DATI ==========
+  // CARICAMENTO DATI 
   Future<void> loadData() async {
     _isLoading = true;
     notifyListeners();
@@ -50,10 +49,8 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // =============================================
-  // ========== CRUD CORSI =======================
-  // =============================================
 
+  // CRUD CORSI 
   Future<void> addCourse({
     required String nome,
     required String docente,
@@ -109,10 +106,8 @@ class PlannerProvider extends ChangeNotifier {
     }
   }
 
-  // =============================================
-  // ========== CRUD ESAMI =======================
-  // =============================================
 
+  // CRUD ESAMI 
   Future<void> addExam({
     required String titolo,
     required String courseId,
@@ -181,10 +176,8 @@ class PlannerProvider extends ChangeNotifier {
     return sum / completedExams.length;
   }
 
-  // =============================================
-  // ========== CRUD SESSIONI STUDIO =============
-  // =============================================
 
+  // CRUD SESSIONI STUDIO 
   Future<void> addStudySession({
     required String titolo,
     String? courseId,
@@ -227,8 +220,7 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ========== FUNZIONI SPECIALI POMODORO/PAUSA =======
-
+  // FUNZIONI SPECIALI POMODORO/PAUSA
   Future<void> savePomodoroSession({
     required String titolo,
     String? courseId,
@@ -292,10 +284,8 @@ class PlannerProvider extends ChangeNotifier {
         .toList();
   }
 
-  // =============================================
-  // ========== CRUD TASK ========================
-  // =============================================
 
+  // CRUD TASK 
   Future<void> addTask({
     required String titolo,
     String? descrizione,
@@ -370,9 +360,8 @@ class PlannerProvider extends ChangeNotifier {
     return _tasks.where((t) => t.completata).toList();
   }
 
-  // =============================================
-  // ========== STATISTICHE TECNICA POMODORO =====
-  // =============================================
+
+  // STATISTICHE TECNICA POMODORO 
 
   int get pomodoriCompletati => _studySessions
       .where((s) => s.completata && s.tipo == 'pomodoro')
@@ -386,10 +375,8 @@ class PlannerProvider extends ChangeNotifier {
       .where((s) => s.completata && s.tipo == 'pomodoro')
       .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0));
 
-  // =============================================
-  // ========== STATISTICHE GENERALI =============
-  // =============================================
 
+  // STATISTICHE GENERALI 
   int get totalCourses => _courses.length;
   int get activeCourses =>
       _courses.where((c) => c.stato != 'superato').length;
@@ -441,7 +428,7 @@ class PlannerProvider extends ChangeNotifier {
     return votoStima.isNaN || votoStima.isInfinite ? 0.0 : votoStima;
   }
 
-  // Modificato per non conteggiare le pause nel totale dello studio
+  // Serve a non conteggiare le pause nel totale dello studio
   int get totalStudyHours {
     return _studySessions
             .where((s) => s.completata && s.durataEffettiva != null && s.tipo != 'pausa')
@@ -449,10 +436,8 @@ class PlannerProvider extends ChangeNotifier {
         60;
   }
 
-  // =============================================
-  // ========== SUGGERITORE AUTOMATICO ===========
-  // =============================================
 
+  // SUGGERITORE AUTOMATICO 
   List<String> get suggerimentiAutomatici {
     final suggerimenti = <String>[];
     final oggi = DateTime.now();
@@ -498,10 +483,8 @@ class PlannerProvider extends ChangeNotifier {
     return suggerimenti;
   }
 
-  // =============================================
-  // ========== UTILITY ==========================
-  // =============================================
 
+  // UTILITY 
   Future<void> resetDatabase() async {
     await _db.deleteDatabase();
     _courses = [];
