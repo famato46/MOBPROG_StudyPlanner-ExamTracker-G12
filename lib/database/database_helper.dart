@@ -25,6 +25,9 @@ class DatabaseHelper {
       path,
       version: 1,
       onCreate: _onCreate,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON;'); // per evitare esami orfani al riavvio
+      },
     );
   }
 
