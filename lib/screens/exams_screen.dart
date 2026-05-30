@@ -785,7 +785,7 @@ class _ExamCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        exam.titolo,
+                        '${exam.tipologia[0].toUpperCase()}${exam.tipologia.substring(1).toLowerCase()}',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,

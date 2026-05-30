@@ -80,6 +80,10 @@ class _PlanningScreenState extends State<PlanningScreen>
     });
 
     _sessioniTabController = TabController(length: 2, vsync: this);
+    _sessioniTabController.addListener(() {
+    if (_sessioniTabController.indexIsChanging) return;
+    setState(() => _isVistaSettimanale = _sessioniTabController.index == 1);
+    });
   }
 
   @override
@@ -416,24 +420,27 @@ class _PlanningScreenState extends State<PlanningScreen>
     // --- 1. LOGICA FILTRAGGIO OBIETTIVI DI OGGI (Task Oggi + Scaduti) ---
     // Solo task NON completati con scadenza oggi o già passata.
     final taskOggi = provider.tasks.where((t) {
-      if (t.completata) return false;
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
       return !scad.isAfter(oggiDate);
     }).toList()
-      ..sort((a, b) =>
-          _pesoPriorita(b.priorita).compareTo(_pesoPriorita(a.priorita)));
+      ..sort((a, b) {
+  if (a.completata != b.completata) return a.completata ? 1 : -1;
+  return _pesoPriorita(b.priorita).compareTo(_pesoPriorita(a.priorita));
+});
+
 
     // --- 2. LOGICA FILTRAGGIO IN PROGRAMMA (Task Futuri) ---
     // Solo task NON completati con scadenza futura.
     final taskFuturi = provider.tasks.where((t) {
-      if (t.completata) return false;
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
       return scad.isAfter(oggiDate);
     }).toList()
-      ..sort((a, b) => a.scadenza!.compareTo(b.scadenza!));
-
+      ..sort((a, b) {
+  if (a.completata != b.completata) return a.completata ? 1 : -1;
+  return a.scadenza!.compareTo(b.scadenza!);
+});
     final tuttoOggiVuoto = taskOggi.isEmpty;
     final tuttoFuturoVuoto = taskFuturi.isEmpty;
 
@@ -537,36 +544,11 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
         ),
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-            child: Row(
-              children: [
-                _MiniSegment(
-                  options: const ['Giornaliera', 'Settimanale'],
-                  selectedIndex: _isVistaSettimanale ? 1 : 0,
-                  onChanged: (i) =>
-                      setState(() => _isVistaSettimanale = i == 1),
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _formatGiornoPianificatore(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : AppColors.textSecondary,
-                      letterSpacing: -0.2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    textAlign: TextAlign.end,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+          child: _SubTabBar(
+          controller: _sessioniTabController,
+          isDark: isDark,
+  ),
+),
         SliverToBoxAdapter(
           child: _FilterSection(
             espanso: _filtriEspansi,
@@ -2117,6 +2099,57 @@ class _TaskPickerButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubTabBar extends StatelessWidget {
+  final TabController controller;
+  final bool isDark;
+  const _SubTabBar({required this.controller, required this.isDark});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(9),
+        ),
+        padding: const EdgeInsets.all(3),
+        child: TabBar(
+          controller: controller,
+          indicator: BoxDecoration(
+            color: isDark ? const Color(0xFF3A3A3C) : Colors.white,
+            borderRadius: BorderRadius.circular(7),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                )
+            ],
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: isDark ? Colors.white : AppColors.textPrimary,
+          unselectedLabelColor: AppColors.textMuted,
+          labelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.2),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.2),
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: const [
+            Tab(text: 'Giornaliera'),
+            Tab(text: 'Settimanale'),
+          ],
         ),
       ),
     );
