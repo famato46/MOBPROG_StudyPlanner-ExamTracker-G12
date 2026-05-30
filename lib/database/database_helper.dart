@@ -6,9 +6,7 @@ import '../models/study_session.dart';
 import '../models/task.dart';
 
 /// DatabaseHelper - Pattern Singleton per gestire SQLite
-/// Segue rigorosamente il pattern del professore per evitare memory leak
 class DatabaseHelper {
-  // ========== SINGLETON PATTERN ==========
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
   DatabaseHelper._privateConstructor();
 
@@ -20,7 +18,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  // ========== INIZIALIZZAZIONE DATABASE ==========
+  // INIZIALIZZAZIONE DATABASE 
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'unipath.db');
     return await openDatabase(
@@ -30,7 +28,7 @@ class DatabaseHelper {
     );
   }
 
-  // ========== CREAZIONE TABELLE ==========
+  // CREAZIONE TABELLE 
   Future<void> _onCreate(Database db, int version) async {
     // Tabella Corsi
     await db.execute('''
@@ -101,9 +99,9 @@ class DatabaseHelper {
     ''');
   }
 
-  // ========================================
-  // ========== CRUD CORSI ==================
-  // ========================================
+
+  // CRUD CORSI 
+
 
   Future<int> insertCourse(Course course) async {
     Database db = await database;
@@ -163,9 +161,9 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Course.fromMap(maps[i]));
   }
 
-  // ========================================
-  // ========== CRUD ESAMI ==================
-  // ========================================
+
+  // CRUD ESAMI 
+
 
   Future<int> insertExam(Exam exam) async {
     Database db = await database;
@@ -215,9 +213,8 @@ class DatabaseHelper {
     return await db.delete('exams', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ========================================
-  // ========== CRUD SESSIONI ===============
-  // ========================================
+
+  // CRUD SESSIONI 
 
   Future<int> insertStudySession(StudySession session) async {
     Database db = await database;
@@ -278,9 +275,9 @@ class DatabaseHelper {
     return await db.delete('study_sessions', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ========================================
-  // ========== CRUD TASK ===================
-  // ========================================
+ 
+  // CRUD TASK 
+
 
   Future<int> insertTask(Task task) async {
     Database db = await database;
@@ -339,11 +336,10 @@ class DatabaseHelper {
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ========================================
-  // ========== UTILITY =====================
-  // ========================================
 
-  /// Elimina tutto il database (utile per debug)
+  // UTILITY 
+
+  /// Elimina tutto il database (per debug)
   Future<void> deleteDatabase() async {
     String path = join(await getDatabasesPath(), 'unipath.db');
     await databaseFactory.deleteDatabase(path);
@@ -355,9 +351,9 @@ class DatabaseHelper {
     Database db = await database;
     await db.close();
   }
-  // ========================================
-  // ========== TRANSAZIONE POMODORO ========
-  // ========================================
+
+  // TRANSAZIONE POMODORO 
+ 
   
   /// Salva una sessione di studio e aggiorna il tempo effettivo della Task associata
   Future<void> saveSessionAndUpdateTaskTime(StudySession session, String taskId) async {
@@ -365,10 +361,10 @@ class DatabaseHelper {
     
     // Usiamo una transaction: o fa entrambe le cose, o non ne fa nessuna (sicurezza dei dati)
     await db.transaction((txn) async {
-      // 1. Inserisce la sessione nello storico
+      // Inserisce la sessione nello storico
       await txn.insert('study_sessions', session.toMap());
 
-      // 2. Legge la task corrente dal database
+      // Legge la task corrente dal database
       List<Map<String, dynamic>> taskMap = await txn.query(
         'tasks',
         where: 'id = ?',
@@ -378,10 +374,10 @@ class DatabaseHelper {
       if (taskMap.isNotEmpty) {
         Task currentTask = Task.fromMap(taskMap.first);
         
-        // 3. Calcola il nuovo tempo totale
+        // Calcola il nuovo tempo totale
         int nuovoTempoEffettivo = (currentTask.tempoEffettivo ?? 0) + (session.durataEffettiva ?? 0);
 
-        // 4. Aggiorna la task con il nuovo tempo effettivo
+        // Aggiorna la task con il nuovo tempo effettivo
         await txn.update(
           'tasks',
           {'tempoEffettivo': nuovoTempoEffettivo},

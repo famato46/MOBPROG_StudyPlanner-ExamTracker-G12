@@ -70,7 +70,7 @@ class Exam {
     String? priorita,
     String? stato,
     int? voto,
-    bool clearVoto = false, // <-- FIX 1: Parametro per forzare il null
+    bool clearVoto = false, // Parametro per forzare il null
     String? note,
   }) {
     return Exam(
@@ -81,7 +81,7 @@ class Exam {
       tipologia: tipologia ?? this.tipologia,
       priorita: priorita ?? this.priorita,
       stato: stato ?? this.stato,
-      // <-- FIX 1: Applica esplicitamente null se richiesto
+      // Applica esplicitamente null se richiesto
       voto: clearVoto ? null : (voto ?? this.voto), 
       note: note ?? this.note,
     );

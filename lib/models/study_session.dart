@@ -51,7 +51,7 @@ class StudySession {
     };
   }
 
-  // Metodo copyWith aggiornato
+  // Metodo copyWith
   StudySession copyWith({
     String? id,
     String? titolo,
