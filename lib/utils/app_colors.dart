@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// UniPath — Design System
 class AppColors {
   AppColors._();
 
-  // ─── Base neutra (Apple-like) ─────────────────────────────────
+  // Base neutra (Apple-like)
   static const Color background = Color(0xFFF5F4F0);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF1C1C1E);
@@ -12,7 +11,7 @@ class AppColors {
   static const Color textMuted = Color(0xFF9B9B9F);
   static const Color border = Color(0xFFE5E5E1);
 
-  // ─── Background grouped (iOS Settings style) ─────────────────
+  // Background grouped (iOS Settings style) 
   /// Sfondo gruppi nei form/dettagli (tipo Settings iOS, leggermente
   /// più scuro del background generale).
   static const Color groupedBackground = Color(0xFFF2F2F7);
@@ -23,7 +22,7 @@ class AppColors {
   /// Separatore tra righe dentro un gruppo.
   static const Color groupedDivider = Color(0xFFE5E5EA);
 
-  // ─── 4 Pastelli ufficiali della Dashboard ────────────────────
+  // Pastelli ufficiali della Dashboard 
   static const Color pastelRed = Color(0xFFFF8B9C);
   static const Color pastelRedDeep = Color(0xFFD14A60);
   static const Color pastelRedLight = Color(0xFFFFE5EA);
@@ -44,7 +43,7 @@ class AppColors {
   static const Color pastelLavenderDeep = Color(0xFF6C5BC9);
   static const Color pastelLavenderLight = Color(0xFFEEEDFE);
 
-  // ─── Alias semantici per sezione ──────────────────────────────
+  // Alias semantici per sezione 
   static const Color home = pastelLavender;
   static const Color homeDeep = pastelLavenderDeep;
   static const Color homeLight = pastelLavenderLight;
@@ -69,22 +68,22 @@ class AppColors {
   static const Color statsDark = pastelYellowDeep;
   static const Color statsLight = pastelYellowLight;
 
-  // ─── Colori sistema iOS ───────────────────────────────────────
+  // Colori sistema iOS 
   /// Blu di sistema iOS — usato per la tab bar selezionata e per i
   /// link/CTA testuali tipici di iOS (es. "Salva").
   static const Color iosBlue = Color(0xFF007AFF);
 
-  // ─── Colori semantici ─────────────────────────────────────────
+  // Colori semantici 
   static const Color success = Color(0xFF34C759);
   static const Color warning = Color(0xFFFF9500);
   static const Color danger = Color(0xFFFF3B30);
   static const Color info = Color(0xFF007AFF);
 
-  // ─── Header riquadrati ────────────────────────────────────────
+  // Header riquadrati 
   static const Color headerBg = Color(0xFFF1EFE8);
   static const Color headerText = Color(0xFF444441);
 
-  // ─── Helper: colore per priorità ──────────────────────────────
+  // Helper: colore per priorità 
   static Color priorita(String p) {
     switch (p) {
       case 'alta':
@@ -98,7 +97,7 @@ class AppColors {
     }
   }
 
-  // ─── Helper: colore per stato corso ───────────────────────────
+  // Helper: colore per stato corso 
   static Color statoCorso(String s) {
     switch (s) {
       case 'superato':
