@@ -37,6 +37,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   DateTime? _scadenza;
   String _priorita = 'media';
   bool _completata = false;
+  bool _scadenzaError = false;
 
   bool get _isEditing => widget.taskToEdit != null;
 
@@ -93,24 +94,11 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-  if (_scadenza == null) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: const Text('Campo obbligatorio'),
-            content: const Text('Devi selezionare una data di scadenza.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+    if (_scadenza == null) {
+      setState(() => _scadenzaError = true);
+      return;
+    }
+    setState(() => _scadenzaError = false);
     final provider = context.read<PlannerProvider>();
 
     final tempoStimato = _tempoStimatoCtrl.text.isEmpty
@@ -351,15 +339,36 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             _SettingsGroup(
               isDark: isDark,
               children: [
-                _PickerRow(
-                  label: 'Scadenza',
-                  value: _scadenza == null
-                      ? 'Nessuna'
-                      : DateFormat('dd MMM yyyy', 'it_IT')
-                          .format(_scadenza!),
-                  onTap: _pickScadenza,
-                  isDark: isDark,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _PickerRow(
+                    label: 'Scadenza',
+                    value: _scadenza == null
+                        ? 'Nessuna'
+                        : DateFormat('dd MMM yyyy', 'it_IT').format(_scadenza!),
+                    onTap: () async {
+                      await _pickScadenza();
+                      if (_scadenza != null) setState(() => _scadenzaError = false);
+                    },
+                    isDark: isDark,
+                  ),
+                    if (_scadenzaError)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Center(
+                          child: Text(
+                            'Campo obbligatorio',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.danger,
+                              height: 0.8,
+                            ),
+                          ),
+                        ),
+                      ),
+                ],
+              ),
                 _PickerRow(
                   label: 'Priorità',
                   value: _prioritaLabel(_priorita),
