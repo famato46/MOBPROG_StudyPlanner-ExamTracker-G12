@@ -80,6 +80,12 @@ class _StatsScreenState extends State<StatsScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        // ── Scadenze imminenti — primo elemento ──
+        const _SectionLabel(title: 'Scadenze Imminenti'),
+        const SizedBox(height: 12),
+        _buildScadenzeImminenti(provider),
+        const SizedBox(height: 24),
+
         // ── KPI Grid ──
         Row(
           children: [
@@ -232,12 +238,6 @@ class _StatsScreenState extends State<StatsScreen>
         ),
         const SizedBox(height: 16),
         _buildFocusHistory(provider, isDark),
-        const SizedBox(height: 24),
-
-        // ── Scadenze imminenti ──
-        const _SectionLabel(title: 'Scadenze Imminenti'),
-        const SizedBox(height: 12),
-        _buildScadenzeImminenti(provider),
       ],
     );
   }
