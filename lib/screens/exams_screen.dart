@@ -166,7 +166,8 @@ class _ExamsScreenState extends State<ExamsScreen>
                 _FilterRow(
                   options: const [
                     ('tutti', 'Tutti'),
-                    ('esame', 'Esami'),
+                    ('scritto', 'Scritti'),
+                    ('orale', 'Orali'),
                     ('intercorso', 'Intercorsi'),
                     ('consegna', 'Consegne'),
                     ('progetto', 'Progetti'),
@@ -710,8 +711,10 @@ class _ExamCard extends StatelessWidget {
 
   IconData _iconaTipologia(String tipologia) {
     switch (tipologia.toLowerCase()) {
-      case 'esame':
-        return Icons.school_rounded;
+      case 'scritto':
+        return Icons.edit_rounded;
+      case 'orale':
+        return Icons.record_voice_over_rounded;
       case 'intercorso':
         return Icons.rate_review_rounded;
       case 'consegna':
