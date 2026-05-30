@@ -23,8 +23,6 @@ class _CoursesScreenState extends State<CoursesScreen>
 
   final TextEditingController _searchController = TextEditingController();
 
-  // Le 6 voci dello stato-tab — lista statica usata sia dal TabController
-  // che dalle label del TabBar. Identico pattern di exams_screen.dart.
   static const List<(String, String)> _statiTab = [
     ('tutti', 'Tutti'),
     ('da_iniziare', 'Da iniziare'),
@@ -32,6 +30,16 @@ class _CoursesScreenState extends State<CoursesScreen>
     ('da_ripassare', 'Da ripassare'),
     ('completato', 'Completato'),
     ('superato', 'Superato'),
+  ];
+
+  static const List<(String, String)> _semestriOptions = [
+    ('tutti_sem', 'Tutti'),
+    ('1° Semestre · Anno I', '1° Sem · Anno I'),
+    ('2° Semestre · Anno I', '2° Sem · Anno I'),
+    ('1° Semestre · Anno II', '1° Sem · Anno II'),
+    ('2° Semestre · Anno II', '2° Sem · Anno II'),
+    ('1° Semestre · Anno III', '1° Sem · Anno III'),
+    ('2° Semestre · Anno III', '2° Sem · Anno III'),
   ];
 
   late final TabController _statoTabController;
@@ -43,9 +51,6 @@ class _CoursesScreenState extends State<CoursesScreen>
       length: _statiTab.length,
       vsync: this,
     )..addListener(() {
-        // Aggiorna _filterStato quando l'utente cambia tab.
-        // indexIsChanging == true durante l'animazione: aspettiamo
-        // che sia finita per non chiamare setState più volte.
         if (_statoTabController.indexIsChanging) return;
         setState(() =>
             _filterStato = _statiTab[_statoTabController.index].$1);
@@ -140,8 +145,6 @@ class _CoursesScreenState extends State<CoursesScreen>
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
-                // TabBar nativo Flutter con isScrollable: true.
-                // Hardware-accelerated, fluido come exams_screen.dart.
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -183,18 +186,9 @@ class _CoursesScreenState extends State<CoursesScreen>
                     ),
                   ),
                 ),
-                // GAP più ampio tra le due righe di filtri
                 const SizedBox(height: 12),
                 _FilterRow(
-                  options: const [
-                    ('tutti_sem', 'Tutti'),
-                    ('1° Semestre · Anno I', '1° Sem · Anno I'),
-                    ('2° Semestre · Anno I', '2° Sem · Anno I'),
-                    ('1° Semestre · Anno II', '1° Sem · Anno II'),
-                    ('2° Semestre · Anno II', '2° Sem · Anno II'),
-                    ('1° Semestre · Anno III', '1° Sem · Anno III'),
-                    ('2° Semestre · Anno III', '2° Sem · Anno III'),
-                  ],
+                  options: _semestriOptions,
                   current: _filterSemestre,
                   onSelected: (v) => setState(() => _filterSemestre = v),
                   isDark: isDark,
@@ -283,6 +277,105 @@ class _CoursesScreenState extends State<CoursesScreen>
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// FILTER ROW — TabBar nativo con auto-scroll identico ai tab stati
+// ═══════════════════════════════════════════════════════════════
+class _FilterRow extends StatefulWidget {
+  final List<(String, String)> options;
+  final String current;
+  final ValueChanged<String> onSelected;
+  final bool isDark;
+
+  const _FilterRow({
+    required this.options,
+    required this.current,
+    required this.onSelected,
+    required this.isDark,
+  });
+
+  @override
+  State<_FilterRow> createState() => _FilterRowState();
+}
+
+class _FilterRowState extends State<_FilterRow>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(
+      length: widget.options.length,
+      vsync: this,
+      initialIndex: _currentIndex,
+    );
+  }
+
+  int get _currentIndex {
+    final i = widget.options.indexWhere((o) => o.$1 == widget.current);
+    return i < 0 ? 0 : i;
+  }
+
+  @override
+  void didUpdateWidget(_FilterRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.current != widget.current) {
+      _tabController.animateTo(_currentIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: widget.isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          onTap: (i) => widget.onSelected(widget.options[i].$1),
+          indicator: BoxDecoration(
+            color: AppColors.pastelRed,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          labelColor: Colors.white,
+          unselectedLabelColor: widget.isDark
+              ? Colors.white70
+              : AppColors.textSecondary,
+          labelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2),
+          unselectedLabelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2),
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(Colors.transparent),
+          tabs: widget.options.map((o) => Tab(text: o.$2)).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
 
 class _CoursesHeader extends StatelessWidget {
   final int total;
@@ -472,101 +565,6 @@ class _SearchBar extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterRow extends StatelessWidget {
-  final List<(String, String)> options;
-  final String current;
-  final ValueChanged<String> onSelected;
-  final bool isDark;
-
-  const _FilterRow({
-    required this.options,
-    required this.current,
-    required this.onSelected,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final (value, label) = options[i];
-          final selected = current == value;
-          return _FilterPill(
-            label: label,
-            selected: selected,
-            onTap: () => onSelected(value),
-            isDark: isDark,
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _FilterPill({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = selected
-        ? AppColors.pastelRed
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface);
-    final fg = selected
-        ? Colors.white
-        : (isDark ? Colors.white70 : AppColors.textSecondary);
-    final border = selected
-        ? AppColors.pastelRed
-        : (isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : AppColors.border);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: border),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: fg,
-              letterSpacing: -0.2,
-            ),
           ),
         ),
       ),
@@ -847,9 +845,6 @@ class _SectionFab extends StatelessWidget {
         ],
       ),
       child: FloatingActionButton(
-        // heroTag univoco: senza questo, più FAB vivi nello stesso
-        // IndexedStack (Corsi/Esami/Pianifica) condividono il tag Hero
-        // di default e Flutter lancia "multiple heroes share the same tag".
         heroTag: 'fab_courses',
         backgroundColor: color,
         foregroundColor: Colors.white,
