@@ -53,8 +53,6 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
-  int get _secondsRemaining => _secondsNotifier.value;
-
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
 
