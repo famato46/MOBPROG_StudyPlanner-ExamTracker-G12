@@ -5,9 +5,9 @@ class StudySession {
   final String? examId; // FK facoltativa verso Exam
   final DateTime data;
   final int durataPianificata; // Minuti previsti
-  final int? durataEffettiva; // Minuti effettivi (da timer Pomodoro)
+  final int? durataEffettiva; // Minuti effettivi 
   final bool completata;
-  final String tipo; // 'studio' | 'ripasso' | 'esercitazione'
+  final String tipo; // studio, ripasso, esercitazione
 
   const StudySession({
     required this.id,

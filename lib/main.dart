@@ -7,7 +7,7 @@ import 'screens/splash_screen.dart';
 import 'utils/app_colors.dart';
 
 void main() async {
-  // Inizializzazione necessaria prima del runApp per locale 
+  // Inizializzazione prima del runApp 
   WidgetsFlutterBinding.ensureInitialized();
   // Carica i dati di localizzazione per le date in italiano
   await initializeDateFormatting('it_IT', null);
@@ -86,7 +86,7 @@ class StudyPlannerApp extends StatelessWidget {
             themeMode: themeProvider.isDarkMode
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            // Larghezza massima dell'intera app (430 per phone landscape)
+            // Larghezza massima dell'intera app 
             builder: (context, child) {
               return Center(
                 child: ConstrainedBox(

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Base neutra (Apple-like)
+  // Base colors
   static const Color background = Color(0xFFF5F4F0);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color textPrimary = Color(0xFF1C1C1E);
@@ -11,18 +11,16 @@ class AppColors {
   static const Color textMuted = Color(0xFF9B9B9F);
   static const Color border = Color(0xFFE5E5E1);
 
-  // Background grouped (iOS Settings style) 
-  /// Sfondo gruppi nei form/dettagli (tipo Settings iOS, leggermente
-  /// più scuro del background generale).
+  // Sfondo gruppi nei form/dettagli 
   static const Color groupedBackground = Color(0xFFF2F2F7);
 
-  /// Sfondo singolo gruppo (card grigio molto chiaro).
+  // Sfondo singolo gruppo 
   static const Color groupedSurface = Color(0xFFFFFFFF);
 
-  /// Separatore tra righe dentro un gruppo.
+  // Separatore tra righe dentro un gruppo.
   static const Color groupedDivider = Color(0xFFE5E5EA);
 
-  // Pastelli ufficiali della Dashboard 
+  // Colori della Dashboard 
   static const Color pastelRed = Color(0xFFFF8B9C);
   static const Color pastelRedDeep = Color(0xFFD14A60);
   static const Color pastelRedLight = Color(0xFFFFE5EA);
@@ -68,9 +66,7 @@ class AppColors {
   static const Color statsDark = pastelYellowDeep;
   static const Color statsLight = pastelYellowLight;
 
-  // Colori sistema iOS 
-  /// Blu di sistema iOS — usato per la tab bar selezionata e per i
-  /// link/CTA testuali tipici di iOS (es. "Salva").
+  // Colore Blu usato per la tab bar selezionata e per i link/CTA testuali
   static const Color iosBlue = Color(0xFF007AFF);
 
   // Colori semantici 

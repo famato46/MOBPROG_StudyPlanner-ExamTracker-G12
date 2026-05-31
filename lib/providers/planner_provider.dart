@@ -6,12 +6,12 @@ import '../models/exam.dart';
 import '../models/study_session.dart';
 import '../models/task.dart';
 
-/// PlannerProvider - Gestisce tutto lo stato dell'app
+// PlannerProvider, Gestisce lo stato 
 class PlannerProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final Uuid _uuid = const Uuid();
 
-  // STATE (Liste in memoria) 
+  // STATE (Liste caricate dal DB)
   List<Course> _courses = [];
   List<Exam> _exams = [];
   List<StudySession> _studySessions = [];
@@ -19,7 +19,7 @@ class PlannerProvider extends ChangeNotifier {
 
   bool _isLoading = false;
 
-  // GETTERS PUBBLICI 
+  // GETTERS  
   List<Course> get courses => _courses;
   List<Exam> get exams => _exams;
   List<StudySession> get studySessions => _studySessions;
@@ -220,7 +220,7 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // FUNZIONI SPECIALI POMODORO/PAUSA
+  // FUNZIONI POMODORO/PAUSA
   Future<void> savePomodoroSession({
     required String titolo,
     String? courseId,
@@ -362,7 +362,6 @@ class PlannerProvider extends ChangeNotifier {
 
 
   // STATISTICHE TECNICA POMODORO 
-
   int get pomodoriCompletati => _studySessions
       .where((s) => s.completata && s.tipo == 'pomodoro')
       .length;

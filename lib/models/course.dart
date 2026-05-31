@@ -4,7 +4,7 @@ class Course {
   final String docente;
   final int cfu;
   final String semestre;
-  final String stato; // 'da_iniziare' | 'in_corso' | 'da_ripassare' | 'completato' | 'superato'
+  final String stato; // da_iniziare, in_corso, frequentato, superato
   final int? votoOttenuto;
   final int? votoDesiderato;
   final String? note;

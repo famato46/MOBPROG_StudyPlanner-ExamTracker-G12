@@ -3,9 +3,9 @@ class Exam {
   final String titolo;
   final String courseId; // FK verso Course (obbligatorio)
   final DateTime data;
-  final String tipologia; // 'scritto' | 'orale' | 'intercorso' | 'consegna' | 'progetto'
-  final String priorita; // 'alta' | 'media' | 'bassa'
-  final String stato; // 'programmato' | 'completato' | 'annullato'
+  final String tipologia; // scritto , orale, intercorso, consegna, progetto
+  final String priorita; // alta, media, bassa
+  final String stato; // programmato, completato, annullato
   final int? voto;
   final String? note;
 
@@ -21,7 +21,6 @@ class Exam {
     this.note,
   });
 
-  // Getter derivati (non salvati nel DB)
   bool get isPassato => data.isBefore(DateTime.now());
   bool get isCompletato => stato == 'completato';
   bool get isImminente {
@@ -55,7 +54,7 @@ class Exam {
       'tipologia': tipologia,
       'priorita': priorita,
       'stato': stato,
-      'voto': voto, // Se voto è null, SQFlite scriverà correttamente NULL sovrascrivendo l'intero
+      'voto': voto, // Se voto è null, sqflite scriverà correttamente NULL sovrascrivendo l'intero
       'note': note,
     };
   }

@@ -5,7 +5,7 @@ class Task {
   final String? courseId; // FK facoltativa verso Course
   final String? examId; // FK facoltativa verso Exam
   final DateTime? scadenza;
-  final String priorita; // 'alta' | 'media' | 'bassa'
+  final String priorita; // alta, media, bassa
   final bool completata;
   final int? tempoStimato; // Minuti previsti
   final int? tempoEffettivo; // Minuti effettivi impiegati
