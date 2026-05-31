@@ -6,7 +6,7 @@ import '../models/exam.dart';
 import '../models/course.dart';
 import '../utils/app_colors.dart';
 
-/// ExamFormScreen — Form Apple-style.
+/// ExamFormScreen 
 class ExamFormScreen extends StatefulWidget {
   final Exam? exam;
   const ExamFormScreen({super.key, this.exam});
@@ -83,7 +83,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
     super.dispose();
   }
 
-  // RIPRISTINATO IL MODELLO MASTER CON TEMA BLU PASTELLO
+  
   Future<void> _pickDate() async {
     DateTime tempDate = _data;
     await showModalBottomSheet(
@@ -144,7 +144,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
                   Theme(
                     data: Theme.of(ctx).copyWith(
                       colorScheme: Theme.of(ctx).colorScheme.copyWith(
-                        primary: AppColors.pastelBlue, // BLU PASTELLO
+                        primary: AppColors.pastelBlue, 
                       ),
                     ),
                     child: CalendarDatePicker(

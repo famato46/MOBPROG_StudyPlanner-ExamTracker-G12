@@ -6,7 +6,7 @@ import '../utils/app_colors.dart';
 import 'course_detail_screen.dart';
 import 'course_form_screen.dart';
 
-/// CoursesScreen — Lista corsi Apple-style.
+/// CoursesScreen 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
 
@@ -189,7 +189,7 @@ static const List<(String, String)> _semestriOptions = [
                   ),
                 ),
                 const SizedBox(height: 12),
-                // ── Filtro semestri con TabBar nativo auto-scroll ──
+                // Filtro semestri con TabBar nativo auto-scroll
                 _FilterRow(
                   options: _semestriOptions,
                   current: _filterSemestre,
@@ -281,9 +281,7 @@ static const List<(String, String)> _semestriOptions = [
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FILTER ROW SEMESTRI — TabBar nativo con auto-scroll
-// ═══════════════════════════════════════════════════════════════
+// FILTER ROW SEMESTRI TabBar nativo con auto-scroll
 class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
@@ -378,9 +376,7 @@ class _FilterRowState extends State<_FilterRow>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // HEADER
-// ═══════════════════════════════════════════════════════════════
 class _CoursesHeader extends StatelessWidget {
   final int total;
   final int visible;
@@ -499,9 +495,7 @@ class _CoursesHeader extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SEARCH BAR
-// ═══════════════════════════════════════════════════════════════
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final bool hasQuery;
@@ -568,9 +562,7 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // DISMISSIBLE COURSE
-// ═══════════════════════════════════════════════════════════════
 class _DismissibleCourse extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -618,9 +610,7 @@ class _DismissibleCourse extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // COURSE CARD
-// ═══════════════════════════════════════════════════════════════
 class _CourseCard extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -740,9 +730,7 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // BADGE
-// ═══════════════════════════════════════════════════════════════
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
@@ -769,9 +757,7 @@ class _Badge extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // EMPTY STATE
-// ═══════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final bool hasAnyCourse;
   final bool isDark;
@@ -823,9 +809,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SECTION FAB
-// ═══════════════════════════════════════════════════════════════
 class _SectionFab extends StatelessWidget {
   final Color color;
   final VoidCallback onPressed;

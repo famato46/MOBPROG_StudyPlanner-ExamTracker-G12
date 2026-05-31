@@ -4,10 +4,7 @@ import '../providers/planner_provider.dart';
 import '../models/course.dart';
 import '../utils/app_colors.dart';
 
-/// CourseFormScreen — Form Apple-style.
-///
-/// Layout iOS Settings: gruppi grigi arrotondati, righe con label
-/// a sx e input/picker a dx, divider sottili.
+/// CourseFormScreen
 class CourseFormScreen extends StatefulWidget {
   final Course? courseToEdit;
   const CourseFormScreen({super.key, this.courseToEdit});
@@ -39,10 +36,10 @@ static const List<String> _semestri = [
   '2° Semestre · Anno II',
   '1° Semestre · Anno III',
   '2° Semestre · Anno III',
-  '1° Semestre · Anno IV', // Aggiunto
-  '2° Semestre · Anno IV', // Aggiunto
-  '1° Semestre · Anno V',  // Aggiunto
-  '2° Semestre · Anno V',  // Aggiunto
+  '1° Semestre · Anno IV', 
+  '2° Semestre · Anno IV', 
+  '1° Semestre · Anno V',  
+  '2° Semestre · Anno V',  
 ];
 
   static const List<(String, String)> _stati = [
@@ -70,15 +67,7 @@ static const List<String> _semestri = [
     _stato = c?.stato ?? 'da_iniziare';
   }
 
-  // ─── HELPER VOTO (supporto 30L) ────────────────────────────────
-  // Internamente memorizziamo i voti come int: 18..30 + 31 per la lode.
-  // In UI usiamo "30L" quando il valore è 31, per coerenza con la
-  // convenzione universitaria italiana. Questi due helper centralizzano
-  // la conversione bidirezionale stringa<->int.
-
-  /// Parsa la stringa inserita dall'utente in un voto numerico.
-  /// Accetta sia "30L" / "30l" / "30 L" / "30 e lode" sia "31".
-  /// Restituisce null se non parsabile.
+  // HELPER VOTO per supporto 30L
   int? _parseVoto(String input) {
     final cleaned = input.trim().toLowerCase();
     if (cleaned.isEmpty) return null;
@@ -93,7 +82,6 @@ static const List<String> _semestri = [
   }
 
   /// Formatta un voto numerico in stringa visualizzabile.
-  /// 31 -> "30L", null -> "", altrimenti il numero.
   String _formatVoto(int? voto) {
     if (voto == null) return '';
     if (voto >= 31) return '30L';
@@ -116,7 +104,7 @@ static const List<String> _semestri = [
     if (!_formKey.currentState!.validate()) return;
     final provider = context.read<PlannerProvider>();
 
-    // Parsing centralizzato che supporta sia "30L" che "31"
+    // Parsing che supporta sia 30L che 31
     final vDesiderato = _votoDesideratoCtrl.text.isEmpty
         ? null
         : _parseVoto(_votoDesideratoCtrl.text);
@@ -220,7 +208,7 @@ static const List<String> _semestri = [
         child: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            // ─── GRUPPO DATI PRINCIPALI ─────────────────────
+            // DATI PRINCIPALI 
             _GroupHeader(label: 'Dati corso'),
             _SettingsGroup(
               isDark: isDark,
@@ -258,7 +246,7 @@ static const List<String> _semestri = [
               ],
             ),
 
-            // ─── GRUPPO STATO E PERIODO ─────────────────────
+            // GRUPPO STATO E PERIODO
             const SizedBox(height: 24),
             _GroupHeader(label: 'Stato e periodo'),
             _SettingsGroup(
@@ -280,7 +268,7 @@ static const List<String> _semestri = [
               ],
             ),
 
-            // ─── GRUPPO VOTI ────────────────────────────────
+            // GRUPPO VOTI
             const SizedBox(height: 24),
             _GroupHeader(label: 'Voti'),
             _SettingsGroup(
@@ -289,9 +277,6 @@ static const List<String> _semestri = [
                 _TextFieldRow(
                   label: 'Voto desiderato',
                   controller: _votoDesideratoCtrl,
-                  // FIX 30L: ora accettiamo anche "30L" (oltre a "31" che è
-                  // la rappresentazione interna). Il validator normalizza
-                  // entrambe le forme e accetta range 18-30 più la lode.
                   hint: '18-30 o 30L',
                   keyboardType: TextInputType.text,
                   validator: (v) {
@@ -329,7 +314,7 @@ static const List<String> _semestri = [
               ],
             ),
 
-            // ─── GRUPPO RISORSE ─────────────────────────────
+            // GRUPPO RISORSE 
             const SizedBox(height: 24),
             _GroupHeader(label: 'Risorse'),
             _SettingsGroup(
@@ -352,7 +337,7 @@ static const List<String> _semestri = [
 
             const SizedBox(height: 32),
 
-            // ─── CTA PRINCIPALE: pill rosa pastello ────────
+            // CTA PRINCIPALE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
@@ -387,7 +372,7 @@ static const List<String> _semestri = [
     );
   }
 
-  // ─── BOTTOM SHEET PICKER iOS-style ─────────────────────────
+  // BOTTOM SHEET PICKER stile IoS
   void _showSemestrePicker(BuildContext context, bool isDark) {
     _showIosPicker<String>(
       context: context,
@@ -426,9 +411,7 @@ static const List<String> _semestri = [
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// IOS-STYLE BOTTOM SHEET PICKER
-// ═══════════════════════════════════════════════════════════════
+// BOTTOM SHEET PICKER stile IoS
 void _showIosPicker<T>({
   required BuildContext context,
   required bool isDark,
@@ -531,9 +514,7 @@ void _showIosPicker<T>({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// GROUP HEADER (uppercase label sopra ogni gruppo)
-// ═══════════════════════════════════════════════════════════════
+// GRUPPO HEADER 
 class _GroupHeader extends StatelessWidget {
   final String label;
   const _GroupHeader({required this.label});
@@ -555,9 +536,7 @@ class _GroupHeader extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SETTINGS GROUP (card bianca arrotondata con divider tra righe)
-// ═══════════════════════════════════════════════════════════════
+// SETTINGS GROUP 
 class _SettingsGroup extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -605,9 +584,7 @@ class _SettingsGroup extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT FIELD ROW (label sx, input dx allineato a destra)
-// ═══════════════════════════════════════════════════════════════
+// TEXT FIELD ROW 
 class _TextFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -690,9 +667,7 @@ class _TextFieldRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT AREA ROW (per Note: label sopra, area multiline sotto)
-// ═══════════════════════════════════════════════════════════════
+// TEXT AREA ROW
 class _TextAreaRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -755,9 +730,7 @@ class _TextAreaRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PICKER ROW (label sx, valore + chevron dx, tap apre bottom sheet)
-// ═══════════════════════════════════════════════════════════════
+// PICKER ROW 
 class _PickerRow extends StatelessWidget {
   final String label;
   final String value;

@@ -8,15 +8,7 @@ import 'course_form_screen.dart';
 import 'task_form_screen.dart';
 import 'exam_detail_screen.dart';
 
-/// CourseDetailScreen — Stile Apple moderno, minimalista.
-///
-/// Layout a 5 blocchi:
-///  1. AppBar minimal con nome corso + matita + cestino
-///  2. HERO card pastello rosa con nome, docente, badge CFU e chips di stato/voto
-///  3. Mini-grid info (Semestre, Voto) in card bianche compatte
-///  4. Card Note/Materiale (solo se presenti)
-///  5. Sezioni "Esami" e "Attività" con piccolo "+ Aggiungi" inline
-///     accanto al titolo (no FAB).
+/// CourseDetailScreen
 class CourseDetailScreen extends StatelessWidget {
   final Course course;
   const CourseDetailScreen({super.key, required this.course});
@@ -51,16 +43,14 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
-  /// Converte un voto numerico interno in stringa display.
-  /// Convenzione: 31 = 30L.
+  // Converte un voto numerico interno in stringa display
   String _formatVoto(int? voto) {
     if (voto == null) return '-';
     if (voto >= 31) return '30L';
     return voto.toString();
   }
 
-  // Mostra "1° sem 24/25" invece di "Primo semestre 2024/25" per
-  // farlo stare nella card compatta senza troncamento.
+  // Mostra "1° sem 24/25"
   String _shortSemestre(String s) {
     return s
         .replaceAll('Primo semestre', '1° sem')
@@ -127,7 +117,6 @@ class CourseDetailScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              // ─── 1. HERO CARD ROSA PASTELLO ──────────────────
               _HeroCard(
                 course: updatedCourse,
                 statoLabel: _formatStato(updatedCourse.stato),
@@ -137,7 +126,7 @@ class CourseDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // ─── 2. MINI-GRID INFO (2 colonne) ──────────────
+              //MINI-GRID INFO
               Row(
                 children: [
                   Expanded(
@@ -163,7 +152,7 @@ class CourseDetailScreen extends StatelessWidget {
                 ],
               ),
 
-              // ─── 3. NOTE / MATERIALE (se presenti) ──────────
+              // NOTE
               if ((updatedCourse.note?.isNotEmpty ?? false) ||
                   (updatedCourse.materialeAssociato?.isNotEmpty ??
                       false)) ...[
@@ -175,7 +164,7 @@ class CourseDetailScreen extends StatelessWidget {
                 ),
               ],
 
-              // ─── 4. SEZIONE ESAMI ──────────────────────────
+              // SEZIONE ESAMI 
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Esami',
@@ -205,17 +194,13 @@ class CourseDetailScreen extends StatelessWidget {
                       .toList(),
                 ),
 
-              // ─── 5. SEZIONE ATTIVITÀ con "+ Aggiungi" inline ─
+              // SEZIONE ATTIVITÀ
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Attività',
                 count: tasks.length,
                 isDark: isDark,
-                // "+ Aggiungi" come trailing della section title.
-                // Sostituisce il FAB ingombrante in fondo alla schermata,
-                // mantenendo comunque la possibilità di creare task
-                // collegate al corso direttamente dal dettaglio (CRUD
-                // Task completo, requisito traccia).
+                // Aggiungi come trailing della section title
                 trailing: _AddInlineButton(
                   label: 'Aggiungi',
                   onTap: () => Navigator.push(
@@ -327,9 +312,7 @@ class CourseDetailScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// HERO CARD: card grande pastello rosa con resoconto a colpo d'occhio
-// ═══════════════════════════════════════════════════════════════
+// HERO CARD
 class _HeroCard extends StatelessWidget {
   final Course course;
   final String statoLabel;
@@ -404,7 +387,7 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Badge CFU (rettangolino bianco-trasparente con numero grande)
+              // Badge CFU
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
@@ -440,7 +423,7 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Chips di stato + voto
+          // Chips di stato e voto
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -464,7 +447,7 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// Chip piccolino bianco con bordino colorato per il testo
+// Chip per il testo
 class _StatoChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -491,9 +474,7 @@ class _StatoChip extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// MINI INFO CARD (semestre, voto, ecc.)
-// ═══════════════════════════════════════════════════════════════
+// INFO CARD (semestre, voto, ecc.)
 class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
@@ -547,9 +528,7 @@ class _MiniInfoCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NOTE CARD (per Note e/o Materiale del corso)
-// ═══════════════════════════════════════════════════════════════
+// NOTE CARD (per Note e Materiale del corso)
 class _NoteCard extends StatelessWidget {
   final String? note;
   final String? materiale;
@@ -631,9 +610,7 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SECTION TITLE: "Esami 3"  con eventuale "+ Aggiungi" a destra
-// ═══════════════════════════════════════════════════════════════
+// SECTION TITLE
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
@@ -680,7 +657,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// Bottoncino "+ Aggiungi" inline accanto al titolo di sezione
+// Aggiungi inline accanto al titolo di sezione
 class _AddInlineButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -717,9 +694,8 @@ class _AddInlineButton extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONTAINER LISTA (card bianca con righe + divider sottili)
-// ═══════════════════════════════════════════════════════════════
+
+// CONTAINER LISTA
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -761,9 +737,7 @@ class _ItemsContainer extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EMPTY CARD ("Nessun esame collegato")
-// ═══════════════════════════════════════════════════════════════
+// EMPTY CARD Nessun esame collegato
 class _EmptyCard extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -788,9 +762,8 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+
 // EXAM ROW (dentro la card lista)
-// ═══════════════════════════════════════════════════════════════
 class _ExamRow extends StatelessWidget {
   final String titolo;
   final String tipologia;
@@ -878,9 +851,7 @@ class _ExamRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TASK ROW (con checkbox iOS-style + tap modifica + swipe delete)
-// ═══════════════════════════════════════════════════════════════
+// TASK ROW (con checkbox style IoS, tap modifica e swipe delete)
 class _TaskRow extends StatelessWidget {
   final Task task;
   final VoidCallback onToggle;

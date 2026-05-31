@@ -6,15 +6,7 @@ import '../utils/app_colors.dart';
 import 'exam_form_screen.dart';
 import 'exam_detail_screen.dart';
 
-/// ExamsScreen — Lista esami Apple-style, riprende fedelmente il
-/// pattern visivo di CoursesScreen (large title, search bar, filter
-/// pills, dismissible card con badge).
-///
-/// Differenze rispetto a CoursesScreen:
-///  - Tab orizzontale (Programmati / Completati / Annullati) sopra
-///    i filtri per separare gli stati temporali richiesti dalla traccia.
-///  - Filtri pill per tipologia (esame/intercorso/consegna/progetto).
-///  - FAB pastel blu invece di pastel rosso.
+/// ExamsScreen 
 class ExamsScreen extends StatefulWidget {
   const ExamsScreen({super.key});
 
@@ -27,10 +19,7 @@ class _ExamsScreenState extends State<ExamsScreen>
   String _searchQuery = '';
   String _filterTipologia = 'tutti';
   String _sortBy = 'data';
-  // Inizializzato direttamente nella dichiarazione del campo invece di
-  // usare `late final` + initState. Più robusto: anche se per qualche
-  // motivo build() viene chiamato prima di initState (es. dopo un errore
-  // recuperato), il controller esiste già.
+  // Inizializzato direttamente nella dichiarazione del campo 
   TabController? _tabController;
 
   final TextEditingController _searchController = TextEditingController();
@@ -114,10 +103,7 @@ class _ExamsScreenState extends State<ExamsScreen>
           final annullati =
               provider.exams.where((e) => e.stato == 'annullato').toList();
 
-          // Se per qualche motivo il controller non è ancora pronto
-          // (transizione di hot reload, ecc.) mostriamo un loader vuoto
-          // invece di esplodere. In condizioni normali initState ha già
-          // creato il controller, quindi questo ramo non viene mai preso.
+          
           final tabController = _tabController;
           if (tabController == null) {
             return const Center(child: CircularProgressIndicator());
@@ -264,9 +250,7 @@ class _ExamsScreenState extends State<ExamsScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// HEADER (large title + sort menu)
-// ═══════════════════════════════════════════════════════════════════
+// HEADER titolo e menu
 class _ExamsHeader extends StatelessWidget {
   final int total;
   final int visible;
@@ -394,9 +378,7 @@ class _ExamsHeader extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 // SEARCH BAR (identica alla courses_screen ma con accent blu)
-// ═══════════════════════════════════════════════════════════════════
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final bool hasQuery;
@@ -464,9 +446,7 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 // TAB BAR PER STATI (Programmati / Completati / Annullati)
-// ═══════════════════════════════════════════════════════════════════
 class _ExamTabBar extends StatelessWidget {
   final TabController controller;
   final List<int> counts;
@@ -513,9 +493,6 @@ class _ExamTabBar extends StatelessWidget {
           overlayColor:
               WidgetStateProperty.all(Colors.transparent),
           tabs: [
-            // Label complete. Il FittedBox scala il testo verso il basso
-            // SOLO se non ci sta nello spazio del tab, così evitiamo il
-            // troncamento "Completati (0" senza abbreviare a priori.
             Tab(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -541,9 +518,7 @@ class _ExamTabBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 // FILTER PILL ROW (orizzontale)
-// ═══════════════════════════════════════════════════════════════════
 class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
@@ -638,9 +613,7 @@ class _FilterRowState extends State<_FilterRow>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
 // CARD ESAME (swipe-to-delete)
-// ═══════════════════════════════════════════════════════════════════
 class _DismissibleExam extends StatelessWidget {
   final Exam exam;
   final String? corsoNome;

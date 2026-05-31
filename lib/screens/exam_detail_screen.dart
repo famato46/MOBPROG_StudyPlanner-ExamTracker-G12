@@ -6,20 +6,11 @@ import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'exam_form_screen.dart';
 
-/// ExamDetailScreen — Stile Apple moderno, minimalista.
-///
-/// Layout a 5 blocchi (coerente con CourseDetailScreen):
-///  1. AppBar minimal con titolo + matita + cestino
-///  2. HERO card pastello BLU con titolo, corso, tipologia e chip
-///     di stato (Programmato / Completato / Imminente / Passato)
-///  3. Mini-grid info (Data, Voto se completato)
-///  4. Card Note (se presenti)
-///  5. Sezione "Sessioni di studio" collegate, stile lista card.
+/// ExamDetailScreen
 class ExamDetailScreen extends StatelessWidget {
   final Exam exam;
   const ExamDetailScreen({super.key, required this.exam});
 
-  // FIX APLICATO: Aggiunto toLowerCase() e fallback generico come in course_detail
   String _formatTipologia(String t) {
     switch (t.toLowerCase()) {
       case 'scritto': 
@@ -57,7 +48,6 @@ class ExamDetailScreen extends StatelessWidget {
     return voto.toString();
   }
 
-  // Etichetta di stato visibile (usa anche imminente/passato calcolati)
   String _etichettaStato(Exam e) {
     if (e.stato == 'completato') return 'Completato';
     if (e.stato == 'annullato') return 'Annullato';
@@ -133,7 +123,6 @@ class ExamDetailScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              // ─── 1. HERO CARD BLU PASTELLO ────────────────────
               _HeroCard(
                 exam: updatedExam,
                 corso: corso?.nome ?? 'Corso non trovato',
@@ -145,7 +134,6 @@ class ExamDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              // ─── 2. MINI-GRID (Data, Priorità, Voto) ──────────
               Row(
                 children: [
                   Expanded(
@@ -176,14 +164,14 @@ class ExamDetailScreen extends StatelessWidget {
                 ],
               ),
 
-              // ─── 3. NOTE (se presenti) ────────────────────────
+              // NOTE
               if (updatedExam.note != null &&
                   updatedExam.note!.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 _NoteCard(note: updatedExam.note!, isDark: isDark),
               ],
 
-              // ─── 4. SESSIONI DI STUDIO COLLEGATE ──────────────
+              // SESSIONI DI STUDIO COLLEGATE 
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Sessioni di studio',
@@ -249,9 +237,7 @@ class ExamDetailScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // HERO CARD: card grande pastello BLU
-// ═══════════════════════════════════════════════════════════════
 class _HeroCard extends StatelessWidget {
   final Exam exam;
   final String corso;
@@ -273,7 +259,6 @@ class _HeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Countdown giorni (positivo = futuro, negativo = passato)
     final adesso = DateTime.now();
     final dataSoloGiorno =
         DateTime(exam.data.year, exam.data.month, exam.data.day);
@@ -324,12 +309,6 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Countdown (rettangolo bianco trasparente)
-              // Mostra:
-              //  - "Oggi" se 0
-              //  - "X gg" se positivo
-              //  - "-X gg" se passato
-              //  - "✓" se completato
               _CountdownBadge(
                 giorni: giorni,
                 completato: exam.stato == 'completato',
@@ -337,7 +316,7 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Chips di stato + priorità
+          // Chips di stato e priorità
           Wrap(
             spacing: 6,
             runSpacing: 6,
@@ -355,7 +334,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// Badge "tra N giorni" in alto a destra dell'hero card
 class _CountdownBadge extends StatelessWidget {
   final int giorni;
   final bool completato;
@@ -416,7 +394,7 @@ class _CountdownBadge extends StatelessWidget {
   }
 }
 
-// Chip piccolino bianco
+// Chip bianco
 class _StatoChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -443,9 +421,7 @@ class _StatoChip extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // MINI INFO CARD
-// ═══════════════════════════════════════════════════════════════
 class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
@@ -499,9 +475,7 @@ class _MiniInfoCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // NOTE CARD
-// ═══════════════════════════════════════════════════════════════
 class _NoteCard extends StatelessWidget {
   final String note;
   final bool isDark;
@@ -545,9 +519,7 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SECTION TITLE
-// ═══════════════════════════════════════════════════════════════
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
@@ -590,9 +562,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // CONTAINER LISTA
-// ═══════════════════════════════════════════════════════════════
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -634,9 +604,7 @@ class _ItemsContainer extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // EMPTY CARD
-// ═══════════════════════════════════════════════════════════════
 class _EmptyCard extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -661,9 +629,7 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SESSION ROW (riga sessione di studio)
-// ═══════════════════════════════════════════════════════════════
 class _SessionRow extends StatelessWidget {
   final String titolo;
   final int durata;
