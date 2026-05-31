@@ -104,9 +104,4 @@ class Task {
     return scadenza!.isBefore(DateTime.now()) && !completata;
   }
   
-  // Helper per ottenere la differenza tra tempo stimato ed effettivo
-  int? get differenzaTempo {
-    if (tempoStimato == null || tempoEffettivo == null) return null;
-    return tempoEffettivo! - tempoStimato!;
-  }
 }

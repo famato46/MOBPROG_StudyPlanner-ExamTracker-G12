@@ -84,9 +84,4 @@ class StudySession {
            data.day == oggi.day;
   }
   
-  // Helper per ottenere la differenza tra pianificato ed effettivo
-  int? get diferenciaTempo {
-    if (durataEffettiva == null) return null;
-    return durataEffettiva! - durataPianificata;
-  }
 }
