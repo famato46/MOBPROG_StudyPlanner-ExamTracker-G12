@@ -286,9 +286,6 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           ),
         ],
       ),
-      // Stesso pattern di exam_form_screen: Form → ListView.
-      // ListView gestisce nativamente lo scroll e i vincoli di altezza,
-      // eliminando il bottom overflow che Column causava.
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Form(

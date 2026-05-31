@@ -35,7 +35,7 @@ class _StatsScreenState extends State<StatsScreen>
     super.dispose();
   }
 
-  // ─── Helper ore settimana ──────────────────────────────────────
+  // Helper
   int _orePianificateSettimana(PlannerProvider provider) {
     final oggi = DateTime.now();
     final inizio = oggi.subtract(Duration(days: oggi.weekday - 1));
@@ -59,9 +59,7 @@ class _StatsScreenState extends State<StatsScreen>
         60;
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 0 — RIEPILOGO
-  // ═══════════════════════════════════════════════════════════════
+  // RIEPILOGO
   Widget _buildTabRiepilogo(PlannerProvider provider, bool isDark) {
     final esamiDaSostenere = provider.exams
         .where((e) =>
@@ -80,13 +78,13 @@ class _StatsScreenState extends State<StatsScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
-        // ── Scadenze imminenti — primo elemento ──
+        // Scadenze imminenti
         const _SectionLabel(title: 'Scadenze Imminenti'),
         const SizedBox(height: 12),
         _buildScadenzeImminenti(provider),
         const SizedBox(height: 24),
 
-        // ── KPI Grid ──
+        // KPI Grid
         Row(
           children: [
             Expanded(
@@ -171,7 +169,7 @@ class _StatsScreenState extends State<StatsScreen>
         ],
         const SizedBox(height: 24),
 
-        // ── Indicatori circolari ──
+        // Indicatori circolari
         const _SectionLabel(title: 'Obiettivi & Progresso'),
         const SizedBox(height: 12),
         Row(
@@ -200,7 +198,7 @@ class _StatsScreenState extends State<StatsScreen>
         ),
         const SizedBox(height: 24),
 
-        // ── STORICO FOCUS (Tecnica Pomodoro) ──
+        // STORICO FOCUS (Pomodoro)
         const _SectionLabel(title: 'Storico Focus'),
         const SizedBox(height: 12),
         Row(
@@ -242,9 +240,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // LISTA STORICO FOCUS RECENTE
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildFocusHistory(PlannerProvider provider, bool isDark) {
     // Filtra e ordina le sessioni (ultime 5 completate)
     final history = provider.studySessions
@@ -340,9 +336,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // TAB 1 — GRAFICI
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildTabGrafici(PlannerProvider provider, bool isDark) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -364,9 +358,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // TAB 2 — SIMULATORE
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildTabSimulatore(PlannerProvider provider, bool isDark) {
     final corsiSuperati = provider.courses
         .where((c) => c.stato == 'superato' && c.votoOttenuto != null)
@@ -577,7 +569,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── Grafico a torta ──────────────────────────────────────────
+  // Grafico a torta 
   Widget _buildPieChart(PlannerProvider provider, bool isDark) {
     final List<Color> colors = [
       AppColors.pastelRedDeep,
@@ -664,7 +656,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── Grafico a barre (Stacked) ─────────────────────────────────
+  // Grafico a barre 
   Widget _buildBarChart(PlannerProvider provider, bool isDark) {
     final oggi = DateTime.now();
     final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
@@ -815,7 +807,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── Corsi con più obiettivi aperti ──────────────────────────
+  // Corsi con più obiettivi attivi 
   Widget _buildCorsiAttivita(PlannerProvider provider, bool isDark) {
     final Map<String, int> map = {};
     for (final t in provider.tasks.where((t) => !t.completata)) {
@@ -868,7 +860,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── Scadenze imminenti ───────────────────────────────────────
+  // Scadenze imminenti 
   Widget _buildScadenzeImminenti(PlannerProvider provider) {
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
@@ -934,7 +926,7 @@ class _StatsScreenState extends State<StatsScreen>
     );
   }
 
-  // ─── BUILD ────────────────────────────────────────────────────
+  // BUILD
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1016,9 +1008,7 @@ class _StatsScreenState extends State<StatsScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// WIDGET CARD STATISTICHE FOCUS (Glassmorphism)
-// ═══════════════════════════════════════════════════════════════
+// WIDGET CARD STATISTICHE FOCUS 
 class _FocusStatCard extends StatelessWidget {
   final String label;
   final String value;
@@ -1075,9 +1065,7 @@ class _FocusStatCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // STATS TAB BAR — TabBar nativo con icona sopra e testo sotto
-// ═══════════════════════════════════════════════════════════════
 class _StatsTabBar extends StatelessWidget {
   final TabController controller;
   final bool isDark;
@@ -1151,7 +1139,6 @@ class _IconTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Il colore arriva dal labelColor/unselectedLabelColor del TabBar.
     return Tab(
       height: 48,
       child: Column(
@@ -1172,9 +1159,7 @@ class _IconTab extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// KPI CARD — colore pieno come Dashboard
-// ═══════════════════════════════════════════════════════════════
+// KPI CARD
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
@@ -1228,9 +1213,7 @@ class _KpiCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // CIRCULAR CARD
-// ═══════════════════════════════════════════════════════════════
 class _CircularCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1295,9 +1278,7 @@ class _CircularCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // WIDGET AUSILIARI
-// ═══════════════════════════════════════════════════════════════
 class _SectionLabel extends StatelessWidget {
   final String title;
   const _SectionLabel({required this.title});

@@ -27,9 +27,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Splash minimal: solo logo + nome.
-    // Sfondo bianco PURO, forzato indipendentemente dal tema corrente,
-    // per matchare lo sfondo bianco del PNG dell'icona UniPath.
     return const Scaffold(
       backgroundColor: Color(0xFFFFFFFF),
       body: Center(

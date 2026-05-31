@@ -428,7 +428,7 @@ class PlannerProvider extends ChangeNotifier {
     return votoStima.isNaN || votoStima.isInfinite ? 0.0 : votoStima;
   }
 
-  // Serve a non conteggiare le pause nel totale dello studio
+  // Serve a non contare le pause nel totale dello studio
   int get totalStudyHours {
     return _studySessions
             .where((s) => s.completata && s.durataEffettiva != null && s.tipo != 'pausa')

@@ -24,7 +24,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
   late final TextEditingController _durataCtrl;
 
   String? _courseId;
-  String? _examId;  // FK verso Exam — necessario per exam_detail_screen
+  String? _examId;  // FK verso Exam 
   DateTime _data = DateTime.now();
   String _tipo = 'studio';
 
@@ -224,7 +224,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
           ),
         ],
       ),
-      // Struttura identica a exam_form_screen: Form con all'interno direttamente ListView
+      // Form con all'interno ListView
       body: Form(
         key: _formKey,
         child: ListView(
@@ -267,8 +267,6 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
                       _showCoursePicker(context, isDark, provider.courses),
                   isDark: isDark,
                 ),
-                // Esame: disabilitato finché non è selezionato un corso.
-                // Quando cambia il corso, _examId viene resettato.
                 _PickerRow(
                   label: 'Esame',
                   value: _examId == null
@@ -471,9 +469,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // WIDGET CONDIVISI
-// ═══════════════════════════════════════════════════════════════
 class _GroupHeader extends StatelessWidget {
   final String label;
   const _GroupHeader({required this.label});

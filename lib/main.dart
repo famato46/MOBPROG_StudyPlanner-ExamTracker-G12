@@ -7,9 +7,9 @@ import 'screens/splash_screen.dart';
 import 'utils/app_colors.dart';
 
 void main() async {
-  // Inizializzazione necessaria prima del runApp per locale 'it_IT'
+  // Inizializzazione necessaria prima del runApp per locale 
   WidgetsFlutterBinding.ensureInitialized();
-  // Carica i dati di localizzazione per le date in italiano (giorni e mesi).
+  // Carica i dati di localizzazione per le date in italiano
   await initializeDateFormatting('it_IT', null);
 
   runApp(const StudyPlannerApp());

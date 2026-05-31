@@ -10,15 +10,10 @@ import '../models/course.dart';
 import 'task_form_screen.dart';
 import 'session_form_screen.dart';
 
-/// Tipo di sessione del timer Focus.
+// Tipo di sessione del timer Focus.
 enum FocusType { pomodoro, pausa }
 
-/// PlanningScreen — "Pianifica" in stile Apple moderno.
-///
-/// Tre sotto-viste tramite segmented control iOS:
-///  1. Attività      — impegni di oggi (solo task) con "+ Attività"
-///  2. Sessioni      — calendario giorno/settimana + filtri + CRUD sessioni
-///  3. Focus         — timer con Tecnica Pomodoro (Pomodoro / Pausa + reset)
+/// PlanningScreen 
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -37,13 +32,13 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   DateTime _giornoPianificatore = DateTime.now();
 
-  // Filtri Tab Sessioni (stato effimero)
+  // Filtri Tab Sessioni
   Course? _filtroCorso;
   String _filtroTipoAttivita = 'Tutti';
   bool _isVistaSettimanale = false;
   bool _filtriEspansi = false;
 
-  // ─── Stato Timer Focus (Pomodoro / Pausa) ───
+  // Stato Timer Focus 
   static const int _pomodoroSeconds = 25 * 60;
   static const int _pausaSeconds = 5 * 60;
 
@@ -96,7 +91,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     super.dispose();
   }
 
-  // ─────────────────────────── TIMER ───────────────────────────
+  // TIMER 
   void _startTimer() {
     if (_focusType == FocusType.pomodoro && _selectedTaskForPomodoro == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -184,7 +179,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // ─────────────────────────── HELPER ───────────────────────────
+  // HELPER 
   int _pesoPriorita(String priorita) {
     switch (priorita.toLowerCase()) {
       case 'alta':
@@ -206,14 +201,14 @@ class _PlanningScreenState extends State<PlanningScreen>
     return !date.isBefore(inizioSettimana) && date.isBefore(fineSettimana);
   }
 
-  String _formatGiornoPianificatore() {
+  /*String _formatGiornoPianificatore() {
     if (_isVistaSettimanale) {
       final inizio = _giornoPianificatore
           .subtract(Duration(days: _giornoPianificatore.weekday - 1));
       return 'Settimana del ${DateFormat('dd MMMM', 'it_IT').format(inizio)}';
     }
     return DateFormat('EEEE dd MMMM', 'it_IT').format(_giornoPianificatore);
-  }
+  }*/
 
   void _apriFormSessione({StudySession? sessione}) {
     final provider = context.read<PlannerProvider>();
@@ -281,7 +276,7 @@ class _PlanningScreenState extends State<PlanningScreen>
         isDark ? Theme.of(context).colorScheme.surface : AppColors.background;
     final provider = Provider.of<PlannerProvider>(context);
 
-    // ===== DATI TAB SESSIONI (Tab 2) =====
+    // DATI TAB SESSIONI
     var sessioniPianificatore = provider.studySessions.where((s) {
       final tipo = s.tipo.toLowerCase();
       // Escludiamo le sessioni generate dai timer per la schermata pianificatore
@@ -409,9 +404,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 1 — ATTIVITÀ (Esclusivamente Task: Oggi + Scaduti e Futuri)
-  // ═══════════════════════════════════════════════════════════════
+  // TAB 1 — ATTIVITÀ 
   Widget _buildTabOggi(PlannerProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final oggi = DateTime.now();
@@ -430,8 +423,7 @@ class _PlanningScreenState extends State<PlanningScreen>
 });
 
 
-    // --- 2. LOGICA FILTRAGGIO IN PROGRAMMA (Task Futuri) ---
-    // Solo task NON completati con scadenza futura.
+    // TASK FUTURI
     final taskFuturi = provider.tasks.where((t) {
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
@@ -480,7 +472,7 @@ class _PlanningScreenState extends State<PlanningScreen>
 
         const SizedBox(height: 36),
 
-        // ─── SEZIONE 2: IN PROGRAMMA ───
+        // IN PROGRAMMA
         _HeaderLabel(title: 'In programma', isDark: isDark),
 
         if (tuttoFuturoVuoto)
@@ -514,9 +506,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // TAB 2 — PIANIFICATORE (Sessioni)
-  // ═══════════════════════════════════════════════════════════════
+  // PIANIFICATORE 
   Widget _buildTabPianificatore(
       List<StudySession> sessioni, PlannerProvider provider) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -669,9 +659,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════
   // TAB 3 — FOCUS (Tecnica Pomodoro)
-  // ═══════════════════════════════════════════════════════════════
   Widget _buildTabFocus(List<Task> pendingTasks) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPomodoro = _focusType == FocusType.pomodoro;
@@ -700,7 +688,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 20),
 
-          // ── Selettore Pomodoro / Pausa ──
+          // Selettore Pomodoro / Pausa
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0),
             child: Container(
@@ -733,7 +721,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                 splashFactory: NoSplash.splashFactory,
                 overlayColor:
                     WidgetStateProperty.all(Colors.transparent),
-                // FIX EMOJI REMOVED
                 tabs: const [
                   Tab(
                     icon: Icon(Icons.timer_outlined, size: 20),
@@ -749,7 +736,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 24),
 
-          // ── Selettore obiettivo (solo Pomodoro) ──
+          //Selettore obiettivo (Pomodoro)
           SizedBox(
             height: 56,
             child: isPomodoro
@@ -765,7 +752,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          // ── Cerchio timer ──
+          // Cerchio timer
           ValueListenableBuilder<int>(
             valueListenable: _secondsNotifier,
             builder: (context, seconds, _) {
@@ -821,7 +808,7 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          // ── Controlli: Reset + Avvia/Pausa ──
+          // Controlli: Reset + Avvia/Pausa
           Row(
             children: [
               _CircleControl(
@@ -872,9 +859,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // UI COMPONENTI AGGIUNTIVI
-// ═══════════════════════════════════════════════════════════════
 
 class _HeaderLabel extends StatelessWidget {
   final String title;
@@ -937,9 +922,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // TAB BAR PLANNING
-// ═══════════════════════════════════════════════════════════════
 class _PlanningTabBar extends StatelessWidget {
   final TabController controller;
   final bool isDark;
@@ -1004,9 +987,7 @@ class _PlanningTabBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // CALENDAR GRID
-// ═══════════════════════════════════════════════════════════════
 class _CalendarGrid extends StatefulWidget {
   final DateTime selectedDay;
   final Set<DateTime> giorniConSessioni;
@@ -1206,9 +1187,7 @@ class _CalendarGridState extends State<_CalendarGrid> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // MINI SEGMENT
-// ═══════════════════════════════════════════════════════════════
 class _MiniSegment extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -1280,9 +1259,7 @@ class _MiniSegment extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // FILTER SECTION
-// ═══════════════════════════════════════════════════════════════
 class _FilterSection extends StatelessWidget {
   final bool espanso;
   final bool filtriAttivi;
@@ -1415,9 +1392,7 @@ class _FilterSection extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // FILTER PICKER ROW
-// ═══════════════════════════════════════════════════════════════
 class _FilterPickerRow extends StatelessWidget {
   final String label;
   final String displayValue;
@@ -1564,9 +1539,7 @@ class _FilterPickerRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SECTION LABEL
-// ═══════════════════════════════════════════════════════════════
 class _SectionLabel extends StatelessWidget {
   final String label;
   final bool isDark;
@@ -1595,9 +1568,7 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // CARD GROUP
-// ═══════════════════════════════════════════════════════════════
 class _CardGroup extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -1640,9 +1611,7 @@ class _CardGroup extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // TASK ROW
-// ═══════════════════════════════════════════════════════════════
 class _TaskRow extends StatelessWidget {
   final Task task;
   final String sottotitolo;
@@ -1776,9 +1745,7 @@ class _TaskRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // SESSION ROW (Utilizzato solo nella Tab 2)
-// ═══════════════════════════════════════════════════════════════
 class _SessionRow extends StatelessWidget {
   final StudySession session;
   final String sottotitolo;
@@ -1909,9 +1876,7 @@ class _SessionRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // CIRCLE CONTROL
-// ═══════════════════════════════════════════════════════════════
 class _CircleControl extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -1948,9 +1913,7 @@ class _CircleControl extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // TASK PICKER BUTTON
-// ═══════════════════════════════════════════════════════════════
 class _TaskPickerButton extends StatelessWidget {
   final Task? selectedTask;
   final List<Task> pendingTasks;
@@ -2156,9 +2119,7 @@ class _SubTabBar extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
 // EMPTY STATE
-// ═══════════════════════════════════════════════════════════════
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String text;

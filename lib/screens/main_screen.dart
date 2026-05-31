@@ -6,14 +6,7 @@ import 'exams_screen.dart';
 import 'planning_screen.dart';
 import 'stats_screen.dart';
 
-/// MainScreen — Container con BottomNavigationBar stile Apple.
-///
-/// Pattern del prof: `_currentIndex` + `setState` per cambiare tab,
-/// le 5 schermate sono pre-istanziate in un array così il loro stato
-/// non viene distrutto cambiando tab.
-///
-/// Stile: tutte le icone selezionate diventano blu iOS standard
-/// (#007AFF), non più colore-per-sezione, per coerenza con iOS.
+/// MainScreen 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -24,14 +17,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  /// Cambia la tab attiva. Passata in giù alla HomeScreen come
-  /// VoidCallback (pattern "evento dal basso verso l'alto" del prof)
-  /// così le card della dashboard possono navigare alle altre sezioni.
   void _goToTab(int index) => setState(() => _currentIndex = index);
 
-  // Le schermate sono costruite in build (non più const) perché la
-  // HomeScreen riceve la callback _goToTab. Restano comunque istanziate
-  // una sola volta dentro l'IndexedStack, che ne preserva lo stato.
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -45,13 +32,12 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
-      // IndexedStack mantiene tutte le tab in memoria → no rebuild
+      // IndexedStack mantiene tutte le tab in memoria
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
       ),
-      // NavigationBar (Material 3) — nessun ripple grigio Android,
-      // nessuna transizione aggiunta.
+      // NavigationBar
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) =>
