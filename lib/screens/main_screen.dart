@@ -21,7 +21,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final screens = <Widget>[
       HomeScreen(onNavigateToTab: _goToTab),
@@ -42,9 +41,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) =>
             setState(() => _currentIndex = index),
-        backgroundColor: isDark
-            ? const Color(0xFF1C1C1E)
-            : AppColors.surface,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.transparent,
         elevation: 0,
@@ -70,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
       IconData outline, IconData filled, String label) {
     return NavigationDestination(
       icon: Icon(outline),
-      selectedIcon: Icon(filled, color: AppColors.iosBlue),
+      selectedIcon: Icon(filled, color: Theme.of(context).colorScheme.primary),
       label: label,
     );
   }
