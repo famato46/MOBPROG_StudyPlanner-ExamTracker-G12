@@ -81,6 +81,11 @@ lib/
 │   └── stats_screen.dart
 ├── utils/
 │   └── app_colors.dart
+├── widgets/
+│   ├── form.dart
+│   ├── planning_calendar.dart
+│   ├── planning_filter_section.dart
+│   ├── planning_task_picker.dart
 └── main.dart
 ```
 
