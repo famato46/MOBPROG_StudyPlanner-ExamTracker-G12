@@ -267,9 +267,6 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? Theme.of(context).colorScheme.surface : AppColors.background;
     final provider = Provider.of<PlannerProvider>(context);
 
     // DATI TAB SESSIONI
@@ -297,15 +294,14 @@ class _PlanningScreenState extends State<PlanningScreen>
     }
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
-            _Header(isDark: isDark),
+            const _Header(),
             const SizedBox(height: 8),
             _PlanningTabBar(
               controller: _tabController,
-              isDark: isDark,
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -402,7 +398,6 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   // TAB 1 — ATTIVITÀ 
   Widget _buildTabOggi(PlannerProvider provider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
 
@@ -431,7 +426,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: [
-        _HeaderLabel(title: 'Obiettivi di oggi', isDark: isDark),
+        _HeaderLabel(title: 'Obiettivi di oggi'),
 
         if (tuttoOggiVuoto)
           const Padding(
@@ -443,7 +438,6 @@ class _PlanningScreenState extends State<PlanningScreen>
           )
         else
           _CardGroup(
-            isDark: isDark,
             children: [
               ...taskOggi.map((t) => _TaskRow(
                     task: t,
@@ -456,14 +450,13 @@ class _PlanningScreenState extends State<PlanningScreen>
                         await provider.deleteTask(t.id);
                       }
                     },
-                    isDark: isDark,
                   )),
             ],
           ),
 
         const SizedBox(height: 36),
 
-        _HeaderLabel(title: 'In programma', isDark: isDark),
+        _HeaderLabel(title: 'In programma'),
 
         if (tuttoFuturoVuoto)
           const Padding(
@@ -475,7 +468,6 @@ class _PlanningScreenState extends State<PlanningScreen>
           )
         else
           _CardGroup(
-            isDark: isDark,
             children: [
               ...taskFuturi.map((t) => _TaskRow(
                     task: t,
@@ -488,7 +480,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                         await provider.deleteTask(t.id);
                       }
                     },
-                    isDark: isDark,
                   )),
             ],
           ),
@@ -498,8 +489,7 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   // PIANIFICATORE 
   Widget _buildTabPianificatore(
-      List<StudySession> sessioni, PlannerProvider provider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    List<StudySession> sessioni, PlannerProvider provider) {
     final sessioniInCorso = sessioni.where((s) => !s.completata).toList();
     final sessioniCompletate = sessioni.where((s) => s.completata).toList();
     final filtriAttivi =
@@ -524,14 +514,12 @@ class _PlanningScreenState extends State<PlanningScreen>
                   selectedDay: _giornoPianificatore,
                   giorniConSessioni: giorniConSessioni,
                   onDaySelected: (d) => setState(() => _giornoPianificatore = d),
-                  isDark: isDark,
                 ),
               ),
             ),
             SliverToBoxAdapter(
               child: _SubTabBar(
                 controller: _sessioniTabController,
-                isDark: isDark,
               ),
             ),
             SliverToBoxAdapter(
@@ -548,7 +536,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                 filtroTipo: _filtroTipoAttivita,
                 onCorsoChanged: (c) => setState(() => _filtroCorso = c),
                 onTipoChanged: (t) => setState(() => _filtroTipoAttivita = t),
-                isDark: isDark,
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -566,7 +553,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _CardGroup(
-                      isDark: isDark,
                       children: sessioniInCorso
                           .map((s) => _SessionRow(
                                 session: s,
@@ -581,7 +567,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                                     await provider.deleteStudySession(s.id);
                                   }
                                 },
-                                isDark: isDark,
                               ))
                           .toList(),
                     ),
@@ -594,7 +579,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                   sliver: SliverToBoxAdapter(
                     child: _SectionLabel(
                         label: 'Completate',
-                        isDark: isDark,
                         color: AppColors.success),
                   ),
                 ),
@@ -603,7 +587,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverToBoxAdapter(
                     child: _CardGroup(
-                      isDark: isDark,
                       children: sessioniCompletate
                           .map((s) => _SessionRow(
                                 session: s,
@@ -618,7 +601,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                                     await provider.deleteStudySession(s.id);
                                   }
                                 },
-                                isDark: isDark,
                               ))
                           .toList(),
                     ),
@@ -658,7 +640,6 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   // TAB 3 — FOCUS (Tecnica Pomodoro)
   Widget _buildTabFocus(List<Task> pendingTasks) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isPomodoro = _focusType == FocusType.pomodoro;
     final accent = isPomodoro ? AppColors.danger : AppColors.success;
 
@@ -672,7 +653,7 @@ class _PlanningScreenState extends State<PlanningScreen>
               fontSize: 22,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -688,9 +669,7 @@ class _PlanningScreenState extends State<PlanningScreen>
             padding: const EdgeInsets.symmetric(horizontal: 0),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.black.withValues(alpha: 0.04),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.all(4),
@@ -703,8 +682,7 @@ class _PlanningScreenState extends State<PlanningScreen>
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
                 labelColor: Colors.white,
-                unselectedLabelColor:
-                    isDark ? Colors.white70 : AppColors.textSecondary,
+                unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
                 labelStyle: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -740,7 +718,6 @@ class _PlanningScreenState extends State<PlanningScreen>
                     enabled: !_isTimerRunning,
                     onSelected: (t) =>
                         setState(() => _selectedTaskForPomodoro = t),
-                    isDark: isDark,
                   )
                 : const SizedBox.shrink(),
           ),
@@ -758,9 +735,9 @@ class _PlanningScreenState extends State<PlanningScreen>
             child: CircularProgressIndicator(
               value: _timerSeconds / _currentTotal,
               strokeWidth: 8,
-              backgroundColor: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : accent.withValues(alpha: 0.15),
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : accent.withValues(alpha: 0.15),
             valueColor: AlwaysStoppedAnimation<Color>(accent),
           ),
         ),
@@ -772,7 +749,7 @@ class _PlanningScreenState extends State<PlanningScreen>
             style: TextStyle(
               fontSize: 52,
               fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -1,
             ),
           ),
@@ -798,7 +775,6 @@ class _PlanningScreenState extends State<PlanningScreen>
               _CircleControl(
                 icon: Icons.refresh_rounded,
                 onTap: _resetTimer,
-                isDark: isDark,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -847,9 +823,9 @@ class _PlanningScreenState extends State<PlanningScreen>
 
 class _HeaderLabel extends StatelessWidget {
   final String title;
-  final bool isDark;
+  
 
-  const _HeaderLabel({required this.title, required this.isDark});
+  const _HeaderLabel({required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -861,7 +837,7 @@ class _HeaderLabel extends StatelessWidget {
           fontSize: 22,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.5,
-          color: isDark ? Colors.white : AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -869,8 +845,7 @@ class _HeaderLabel extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  final bool isDark;
-  const _Header({required this.isDark});
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
@@ -888,7 +863,7 @@ class _Header extends StatelessWidget {
                 fontWeight: FontWeight.w800,
                 letterSpacing: -1.2,
                 height: 1.05,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
@@ -896,7 +871,7 @@ class _Header extends StatelessWidget {
               'Organizza studio e sessioni di focus',
               style: TextStyle(
                 fontSize: 15,
-                color: isDark ? Colors.white70 : AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -908,11 +883,10 @@ class _Header extends StatelessWidget {
 
 class _PlanningTabBar extends StatelessWidget {
   final TabController controller;
-  final bool isDark;
+  
 
   const _PlanningTabBar({
     required this.controller,
-    required this.isDark,
   });
 
   static const _labels = ['Attività', 'Sessioni', 'Focus'];
@@ -928,9 +902,7 @@ class _PlanningTabBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
@@ -943,8 +915,7 @@ class _PlanningTabBar extends StatelessWidget {
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor:
-              isDark ? Colors.white70 : AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(
               fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: -0.2),
           unselectedLabelStyle: const TextStyle(
@@ -972,12 +943,10 @@ class _PlanningTabBar extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String label;
-  final bool isDark;
   final Color? color;
 
   const _SectionLabel({
     required this.label,
-    required this.isDark,
     this.color,
   });
 
@@ -990,7 +959,7 @@ class _SectionLabel extends StatelessWidget {
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w700,
-          color: color ?? (isDark ? Colors.white : AppColors.textPrimary),
+          color: color ?? Theme.of(context).colorScheme.onSurface,
           letterSpacing: -0.2,
         ),
       ),
@@ -1000,25 +969,22 @@ class _SectionLabel extends StatelessWidget {
 
 class _CardGroup extends StatelessWidget {
   final List<Widget> children;
-  final bool isDark;
 
-  const _CardGroup({required this.children, required this.isDark});
+  const _CardGroup({required this.children});
 
   @override
   Widget build(BuildContext context) {
     if (children.isEmpty) return const SizedBox.shrink();
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(children: _withDividers(children, isDark)),
+      child: Column(children: _withDividers(children, context)),
     );
   }
 
-  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
+  List<Widget> _withDividers(List<Widget> rows, BuildContext context) {
     if (rows.length <= 1) return rows;
     final result = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
@@ -1029,9 +995,7 @@ class _CardGroup extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 0.5,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.groupedDivider,
+            color: Theme.of(context).dividerColor,
           ),
         ));
       }
@@ -1046,7 +1010,6 @@ class _TaskRow extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback? onTap;
   final Future<void> Function()? onDelete;
-  final bool isDark;
 
   const _TaskRow({
     required this.task,
@@ -1054,7 +1017,6 @@ class _TaskRow extends StatelessWidget {
     required this.onToggle,
     this.onTap,
     this.onDelete,
-    required this.isDark,
   });
 
   @override
@@ -1083,7 +1045,7 @@ class _TaskRow extends StatelessWidget {
                     border: Border.all(
                       color: task.completata
                           ? AppColors.iosBlue
-                          : (isDark ? Colors.white38 : AppColors.textMuted),
+                          : Theme.of(context).colorScheme.outline,
                       width: 2,
                     ),
                   ),
@@ -1105,7 +1067,7 @@ class _TaskRow extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                         color: task.completata
                             ? AppColors.textMuted
-                            : (isDark ? Colors.white : AppColors.textPrimary),
+                            : Theme.of(context).colorScheme.onSurface,
                         decoration: task.completata
                             ? TextDecoration.lineThrough
                             : null,
@@ -1120,7 +1082,7 @@ class _TaskRow extends StatelessWidget {
                         fontSize: 12,
                         color: task.completata
                             ? AppColors.textMuted.withValues(alpha: 0.6)
-                            : (isDark ? Colors.white60 : AppColors.textSecondary),
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1179,7 +1141,6 @@ class _SessionRow extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final Future<void> Function()? onDelete;
-  final bool isDark;
 
   const _SessionRow({
     required this.session,
@@ -1187,7 +1148,6 @@ class _SessionRow extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     this.onDelete,
-    required this.isDark,
   });
 
   @override
@@ -1212,7 +1172,7 @@ class _SessionRow extends StatelessWidget {
                 border: Border.all(
                   color: session.completata
                       ? AppColors.success
-                      : (isDark ? Colors.white38 : AppColors.textMuted),
+                      : Theme.of(context).colorScheme.outline,
                   width: 2,
                 ),
               ),
@@ -1244,7 +1204,7 @@ class _SessionRow extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                     color: session.completata
                         ? AppColors.textMuted
-                        : (isDark ? Colors.white : AppColors.textPrimary),
+                        : Theme.of(context).colorScheme.onSurface,
                     decoration: session.completata
                         ? TextDecoration.lineThrough
                         : null,
@@ -1257,9 +1217,7 @@ class _SessionRow extends StatelessWidget {
                   sottotitolo,
                   style: TextStyle(
                     fontSize: 12,
-                    color: session.completata
-                        ? AppColors.textMuted.withValues(alpha: 0.6)
-                        : (isDark ? Colors.white60 : AppColors.textSecondary),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1306,12 +1264,10 @@ class _SessionRow extends StatelessWidget {
 class _CircleControl extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  final bool isDark;
 
   const _CircleControl({
     required this.icon,
     required this.onTap,
-    required this.isDark,
   });
 
   @override
@@ -1323,17 +1279,10 @@ class _CircleControl extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.surface,
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.12)
-                : AppColors.border,
-          ),
+          color: Theme.of(context).colorScheme.surface,
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
-        child:
-            Icon(icon, color: isDark ? Colors.white : AppColors.textPrimary),
+        child: Icon(icon, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }
@@ -1341,8 +1290,7 @@ class _CircleControl extends StatelessWidget {
 
 class _SubTabBar extends StatelessWidget {
   final TabController controller;
-  final bool isDark;
-  const _SubTabBar({required this.controller, required this.isDark});
+  const _SubTabBar({required this.controller});
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1350,29 +1298,19 @@ class _SubTabBar extends StatelessWidget {
       child: Container(
         height: 38,
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(9),
         ),
         padding: const EdgeInsets.all(3),
         child: TabBar(
           controller: controller,
           indicator: BoxDecoration(
-            color: isDark ? const Color(0xFF3A3A3C) : Colors.white,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(7),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                )
-            ],
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
-          labelColor: isDark ? Colors.white : AppColors.textPrimary,
+          labelColor: Theme.of(context).colorScheme.onSurface,
           unselectedLabelColor: AppColors.textMuted,
           labelStyle: const TextStyle(
               fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: -0.2),

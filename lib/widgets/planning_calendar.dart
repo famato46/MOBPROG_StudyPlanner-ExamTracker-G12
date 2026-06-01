@@ -42,7 +42,6 @@ class _PlanningCalendarGridState extends State<PlanningCalendarGrid> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final colorScheme = theme.colorScheme;
     final oggi = DateTime.now();
     final oggiNorm = DateTime(oggi.year, oggi.month, oggi.day);
 
