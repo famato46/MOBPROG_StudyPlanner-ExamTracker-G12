@@ -402,27 +402,23 @@ class PlannerProvider extends ChangeNotifier {
       _courses.where((c) => c.stato == 'superato').fold(0, (sum, c) => sum + c.cfu);
 
   double get weightedAverage {
-    final passedWithGrade = _courses
-        .where((c) => c.stato == 'superato' && c.votoOttenuto != null);
-    if (passedWithGrade.isEmpty) return 0.0;
+    double totalePonderato = 0;
+    int totaleCfu = 0;
 
-    final totalWeighted = passedWithGrade.fold(
-        0.0, (sum, c) => sum + (c.votoOttenuto! * c.cfu));
-    final totalCfuConVoto =
-        passedWithGrade.fold(0, (sum, c) => sum + c.cfu);
+    for (var corso in _courses) {
+      if (corso.stato == 'superato' && corso.votoOttenuto != null) {
+        totalePonderato += corso.votoOttenuto! * corso.cfu;
+        totaleCfu += corso.cfu;
+      }
+    }
 
-    if (totalCfuConVoto == 0) return 0.0;
-
-    final media = totalWeighted / totalCfuConVoto;
-    return media.isNaN || media.isInfinite ? 0.0 : media;
+    if (totaleCfu == 0) return 0.0;
+    return totalePonderato / totaleCfu;
   }
 
   double get estimatedGraduationGrade {
-    final media = weightedAverage;
-    if (media == 0.0) return 0.0;
-
-    final votoStima = (media / 30) * 110;
-    return votoStima.isNaN || votoStima.isInfinite ? 0.0 : votoStima;
+    if (weightedAverage == 0.0) return 0.0;
+    return (weightedAverage / 30) * 110;
   }
 
   // Serve a non contare le pause nel totale dello studio
@@ -439,37 +435,41 @@ class PlannerProvider extends ChangeNotifier {
     final oggi = DateTime.now();
     final scadenzaCritica = oggi.add(const Duration(days: 14));
 
-    final esamiImminenti = _exams.where((e) {
-      final course = getCourseById(e.courseId);
-      if (course == null || course.stato == 'superato') return false;
-      return e.data.isAfter(oggi) &&
-          e.data.isBefore(scadenzaCritica) &&
-          e.stato == 'programmato';
-    }).toList();
+    final esamiImminenti = <Exam>[];
+    for (var esame in _exams) {
+      final corso = getCourseById(esame.courseId);
+      if (corso == null || corso.stato == 'superato') continue;
+      if (esame.stato != 'programmato') continue;
+      if (!esame.data.isAfter(oggi)) continue;
+      if (!esame.data.isBefore(scadenzaCritica)) continue;
+      esamiImminenti.add(esame);
+    }
 
     esamiImminenti.sort((a, b) => a.data.compareTo(b.data));
 
-    for (final esame in esamiImminenti.take(3)) {
-      final course = getCourseById(esame.courseId);
-      if (course == null) continue;
-
+    int contatore = 0;
+    for (var esame in esamiImminenti) {
+      if (contatore >= 3) break;
+      final corso = getCourseById(esame.courseId);
+      if (corso == null) continue;
       final giorniMancanti = esame.data.difference(oggi).inDays;
-
       if (giorniMancanti <= 3) {
-        suggerimenti
-            .add('URGENZA: Fai una simulazione per ${course.nome}!');
+        suggerimenti.add('URGENZA: Fai una simulazione per ${corso.nome}!');
       } else if (giorniMancanti <= 7) {
-        suggerimenti
-            .add('Ripasso intensivo consigliato per ${course.nome}');
+        suggerimenti.add('Ripasso intensivo consigliato per ${corso.nome}');
       } else {
-        suggerimenti.add('Inizia gli esercizi per ${course.nome}');
+        suggerimenti.add('Inizia gli esercizi per ${corso.nome}');
       }
+      contatore++;
     }
 
-    final taskInScadenza =
-        _tasks.where((t) => t.isInScadenza && !t.completata).toList();
-    for (final task in taskInScadenza.take(2)) {
-      suggerimenti.add('Scadenza vicina: ${task.titolo}');
+    int taskContatore = 0;
+    for (var task in _tasks) {
+      if (taskContatore >= 2) break;
+      if (task.isInScadenza && !task.completata) {
+        suggerimenti.add('Scadenza vicina: ${task.titolo}');
+        taskContatore++;
+      }
     }
 
     if (suggerimenti.isEmpty && _courses.isNotEmpty) {
