@@ -346,7 +346,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       title: 'Esame associato',
       current: _examId,
       options: options,
-      labelBuilder: (id) => id == null ? 'Nessuno' : exams.firstWhere((e) => e.id == id).titolo,
+      labelBuilder: (id) {
+      if (id == null) return 'Nessuno';
+      final esame = exams.firstWhere((e) => e.id == id);
+      final data = '${esame.data.day.toString().padLeft(2, '0')}/${esame.data.month.toString().padLeft(2, '0')}/${esame.data.year}';
+      return '${_capitalize(esame.tipologia)} · $data';
+    },
       onSelected: (id) => setState(() => _examId = id),
     );
   }

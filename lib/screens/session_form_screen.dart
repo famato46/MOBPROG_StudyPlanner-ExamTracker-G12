@@ -311,7 +311,12 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
       title: 'Esame',
       current: _examId,
       options: options,
-      labelBuilder: (id) => id == null ? 'Nessun esame' : exams.firstWhere((e) => e.id == id).titolo,
+      labelBuilder: (id) {
+      if (id == null) return 'Nessun esame';
+      final esame = exams.firstWhere((e) => e.id == id);
+      final data = '${esame.data.day.toString().padLeft(2, '0')}/${esame.data.month.toString().padLeft(2, '0')}/${esame.data.year}';
+      return '${_capitalize(esame.tipologia)} · $data';
+    },
       onSelected: (id) => setState(() => _examId = id),
     );
   }
