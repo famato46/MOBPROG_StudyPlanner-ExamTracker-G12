@@ -176,6 +176,7 @@ class FormPickerRow extends StatelessWidget {
   final Color? valueColor;
   final VoidCallback onTap;
   final bool disabled;
+  final bool hasError;
 
   const FormPickerRow({
     super.key,
@@ -184,47 +185,67 @@ class FormPickerRow extends StatelessWidget {
     this.valueColor,
     required this.onTap,
     this.disabled = false,
+    this.hasError = false, 
   });
 
   @override
   Widget build(BuildContext context) {
     final effectiveLabelColor = disabled ? AppColors.textMuted : Theme.of(context).colorScheme.onSurface;
     final effectiveValueColor = disabled ? AppColors.textMuted : (valueColor ?? Theme.of(context).colorScheme.onSurfaceVariant);
+    final errorColor = AppColors.danger;
+    final showError = hasError && !disabled;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: disabled ? null : onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label, 
-                  style: TextStyle(fontSize: 16, color: effectiveLabelColor, letterSpacing: -0.3)
-                )
-              ),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 16, 
-                    color: effectiveValueColor, 
-                    letterSpacing: -0.3, 
-                    fontWeight: valueColor != null && !disabled ? FontWeight.w600 : FontWeight.w400
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+  return Material(
+    color: Colors.transparent,
+    child: Column(                    // ← Column che avvolge tutto
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: disabled ? null : onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label, 
+                    style: TextStyle(fontSize: 16, color: effectiveLabelColor, letterSpacing: -0.3)
+                  )
                 ),
-              ),
-              const SizedBox(width: 6),
-              Icon(Icons.unfold_more_rounded, size: 18, color: AppColors.textMuted),
-            ],
+                Flexible(
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 16, 
+                      color: effectiveValueColor, 
+                      letterSpacing: -0.3, 
+                      fontWeight: valueColor != null && !disabled ? FontWeight.w600 : FontWeight.w400
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.unfold_more_rounded, size: 18, color: AppColors.textMuted),
+              ],
+            ),
           ),
         ),
+      if (showError)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: SizedBox(
+          width: double.infinity,
+          child: Text(
+            'Campo obbligatorio',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: errorColor),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -148,6 +148,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_scadenza == null) {
+      setState(() {});
+      return;
+    }
+
     final provider = context.read<PlannerProvider>();
     final int? stimato = _tempoStimatoCtrl.text.isEmpty ? null : int.tryParse(_tempoStimatoCtrl.text.trim());
 
@@ -246,6 +252,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   label: 'Scadenza',
                   value: _scadenza == null ? 'Nessuna' : DateFormat('dd MMM yyyy', 'it_IT').format(_scadenza!),
                   onTap: _pickDate,
+                  hasError: _scadenza == null && _formKey.currentState != null,
                 ),
                 FormPickerRow(
                   label: 'Priorità',
