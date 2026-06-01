@@ -7,7 +7,6 @@ class PlanningTaskPickerButton extends StatelessWidget {
   final List<Task> pendingTasks;
   final bool enabled;
   final ValueChanged<Task?> onSelected;
-  final bool isDark;
 
   const PlanningTaskPickerButton({
     super.key,
@@ -15,11 +14,11 @@ class PlanningTaskPickerButton extends StatelessWidget {
     required this.pendingTasks,
     required this.enabled,
     required this.onSelected,
-    required this.isDark,
   });
 
   void _openPicker(BuildContext context) {
     if (!enabled) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor:
@@ -122,6 +121,7 @@ class PlanningTaskPickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: Colors.transparent,
       child: InkWell(
