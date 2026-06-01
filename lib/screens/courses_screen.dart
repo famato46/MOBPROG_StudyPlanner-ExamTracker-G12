@@ -119,15 +119,14 @@ class _CoursesScreenState extends State<CoursesScreen>{
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : AppColors.background;
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.onSurface;
+    final secondaryColor = colorScheme.onSurfaceVariant;
 
     return DefaultTabController(
     length: 5,
     child: Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: colorScheme.surface,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -153,8 +152,7 @@ class _CoursesScreenState extends State<CoursesScreen>{
                   total: provider.courses.length,
                   visible: tutti.length,
                   sortBy: _sortBy,
-                  onSortChanged: (v) => setState(() => _sortBy = v),
-                  isDark: isDark,
+                  onSortChanged: (v) => setState(() => _sortBy = v)
                 ),
                 _SearchBar(
                   controller: _searchController,
@@ -163,15 +161,14 @@ class _CoursesScreenState extends State<CoursesScreen>{
                   onClear: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
-                  },
-                  isDark: isDark,
+                  }
                 ),
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isDark
+                      color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white.withValues(alpha: 0.06)
                           : Colors.black.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(12),
@@ -187,7 +184,7 @@ class _CoursesScreenState extends State<CoursesScreen>{
                       indicatorSize: TabBarIndicatorSize.tab,
                       dividerColor: Colors.transparent,
                       labelColor: Colors.white,
-                      unselectedLabelColor: isDark
+                      unselectedLabelColor: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white70
                           : AppColors.textSecondary,
                       labelStyle: const TextStyle(
@@ -211,8 +208,7 @@ class _CoursesScreenState extends State<CoursesScreen>{
                 _FilterRow(
                   options: _semestriOptions,
                   current: _filterSemestre,
-                  onSelected: (v) => setState(() => _filterSemestre = v),
-                  isDark: isDark,
+                  onSelected: (v) => setState(() => _filterSemestre = v)
                 ),
                 const SizedBox(height: 16),
                 Expanded(
@@ -223,35 +219,30 @@ class _CoursesScreenState extends State<CoursesScreen>{
                         provider: provider,
                         statoLabel: _statoLabel,
                         onConfirmDelete: (c) => _confirmDelete(context, c),
-                        isDark: isDark,
                       ),
                       _CourseListView(
                         courses: daIniziare,
                         provider: provider,
                         statoLabel: _statoLabel,
                         onConfirmDelete: (c) => _confirmDelete(context, c),
-                        isDark: isDark,
                       ),
                       _CourseListView(
                         courses: inCorso,
                         provider: provider,
                         statoLabel: _statoLabel,
                         onConfirmDelete: (c) => _confirmDelete(context, c),
-                        isDark: isDark,
                       ),
                       _CourseListView(
                         courses: frequentato,
                         provider: provider,
                         statoLabel: _statoLabel,
                         onConfirmDelete: (c) => _confirmDelete(context, c),
-                        isDark: isDark,
                       ),
                       _CourseListView(
                         courses: superato,
                         provider: provider,
                         statoLabel: _statoLabel,
                         onConfirmDelete: (c) => _confirmDelete(context, c),
-                        isDark: isDark,
                       ),
                     ],
                   ),
@@ -278,22 +269,19 @@ class _CourseListView extends StatelessWidget {
   final PlannerProvider provider;
   final String Function(String) statoLabel;
   final Future<bool?> Function(Course) onConfirmDelete;
-  final bool isDark;
 
   const _CourseListView({
     required this.courses,
     required this.provider,
     required this.statoLabel,
-    required this.onConfirmDelete,
-    required this.isDark,
+    required this.onConfirmDelete
   });
 
   @override
   Widget build(BuildContext context) {
     if (courses.isEmpty) {
       return _EmptyState(
-        hasAnyCourse: provider.courses.isNotEmpty,
-        isDark: isDark,
+        hasAnyCourse: provider.courses.isNotEmpty
       );
     }
     return ListView.builder(
@@ -318,8 +306,7 @@ class _CourseListView extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => CourseDetailScreen(course: course),
             ),
-          ),
-          isDark: isDark,
+          )
         );
       },
     );
@@ -330,13 +317,11 @@ class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
   final ValueChanged<String> onSelected;
-  final bool isDark;
 
   const _FilterRow({
     required this.options,
     required this.current,
-    required this.onSelected,
-    required this.isDark,
+    required this.onSelected
   });
 
   @override
@@ -382,7 +367,7 @@ class _FilterRowState extends State<_FilterRow>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: widget.isDark
+          color: Theme.of(context).brightness == Brightness.dark 
               ? Colors.white.withValues(alpha: 0.06)
               : Colors.black.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
@@ -400,8 +385,9 @@ class _FilterRowState extends State<_FilterRow>
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor:
-              widget.isDark ? Colors.white70 : AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).brightness == Brightness.dark 
+          ? Colors.white70 
+          : AppColors.textSecondary,
           labelStyle: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -424,14 +410,12 @@ class _CoursesHeader extends StatelessWidget {
   final int visible;
   final String sortBy;
   final ValueChanged<String> onSortChanged;
-  final bool isDark;
 
   const _CoursesHeader({
     required this.total,
     required this.visible,
     required this.sortBy,
-    required this.onSortChanged,
-    required this.isDark,
+    required this.onSortChanged
   });
 
   String _sortLabel(String s) {
@@ -449,9 +433,9 @@ class _CoursesHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
+    final primaryColor = Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary;
     final secondaryColor =
-        isDark ? Colors.white70 : AppColors.textSecondary;
+        Theme.of(context).brightness == Brightness.dark ? Colors.white70 : AppColors.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
@@ -485,7 +469,7 @@ class _CoursesHeader extends StatelessWidget {
           PopupMenuButton<String>(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            color: isDark ? const Color(0xFF2A2A2C) : AppColors.surface,
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF2A2A2C) : AppColors.surface,
             position: PopupMenuPosition.under,
             onSelected: onSortChanged,
             itemBuilder: (_) => [
@@ -497,12 +481,12 @@ class _CoursesHeader extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark
+                color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.white.withValues(alpha: 0.06)
                     : AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark
+                  color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white.withValues(alpha: 0.1)
                       : AppColors.border,
                 ),
@@ -550,21 +534,18 @@ class _SearchBar extends StatelessWidget {
   final bool hasQuery;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
-  final bool isDark;
 
   const _SearchBar({
     required this.controller,
     required this.hasQuery,
     required this.onChanged,
-    required this.onClear,
-    required this.isDark,
+    required this.onClear
   });
 
   @override
   Widget build(BuildContext context) {
-    final fillColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.05);
+    final colorScheme = Theme.of(context).colorScheme;
+    final fillColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
@@ -573,7 +554,7 @@ class _SearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: TextStyle(
           fontSize: 15,
-          color: isDark ? Colors.white : AppColors.textPrimary,
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
         ),
         cursorColor: AppColors.pastelRedDeep,
         decoration: InputDecoration(
@@ -619,7 +600,6 @@ class _DismissibleCourse extends StatelessWidget {
   final Future<bool?> Function() onConfirmDelete;
   final Future<void> Function() onDelete;
   final VoidCallback onTap;
-  final bool isDark;
 
   const _DismissibleCourse({
     required this.course,
@@ -627,8 +607,7 @@ class _DismissibleCourse extends StatelessWidget {
     required this.statoLabel,
     required this.onConfirmDelete,
     required this.onDelete,
-    required this.onTap,
-    required this.isDark,
+    required this.onTap
   });
 
   @override
@@ -652,8 +631,7 @@ class _DismissibleCourse extends StatelessWidget {
         course: course,
         statoColor: statoColor,
         statoLabel: statoLabel,
-        onTap: onTap,
-        isDark: isDark,
+        onTap: onTap
       ),
     );
   }
@@ -664,36 +642,27 @@ class _CourseCard extends StatelessWidget {
   final Color statoColor;
   final String statoLabel;
   final VoidCallback onTap;
-  final bool isDark;
 
   const _CourseCard({
     required this.course,
     required this.statoColor,
     required this.statoLabel,
-    required this.onTap,
-    required this.isDark,
+    required this.onTap
   });
-
+  
   @override
   Widget build(BuildContext context) {
-    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white60 : AppColors.textSecondary;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface,
+        color: colorScheme.surfaceContainerHigh, // Si adatta automaticamente al tema
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.border,
-        ),
-        boxShadow: isDark
-            ? null
+        border: Border.all(color: colorScheme.outlineVariant),
+        boxShadow: theme.brightness == Brightness.dark 
+            ? null 
             : [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.03),
@@ -729,7 +698,7 @@ class _CourseCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: primaryColor,
+                          color: colorScheme.onSurface,
                           letterSpacing: -0.3,
                         ),
                         maxLines: 1,
@@ -740,7 +709,7 @@ class _CourseCard extends StatelessWidget {
                         course.docente,
                         style: TextStyle(
                           fontSize: 13,
-                          color: secondaryColor,
+                          color: colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -769,7 +738,7 @@ class _CourseCard extends StatelessWidget {
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    color: isDark ? Colors.white38 : Colors.black26),
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white38 : Colors.black26),
               ],
             ),
           ),
@@ -808,9 +777,8 @@ class _Badge extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final bool hasAnyCourse;
-  final bool isDark;
 
-  const _EmptyState({required this.hasAnyCourse, required this.isDark});
+  const _EmptyState({required this.hasAnyCourse});
 
   @override
   Widget build(BuildContext context) {
@@ -839,7 +807,7 @@ class _EmptyState extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -850,7 +818,7 @@ class _EmptyState extends StatelessWidget {
                 : 'Premi + per aggiungere il primo',
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? Colors.white60 : AppColors.textSecondary,
+              color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : AppColors.textSecondary,
             ),
           ),
         ],
