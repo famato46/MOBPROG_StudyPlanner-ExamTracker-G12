@@ -6,6 +6,7 @@ import '../models/task.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../utils/app_colors.dart';
+import '../widgets/form.dart'; // WIDGET CONDIVISI
 
 class TaskFormScreen extends StatefulWidget {
   final Task? taskToEdit;
@@ -39,22 +40,26 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   bool get _isEditing => widget.taskToEdit != null;
 
-  static const List<(String, String)> _prioritaOptions = [
-    ('alta', 'Alta'),
-    ('media', 'Media'),
-    ('bassa', 'Bassa'),
+  static const List<String> _prioritaOptions = [
+    'alta',
+    'media',
+    'bassa',
   ];
+
+  String _capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
 
   @override
   void initState() {
     super.initState();
     final t = widget.taskToEdit;
     _titoloCtrl = TextEditingController(text: t?.titolo ?? '');
-    _descrizioneCtrl =
-        TextEditingController(text: t?.descrizione ?? '');
+    _descrizioneCtrl = TextEditingController(text: t?.descrizione ?? '');
     _noteCtrl = TextEditingController(text: t?.note ?? '');
-    _tempoStimatoCtrl = TextEditingController(
-        text: t?.tempoStimato?.toString() ?? '');
+    _tempoStimatoCtrl = TextEditingController(text: t?.tempoStimato?.toString() ?? '');
+
     _courseId = t?.courseId ?? widget.defaultCourseId;
     _examId = t?.examId ?? widget.defaultExamId;
     _scadenza = t?.scadenza;
@@ -71,99 +76,17 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     super.dispose();
   }
 
-  String _formatTipologia(String t) {
-    switch (t.toLowerCase()) {
-      case 'scritto':
-        return 'Scritto';
-      case 'orale':
-        return 'Orale';
-      case 'intercorso':
-        return 'Intercorso';
-      case 'consegna':
-        return 'Consegna';
-      case 'progetto':
-        return 'Progetto';
-      default:
-        if (t.isEmpty) return t;
-        return t[0].toUpperCase() + t.substring(1).toLowerCase();
-    }
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_scadenza == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Devi selezionare una data di scadenza!',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-          ),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-      return; 
-    }
-    final provider = context.read<PlannerProvider>();
-
-    final tempoStimato = _tempoStimatoCtrl.text.isEmpty
-        ? null
-        : int.tryParse(_tempoStimatoCtrl.text);
-
-    if (_isEditing) {
-      final updated = widget.taskToEdit!.copyWith(
-        titolo: _titoloCtrl.text.trim(),
-        descrizione: _descrizioneCtrl.text.isEmpty
-            ? null
-            : _descrizioneCtrl.text.trim(),
-        courseId: _courseId,
-        examId: _examId,
-        scadenza: _scadenza,
-        priorita: _priorita,
-        completata: _completata,
-        tempoStimato: tempoStimato,
-        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-      );
-      await provider.updateTask(updated);
-    } else {
-      await provider.addTask(
-        titolo: _titoloCtrl.text.trim(),
-        descrizione: _descrizioneCtrl.text.isEmpty
-            ? null
-            : _descrizioneCtrl.text.trim(),
-        courseId: _courseId,
-        examId: _examId,
-        scadenza: _scadenza,
-        priorita: _priorita,
-        completata: _completata,
-        tempoStimato: tempoStimato,
-        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-      );
-    }
-
-    if (!mounted) return;
-    Navigator.pop(context);
-  }
-
-  String _prioritaLabel(String p) => _prioritaOptions
-      .firstWhere((e) => e.$1 == p, orElse: () => (p, p))
-      .$2;
-
-  Future<void> _pickScadenza() async {
-    DateTime tempDate = _scadenza ?? DateTime.now().add(const Duration(days: 3));
+  Future<void> _pickDate() async {
+    DateTime tempDate = _scadenza ?? DateTime.now();
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return StatefulBuilder(
           builder: (ctx, setSheet) => Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1C1E) : AppColors.groupedSurface,
+              color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: SafeArea(
@@ -175,8 +98,8 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                   Container(
                     width: 36, height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.textMuted.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
+                      color: Theme.of(ctx).dividerColor, 
+                      borderRadius: BorderRadius.circular(2)
                     ),
                   ),
                   Padding(
@@ -185,35 +108,26 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: Text('Annulla',
-                              style: TextStyle(
-                                  color: AppColors.iosBlue, fontSize: 16)),
+                          onPressed: () {
+                            setState(() => _scadenza = null);
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Rimuovi', style: TextStyle(color: AppColors.danger, fontSize: 16)),
                         ),
-                        Text('Data scadenza',
-                            style: TextStyle(
-                              fontSize: 17, fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
-                            )),
+                        Text('Scadenza', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Theme.of(ctx).colorScheme.onSurface)),
                         TextButton(
                           onPressed: () {
                             setState(() => _scadenza = tempDate);
                             Navigator.pop(ctx);
                           },
-                          child: Text('OK',
-                              style: TextStyle(
-                                  color: AppColors.iosBlue,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600)),
+                          child: const Text('OK', style: TextStyle(color: AppColors.iosBlue, fontSize: 16, fontWeight: FontWeight.w600)),
                         ),
                       ],
                     ),
                   ),
                   Theme(
                     data: Theme.of(ctx).copyWith(
-                      colorScheme: Theme.of(ctx).colorScheme.copyWith(
-                        primary: AppColors.pastelGreen,
-                      ),
+                      colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: AppColors.iosBlue),
                     ),
                     child: CalendarDatePicker(
                       initialDate: tempDate,
@@ -232,21 +146,47 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     );
   }
 
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final provider = context.read<PlannerProvider>();
+    final int? stimato = _tempoStimatoCtrl.text.isEmpty ? null : int.tryParse(_tempoStimatoCtrl.text.trim());
+
+    if (_isEditing) {
+      final updated = widget.taskToEdit!.copyWith(
+        titolo: _titoloCtrl.text.trim(),
+        descrizione: _descrizioneCtrl.text.trim(),
+        courseId: _courseId,
+        examId: _examId,
+        scadenza: _scadenza,
+        priorita: _priorita,
+        completata: _completata,
+        tempoStimato: stimato,
+        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
+      );
+      await provider.updateTask(updated);
+    } else {
+      await provider.addTask(
+        titolo: _titoloCtrl.text.trim(),
+        descrizione: _descrizioneCtrl.text.trim(),
+        courseId: _courseId,
+        examId: _examId,
+        scadenza: _scadenza,
+        priorita: _priorita,
+        completata: _completata,
+        tempoStimato: stimato,
+        note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
+      );
+    }
+
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? const Color(0xFF000000)
-        : AppColors.groupedBackground;
-
-    final provider = context.watch<PlannerProvider>();
+    final provider = Provider.of<PlannerProvider>(context);
 
     return Scaffold(
-      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: bgColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
         centerTitle: true,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -254,10 +194,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             foregroundColor: AppColors.iosBlue,
             padding: const EdgeInsets.only(left: 16),
           ),
-          child: const Text(
-            'Annulla',
-            style: TextStyle(fontSize: 16),
-          ),
+          child: const Text('Annulla', style: TextStyle(fontSize: 16)),
         ),
         leadingWidth: 88,
         title: Text(
@@ -265,7 +202,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.textPrimary,
+            color: Theme.of(context).colorScheme.onSurface,
             letterSpacing: -0.3,
           ),
         ),
@@ -276,640 +213,202 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
               foregroundColor: AppColors.iosBlue,
               padding: const EdgeInsets.only(right: 16),
             ),
-            child: const Text(
-              'Salva',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text('Salva', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.only(top: 8, bottom: 40),
-            children: [
-                  const _GroupHeader(label: 'Attività'),
-                  _SettingsGroup(
-                    isDark: isDark,
-                    children: [
-                      _TextFieldRow(
-                        label: 'Titolo',
-                        controller: _titoloCtrl,
-                        hint: 'es. Capitolo 3',
-                        required: true,
-                        isDark: isDark,
-                      ),
-                      _TextFieldRow(
-                        label: 'Descrizione',
-                        controller: _descrizioneCtrl,
-                        hint: 'opzionale',
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const _GroupHeader(label: 'Collegamenti'),
-                  _SettingsGroup(
-                    isDark: isDark,
-                    children: [
-                      _PickerRow(
-                        label: 'Corso',
-                        value: _courseId == null
-                            ? 'Nessuno'
-                            : (provider.getCourseById(_courseId!)?.nome ??
-                                'Nessuno'),
-                        onTap: () => _showCoursePicker(
-                            context, isDark, provider.courses),
-                        isDark: isDark,
-                      ),
-                      _PickerRow(
-                        label: 'Esame',
-                        value: _examId == null
-                            ? 'Nessuno'
-                            : (() {
-                                final ex = provider.getExamById(_examId!);
-                                if (ex == null) return 'Nessuno';
-                                final tipo = _formatTipologia(ex.tipologia);
-                                final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(ex.data);
-                                return '$tipo ($dataStr)';
-                              })(),
-                        onTap: () => _showExamPicker(
-                            context, isDark, provider.exams),
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const _GroupHeader(label: 'Pianificazione'),
-                  _SettingsGroup(
-                    isDark: isDark,
-                    children: [
-                      _PickerRow(
-                        label: 'Scadenza',
-                        value: _scadenza == null
-                            ? 'Nessuna'
-                            : DateFormat('dd MMM yyyy', 'it_IT')
-                                .format(_scadenza!),
-                        onTap: _pickScadenza,
-                        isDark: isDark,
-                      ),
-                      _PickerRow(
-                        label: 'Priorità',
-                        value: _prioritaLabel(_priorita),
-                        valueColor: AppColors.priorita(_priorita),
-                        onTap: () => _showPrioritaPicker(context, isDark),
-                        isDark: isDark,
-                      ),
-                      _TextFieldRow(
-                        label: 'Tempo stimato',
-                        controller: _tempoStimatoCtrl,
-                        hint: 'minuti',
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return null;
-                          if (int.tryParse(v) == null) {
-                            return 'Numero non valido';
-                          }
-                          return null;
-                        },
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const _GroupHeader(label: 'Stato'),
-                  _SettingsGroup(
-                    isDark: isDark,
-                    children: [
-                      _SwitchRow(
-                        label: 'Completata',
-                        value: _completata,
-                        onChanged: (v) => setState(() => _completata = v),
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  const _GroupHeader(label: 'Note'),
-                  _SettingsGroup(
-                    isDark: isDark,
-                    children: [
-                      _TextAreaRow(
-                        label: 'Note aggiuntive',
-                        controller: _noteCtrl,
-                        hint: 'opzionale',
-                        isDark: isDark,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.pastelGreen,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          _isEditing ? 'Salva modifiche' : 'Aggiungi attività',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.only(top: 8, bottom: 32),
+          children: [
+            const FormGroupHeader(label: 'Dettagli'),
+            FormSettingsGroup(
+              children: [
+                FormTextFieldRow(
+                  label: 'Titolo',
+                  controller: _titoloCtrl,
+                  hint: 'Cosa devi fare?',
+                  required: true,
+                ),
+                FormTextFieldRow(
+                  label: 'Descrizione',
+                  controller: _descrizioneCtrl,
+                  hint: 'opzionale',
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 24),
+            const FormGroupHeader(label: 'Pianificazione'),
+            FormSettingsGroup(
+              children: [
+                FormPickerRow(
+                  label: 'Scadenza',
+                  value: _scadenza == null ? 'Nessuna' : DateFormat('dd MMM yyyy', 'it_IT').format(_scadenza!),
+                  onTap: _pickDate,
+                ),
+                FormPickerRow(
+                  label: 'Priorità',
+                  value: _capitalize(_priorita),
+                  valueColor: AppColors.priorita(_priorita),
+                  onTap: () => _showPrioritaPicker(context),
+                ),
+                FormTextFieldRow(
+                  label: 'Tempo stimato',
+                  controller: _tempoStimatoCtrl,
+                  hint: 'Minuti (opzionale)',
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const FormGroupHeader(label: 'Collegamento'),
+            FormSettingsGroup(
+              children: [
+                FormPickerRow(
+                  label: 'Corso',
+                  value: _courseId == null ? 'Nessuno' : (provider.getCourseById(_courseId!)?.nome ?? 'Nessuno'),
+                  onTap: () => _showCoursePicker(context, provider.courses),
+                ),
+                FormPickerRow(
+                  label: 'Esame',
+                  value: _examId == null ? 'Nessuno' : (provider.getExamById(_examId!)?.titolo ?? 'Nessuno'),
+                  disabled: _courseId == null,
+                  onTap: () {
+                    if (_courseId == null) return;
+                    final examsForCourse = provider.exams.where((e) => e.courseId == _courseId).toList();
+                    _showExamPicker(context, examsForCourse);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const FormGroupHeader(label: 'Avanzamento'),
+            FormSettingsGroup(
+              children: [
+                FormSwitchRow(
+                  label: 'Completata',
+                  value: _completata,
+                  onChanged: (v) => setState(() => _completata = v),
+                ),
+                FormTextAreaRow(
+                  label: 'Note',
+                  controller: _noteCtrl,
+                  hint: 'Appunti aggiuntivi',
+                ),
+              ],
+            ),
+          ],
         ),
+      ),
     );
   }
 
-  void _showCoursePicker(
-      BuildContext context, bool isDark, List<Course> courses) {
-    _showIosPicker<String?>(
+  void _showPrioritaPicker(BuildContext context) {
+    _showOptionsSheet<String>(
       context: context,
-      isDark: isDark,
-      title: 'Corso',
-      options: [
-        (null, 'Nessuno'),
-        ...courses.map((c) => (c.id, c.nome)),
-      ],
+      title: 'Priorità',
+      current: _priorita,
+      options: _prioritaOptions,
+      labelBuilder: _capitalize,
+      onSelected: (v) => setState(() => _priorita = v),
+    );
+  }
+
+  void _showCoursePicker(BuildContext context, List<Course> courses) {
+    final options = [null, ...courses.map((c) => c.id)];
+    _showOptionsSheet<String?>(
+      context: context,
+      title: 'Corso associato',
       current: _courseId,
-      onSelected: (v) {
+      options: options,
+      labelBuilder: (id) => id == null ? 'Nessuno' : courses.firstWhere((c) => c.id == id).nome,
+      onSelected: (id) {
         setState(() {
-          _courseId = v;
-          _examId = null; 
+          _courseId = id;
+          if (id == null) _examId = null;
         });
       },
     );
   }
 
-  void _showExamPicker(
-      BuildContext context, bool isDark, List<Exam> exams) {
-    final filteredExams = _courseId == null
-        ? exams
-        : exams.where((e) => e.courseId == _courseId).toList();
-    _showIosPicker<String?>(
+  void _showExamPicker(BuildContext context, List<Exam> exams) {
+    final options = [null, ...exams.map((e) => e.id)];
+    _showOptionsSheet<String?>(
       context: context,
-      isDark: isDark,
-      title: 'Esame',
-      options: [
-        (null, 'Nessuno'),
-        ...filteredExams.map((e) {
-          final tipo = _formatTipologia(e.tipologia);
-          final dataStr = DateFormat('dd/MM/yyyy', 'it_IT').format(e.data);
-          return (e.id, '$tipo ($dataStr)');
-        }),
-      ],
+      title: 'Esame associato',
       current: _examId,
-      onSelected: (v) => setState(() => _examId = v),
+      options: options,
+      labelBuilder: (id) => id == null ? 'Nessuno' : exams.firstWhere((e) => e.id == id).titolo,
+      onSelected: (id) => setState(() => _examId = id),
     );
   }
 
-  void _showPrioritaPicker(BuildContext context, bool isDark) {
-    _showIosPicker<String>(
+  void _showOptionsSheet<T>({
+    required BuildContext context,
+    required String title,
+    required T? current,
+    required List<T> options,
+    required String Function(T) labelBuilder,
+    required ValueChanged<T> onSelected,
+  }) {
+    showModalBottomSheet(
       context: context,
-      isDark: isDark,
-      title: 'Priorità',
-      options: _prioritaOptions,
-      current: _priorita,
-      onSelected: (v) => setState(() => _priorita = v),
-    );
-  }
-}
-
-void _showIosPicker<T>({
-  required BuildContext context,
-  required bool isDark,
-  required String title,
-  required List<(T, String)> options,
-  required T current,
-  required ValueChanged<T> onSelected,
-}) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor:
-        isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-  builder: (_) => DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (_, scrollController) => Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 8),
             Container(
-              width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).dividerColor, 
+                  borderRadius: BorderRadius.circular(2)
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
             ),
-            const Divider(height: 1),
-            Expanded(
+            Flexible(
               child: ListView(
-                controller: scrollController,
-                children: [
-                  ...options.map((opt) {
-                    final (value, label) = opt;
-                    final selected = value == current;
-                    return InkWell(
-                      onTap: () {
-                        onSelected(value);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                ),
+                shrinkWrap: true,
+                children: options.map((opt) {
+                  final isSelected = opt == current;
+                  return InkWell(
+                    onTap: () {
+                      onSelected(opt);
+                      Navigator.pop(ctx);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              labelBuilder(opt),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                               ),
                             ),
-                            if (selected)
-                              Icon(Icons.check_rounded,
-                                  color: AppColors.iosBlue, size: 20),
-                          ],
-                        ),
+                          ),
+                          if (isSelected) const Icon(Icons.check_rounded, color: AppColors.iosBlue, size: 22),
+                        ],
                       ),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                ],
+                    ),
+                  );
+                }).toList(),
               ),
             ),
+            const SizedBox(height: 12),
           ],
         ),
-      ),
-    ),
-  );
-}
-
-class _GroupHeader extends StatelessWidget {
-  final String label;
-  const _GroupHeader({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 6),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 12,
-          color: AppColors.textMuted,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsGroup extends StatelessWidget {
-  final List<Widget> children;
-  final bool isDark;
-  const _SettingsGroup({required this.children, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark
-              ? const Color(0xFF1C1C1E)
-              : AppColors.groupedSurface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: _withDividers(children, isDark),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
-    if (rows.length <= 1) return rows;
-    final result = <Widget>[];
-    for (var i = 0; i < rows.length; i++) {
-      result.add(rows[i]);
-      if (i < rows.length - 1) {
-        result.add(Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Divider(
-            height: 1,
-            thickness: 0.5,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.groupedDivider,
-          ),
-        ));
-      }
-    }
-    return result;
-  }
-}
-
-class _TextFieldRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final TextInputType keyboardType;
-  final bool required;
-  final String? Function(String?)? validator;
-  final bool isDark;
-
-  const _TextFieldRow({
-    required this.label,
-    required this.controller,
-    this.hint,
-    this.keyboardType = TextInputType.text,
-    this.required = false,
-    this.validator,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      constraints: const BoxConstraints(minHeight: 44),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextFormField(
-              controller: controller,
-              keyboardType: keyboardType,
-              textAlign: TextAlign.end,
-              cursorColor: AppColors.iosBlue,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textMuted,
-                ),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                errorStyle: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.danger,
-                  height: 0.8,
-                ),
-              ),
-              validator: validator ??
-                  (required
-                      ? (v) => (v == null || v.isEmpty)
-                          ? 'Campo obbligatorio'
-                          : null
-                      : null),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TextAreaRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final bool isDark;
-
-  const _TextAreaRow({
-    required this.label,
-    required this.controller,
-    this.hint,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            maxLines: 3,
-            minLines: 2,
-            cursorColor: AppColors.iosBlue,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark
-                  ? Colors.white60
-                  : AppColors.textSecondary,
-              letterSpacing: -0.2,
-              height: 1.4,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                fontSize: 15,
-                color: AppColors.textMuted,
-              ),
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PickerRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _PickerRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark
-                        ? Colors.white
-                        : AppColors.textPrimary,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: valueColor ??
-                        (isDark
-                            ? Colors.white60
-                            : AppColors.textSecondary),
-                    letterSpacing: -0.3,
-                    fontWeight: valueColor != null
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SwitchRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  final bool isDark;
-
-  const _SwitchRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      constraints: const BoxConstraints(minHeight: 44),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.iosBlue,
-          ),
-        ],
       ),
     );
   }

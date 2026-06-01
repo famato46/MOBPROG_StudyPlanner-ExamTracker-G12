@@ -6,7 +6,6 @@ import '../utils/app_colors.dart';
 import 'course_detail_screen.dart';
 import 'course_form_screen.dart';
 
-/// CoursesScreen 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
 
@@ -17,9 +16,9 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen>
     with TickerProviderStateMixin {
   String _searchQuery = '';
-  String _filterStato = 'tutti';
   String _filterSemestre = 'tutti_sem';
   String _sortBy = 'nome';
+  late final TabController _statoTabController;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -31,21 +30,19 @@ class _CoursesScreenState extends State<CoursesScreen>
     ('superato', 'Superato'),
   ];
 
-static const List<(String, String)> _semestriOptions = [
-  ('tutti_sem', 'Tutti i semestri'),
-  ('1° Semestre · Anno I', '1° sem · Anno I'),
-  ('2° Semestre · Anno I', '2° sem · Anno I'),
-  ('1° Semestre · Anno II', '1° sem · Anno II'),
-  ('2° Semestre · Anno II', '2° sem · Anno II'),
-  ('1° Semestre · Anno III', '1° sem · Anno III'),
-  ('2° Semestre · Anno III', '2° sem · Anno III'),
-  ('1° Semestre · Anno IV', '1° sem · Anno IV'),
-  ('2° Semestre · Anno IV', '2° sem · Anno IV'),
-  ('1° Semestre · Anno V', '1° sem · Anno V'),
-  ('2° Semestre · Anno V', '2° sem · Anno V'),
-];
-
-  late final TabController _statoTabController;
+  static const List<(String, String)> _semestriOptions = [
+    ('tutti_sem', 'Tutti i semestri'),
+    ('1° Semestre · Anno I', '1° sem · Anno I'),
+    ('2° Semestre · Anno I', '2° sem · Anno I'),
+    ('1° Semestre · Anno II', '1° sem · Anno II'),
+    ('2° Semestre · Anno II', '2° sem · Anno II'),
+    ('1° Semestre · Anno III', '1° sem · Anno III'),
+    ('2° Semestre · Anno III', '2° sem · Anno III'),
+    ('1° Semestre · Anno IV', '1° sem · Anno IV'),
+    ('2° Semestre · Anno IV', '2° sem · Anno IV'),
+    ('1° Semestre · Anno V', '1° sem · Anno V'),
+    ('2° Semestre · Anno V', '2° sem · Anno V'),
+  ];
 
   @override
   void initState() {
@@ -53,11 +50,7 @@ static const List<(String, String)> _semestriOptions = [
     _statoTabController = TabController(
       length: _statiOptions.length,
       vsync: this,
-    )..addListener(() {
-        if (_statoTabController.indexIsChanging) return;
-        setState(() =>
-            _filterStato = _statiOptions[_statoTabController.index].$1);
-      });
+    );
   }
 
   @override
@@ -72,16 +65,15 @@ static const List<(String, String)> _semestriOptions = [
       final q = _searchQuery.toLowerCase();
       final matchSearch = c.nome.toLowerCase().contains(q) ||
           c.docente.toLowerCase().contains(q);
-      final matchStato =
-          _filterStato == 'tutti' || c.stato == _filterStato;
-      final matchSemestre = _filterSemestre == 'tutti_sem' ||
-          c.semestre == _filterSemestre;
-      return matchSearch && matchStato && matchSemestre;
+      final matchSemestre =
+          _filterSemestre == 'tutti_sem' || c.semestre == _filterSemestre;
+      return matchSearch && matchSemestre;
     }).toList();
 
     switch (_sortBy) {
       case 'nome':
-        filtered.sort((a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()));
+        filtered.sort(
+            (a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase()));
         break;
       case 'cfu':
         filtered.sort((a, b) => b.cfu.compareTo(a.cfu));
@@ -108,6 +100,30 @@ static const List<(String, String)> _semestriOptions = [
     }
   }
 
+  Future<bool?> _confirmDelete(BuildContext context, Course course) {
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Elimina corso'),
+        content: Text(
+            'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Elimina',
+                style: TextStyle(color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -123,14 +139,24 @@ static const List<(String, String)> _semestriOptions = [
             return const Center(child: CircularProgressIndicator());
           }
 
-          final courses = _filteredCourses(provider.courses);
+          final tutti = _filteredCourses(provider.courses);
+          final daIniziare = _filteredCourses(provider.courses
+              .where((c) => c.stato == 'da_iniziare')
+              .toList());
+          final inCorso = _filteredCourses(
+              provider.courses.where((c) => c.stato == 'in_corso').toList());
+          final frequentato = _filteredCourses(provider.courses
+              .where((c) => c.stato == 'completato')
+              .toList());
+          final superato = _filteredCourses(
+              provider.courses.where((c) => c.stato == 'superato').toList());
 
           return SafeArea(
             child: Column(
               children: [
                 _CoursesHeader(
                   total: provider.courses.length,
-                  visible: courses.length,
+                  visible: tutti.length,
                   sortBy: _sortBy,
                   onSortChanged: (v) => setState(() => _sortBy = v),
                   isDark: isDark,
@@ -146,7 +172,6 @@ static const List<(String, String)> _semestriOptions = [
                   isDark: isDark,
                 ),
                 const SizedBox(height: 4),
-                // ── Tab stati con TabBar nativo auto-scroll ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
@@ -189,7 +214,6 @@ static const List<(String, String)> _semestriOptions = [
                   ),
                 ),
                 const SizedBox(height: 12),
-                // Filtro semestri con TabBar nativo auto-scroll
                 _FilterRow(
                   options: _semestriOptions,
                   current: _filterSemestre,
@@ -198,46 +222,46 @@ static const List<(String, String)> _semestriOptions = [
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: courses.isEmpty
-                      ? _EmptyState(
-                          hasAnyCourse: provider.courses.isNotEmpty,
-                          isDark: isDark,
-                        )
-                      : ListView.builder(
-                          padding:
-                              const EdgeInsets.fromLTRB(20, 4, 20, 100),
-                          itemCount: courses.length,
-                          itemBuilder: (context, index) {
-                            final course = courses[index];
-                            return _DismissibleCourse(
-                              course: course,
-                              statoColor:
-                                  AppColors.statoCorso(course.stato),
-                              statoLabel: _statoLabel(course.stato),
-                              onConfirmDelete: () =>
-                                  _confirmDelete(context, course),
-                              onDelete: () async {
-                                await provider.deleteCourse(course.id);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                        '${course.nome} eliminato'),
-                                  ),
-                                );
-                              },
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => CourseDetailScreen(
-                                      course: course),
-                                ),
-                              ),
-                              isDark: isDark,
-                            );
-                          },
-                        ),
+                  child: TabBarView(
+                    controller: _statoTabController,
+                    children: [
+                      _CourseListView(
+                        courses: tutti,
+                        provider: provider,
+                        statoLabel: _statoLabel,
+                        onConfirmDelete: (c) => _confirmDelete(context, c),
+                        isDark: isDark,
+                      ),
+                      _CourseListView(
+                        courses: daIniziare,
+                        provider: provider,
+                        statoLabel: _statoLabel,
+                        onConfirmDelete: (c) => _confirmDelete(context, c),
+                        isDark: isDark,
+                      ),
+                      _CourseListView(
+                        courses: inCorso,
+                        provider: provider,
+                        statoLabel: _statoLabel,
+                        onConfirmDelete: (c) => _confirmDelete(context, c),
+                        isDark: isDark,
+                      ),
+                      _CourseListView(
+                        courses: frequentato,
+                        provider: provider,
+                        statoLabel: _statoLabel,
+                        onConfirmDelete: (c) => _confirmDelete(context, c),
+                        isDark: isDark,
+                      ),
+                      _CourseListView(
+                        courses: superato,
+                        provider: provider,
+                        statoLabel: _statoLabel,
+                        onConfirmDelete: (c) => _confirmDelete(context, c),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -253,35 +277,61 @@ static const List<(String, String)> _semestriOptions = [
       ),
     );
   }
+}
 
-  Future<bool?> _confirmDelete(BuildContext context, Course course) {
-    return showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text('Elimina corso'),
-        content: Text(
-            'Eliminare "${course.nome}"? Saranno eliminati anche gli esami e le attività collegate.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annulla'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Elimina',
-              style: TextStyle(color: AppColors.danger),
+class _CourseListView extends StatelessWidget {
+  final List<Course> courses;
+  final PlannerProvider provider;
+  final String Function(String) statoLabel;
+  final Future<bool?> Function(Course) onConfirmDelete;
+  final bool isDark;
+
+  const _CourseListView({
+    required this.courses,
+    required this.provider,
+    required this.statoLabel,
+    required this.onConfirmDelete,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (courses.isEmpty) {
+      return _EmptyState(
+        hasAnyCourse: provider.courses.isNotEmpty,
+        isDark: isDark,
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+      itemCount: courses.length,
+      itemBuilder: (context, index) {
+        final course = courses[index];
+        return _DismissibleCourse(
+          course: course,
+          statoColor: AppColors.statoCorso(course.stato),
+          statoLabel: statoLabel(course.stato),
+          onConfirmDelete: () => onConfirmDelete(course),
+          onDelete: () async {
+            await provider.deleteCourse(course.id);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${course.nome} eliminato')),
+            );
+          },
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CourseDetailScreen(course: course),
             ),
           ),
-        ],
-      ),
+          isDark: isDark,
+        );
+      },
     );
   }
 }
 
-// FILTER ROW SEMESTRI TabBar nativo con auto-scroll
 class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
@@ -356,9 +406,8 @@ class _FilterRowState extends State<_FilterRow>
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor: widget.isDark
-              ? Colors.white70
-              : AppColors.textSecondary,
+          unselectedLabelColor:
+              widget.isDark ? Colors.white70 : AppColors.textSecondary,
           labelStyle: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -376,7 +425,6 @@ class _FilterRowState extends State<_FilterRow>
   }
 }
 
-// HEADER
 class _CoursesHeader extends StatelessWidget {
   final int total;
   final int visible;
@@ -394,17 +442,22 @@ class _CoursesHeader extends StatelessWidget {
 
   String _sortLabel(String s) {
     switch (s) {
-      case 'nome': return 'Nome';
-      case 'cfu': return 'CFU';
-      case 'stato': return 'Stato';
-      default: return s;
+      case 'nome':
+        return 'Nome';
+      case 'cfu':
+        return 'CFU';
+      case 'stato':
+        return 'Stato';
+      default:
+        return s;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor = isDark ? Colors.white70 : AppColors.textSecondary;
+    final secondaryColor =
+        isDark ? Colors.white70 : AppColors.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
@@ -447,7 +500,8 @@ class _CoursesHeader extends StatelessWidget {
               _sortItem('stato', 'Stato', Icons.filter_list_rounded),
             ],
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.06)
@@ -462,7 +516,8 @@ class _CoursesHeader extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.sort_rounded, size: 16, color: secondaryColor),
+                  Icon(Icons.sort_rounded,
+                      size: 16, color: secondaryColor),
                   const SizedBox(width: 6),
                   Text(
                     _sortLabel(sortBy),
@@ -481,7 +536,8 @@ class _CoursesHeader extends StatelessWidget {
     );
   }
 
-  PopupMenuItem<String> _sortItem(String value, String label, IconData icon) {
+  PopupMenuItem<String> _sortItem(
+      String value, String label, IconData icon) {
     return PopupMenuItem(
       value: value,
       child: Row(
@@ -495,7 +551,6 @@ class _CoursesHeader extends StatelessWidget {
   }
 }
 
-// SEARCH BAR
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final bool hasQuery;
@@ -532,9 +587,10 @@ class _SearchBar extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           hintText: 'Cerca per nome o docente',
-          hintStyle: TextStyle(fontSize: 15, color: AppColors.textMuted),
-          prefixIcon:
-              Icon(Icons.search_rounded, color: AppColors.textMuted, size: 20),
+          hintStyle:
+              TextStyle(fontSize: 15, color: AppColors.textMuted),
+          prefixIcon: Icon(Icons.search_rounded,
+              color: AppColors.textMuted, size: 20),
           suffixIcon: hasQuery
               ? IconButton(
                   icon: Icon(Icons.cancel_rounded,
@@ -562,7 +618,6 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// DISMISSIBLE COURSE
 class _DismissibleCourse extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -610,7 +665,6 @@ class _DismissibleCourse extends StatelessWidget {
   }
 }
 
-// COURSE CARD
 class _CourseCard extends StatelessWidget {
   final Course course;
   final Color statoColor;
@@ -629,7 +683,8 @@ class _CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor = isDark ? Colors.white60 : AppColors.textSecondary;
+    final secondaryColor =
+        isDark ? Colors.white60 : AppColors.textSecondary;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -730,10 +785,10 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
-// BADGE
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
+
   const _Badge({required this.label, required this.color});
 
   @override
@@ -757,7 +812,6 @@ class _Badge extends StatelessWidget {
   }
 }
 
-// EMPTY STATE
 class _EmptyState extends StatelessWidget {
   final bool hasAnyCourse;
   final bool isDark;
@@ -785,7 +839,9 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            hasAnyCourse ? 'Nessun corso trovato' : 'Nessun corso aggiunto',
+            hasAnyCourse
+                ? 'Nessun corso trovato'
+                : 'Nessun corso aggiunto',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
@@ -809,7 +865,6 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// SECTION FAB
 class _SectionFab extends StatelessWidget {
   final Color color;
   final VoidCallback onPressed;

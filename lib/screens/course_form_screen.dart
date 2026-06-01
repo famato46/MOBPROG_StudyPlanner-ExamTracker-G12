@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/planner_provider.dart';
 import '../models/course.dart';
 import '../utils/app_colors.dart';
+import '../widgets/form.dart'; // WIDGET CONDIVISI
 
-/// CourseFormScreen
 class CourseFormScreen extends StatefulWidget {
   final Course? courseToEdit;
   const CourseFormScreen({super.key, this.courseToEdit});
@@ -29,25 +29,33 @@ class _CourseFormScreenState extends State<CourseFormScreen> {
 
   bool get _isEditing => widget.courseToEdit != null;
 
-static const List<String> _semestri = [
-  '1° Semestre · Anno I',
-  '2° Semestre · Anno I',
-  '1° Semestre · Anno II',
-  '2° Semestre · Anno II',
-  '1° Semestre · Anno III',
-  '2° Semestre · Anno III',
-  '1° Semestre · Anno IV', 
-  '2° Semestre · Anno IV', 
-  '1° Semestre · Anno V',  
-  '2° Semestre · Anno V',  
-];
-
-  static const List<(String, String)> _stati = [
-    ('da_iniziare', 'Da iniziare'),
-    ('in_corso', 'In corso'),
-    ('completato', 'Frequentato'),
-    ('superato', 'Superato'),
+  static const List<String> _semestri = [
+    '1° Semestre · Anno I',
+    '2° Semestre · Anno I',
+    '1° Semestre · Anno II',
+    '2° Semestre · Anno II',
+    '1° Semestre · Anno III',
+    '2° Semestre · Anno III',
+    '1° Semestre · Anno IV', 
+    '2° Semestre · Anno IV', 
+    '1° Semestre · Anno V',  
+    '2° Semestre · Anno V',  
   ];
+
+  static const List<String> _stati = [
+    'da_iniziare',
+    'in_corso',
+    'completato', 
+    'superato',
+  ];
+
+  String _capitalize(String text) {
+    if (text.isEmpty) return text;
+    if (text == 'da_iniziare') return 'Da iniziare';
+    if (text == 'in_corso') return 'In corso';
+    if (text == 'completato') return 'Frequentato';
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
 
   @override
   void initState() {
@@ -57,31 +65,22 @@ static const List<String> _semestri = [
     _docenteCtrl = TextEditingController(text: c?.docente ?? '');
     _cfuCtrl = TextEditingController(text: c?.cfu.toString() ?? '');
     _noteCtrl = TextEditingController(text: c?.note ?? '');
-    _materialeCtrl =
-        TextEditingController(text: c?.materialeAssociato ?? '');
-    _votoDesideratoCtrl = TextEditingController(
-        text: _formatVoto(c?.votoDesiderato));
-    _votoOttenutoCtrl = TextEditingController(
-        text: _formatVoto(c?.votoOttenuto));
+    _materialeCtrl = TextEditingController(text: c?.materialeAssociato ?? '');
+    _votoDesideratoCtrl = TextEditingController(text: _formatVoto(c?.votoDesiderato));
+    _votoOttenutoCtrl = TextEditingController(text: _formatVoto(c?.votoOttenuto));
     _semestre = c?.semestre ?? '1° Semestre · Anno I';
     _stato = c?.stato ?? 'da_iniziare';
   }
 
-  // HELPER VOTO per supporto 30L
   int? _parseVoto(String input) {
     final cleaned = input.trim().toLowerCase();
     if (cleaned.isEmpty) return null;
-    // Lode esplicita
-    if (cleaned == '30l' ||
-        cleaned == '30 l' ||
-        cleaned == '30 e lode' ||
-        cleaned == '30elode') {
+    if (cleaned == '30l' || cleaned == '30 l' || cleaned == '30 e lode' || cleaned == '30elode') {
       return 31;
     }
     return int.tryParse(cleaned);
   }
 
-  /// Formatta un voto numerico in stringa visualizzabile.
   String _formatVoto(int? voto) {
     if (voto == null) return '';
     if (voto >= 31) return '30L';
@@ -102,16 +101,10 @@ static const List<String> _semestri = [
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final provider = context.read<PlannerProvider>();
+    final provider = Provider.of<PlannerProvider>(context, listen: false);
 
-    // Parsing che supporta sia 30L che 31
-    final vDesiderato = _votoDesideratoCtrl.text.isEmpty
-        ? null
-        : _parseVoto(_votoDesideratoCtrl.text);
-    final vOttenuto =
-        (_stato == 'superato' && _votoOttenutoCtrl.text.isNotEmpty)
-            ? _parseVoto(_votoOttenutoCtrl.text)
-            : null;
+    final vDesiderato = _votoDesideratoCtrl.text.isEmpty ? null : _parseVoto(_votoDesideratoCtrl.text);
+    final vOttenuto = (_stato == 'superato' && _votoOttenutoCtrl.text.isNotEmpty) ? _parseVoto(_votoOttenutoCtrl.text) : null;
 
     if (_isEditing) {
       final updated = widget.courseToEdit!.copyWith(
@@ -123,9 +116,7 @@ static const List<String> _semestri = [
         votoDesiderato: vDesiderato,
         votoOttenuto: vOttenuto,
         note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-        materialeAssociato: _materialeCtrl.text.isEmpty
-            ? null
-            : _materialeCtrl.text.trim(),
+        materialeAssociato: _materialeCtrl.text.isEmpty ? null : _materialeCtrl.text.trim(),
       );
       await provider.updateCourse(updated);
     } else {
@@ -138,9 +129,7 @@ static const List<String> _semestri = [
         votoDesiderato: vDesiderato,
         votoOttenuto: vOttenuto,
         note: _noteCtrl.text.isEmpty ? null : _noteCtrl.text.trim(),
-        materialeAssociato: _materialeCtrl.text.isEmpty
-            ? null
-            : _materialeCtrl.text.trim(),
+        materialeAssociato: _materialeCtrl.text.isEmpty ? null : _materialeCtrl.text.trim(),
       );
     }
 
@@ -148,22 +137,10 @@ static const List<String> _semestri = [
     Navigator.pop(context);
   }
 
-  String _statoLabel(String s) =>
-      _stati.firstWhere((e) => e.$1 == s, orElse: () => (s, s)).$2;
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? const Color(0xFF000000)
-        : AppColors.groupedBackground;
-
     return Scaffold(
-      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: bgColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
         centerTitle: true,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -171,19 +148,16 @@ static const List<String> _semestri = [
             foregroundColor: AppColors.iosBlue,
             padding: const EdgeInsets.only(left: 16),
           ),
-          child: const Text(
-            'Annulla',
-            style: TextStyle(fontSize: 16),
-          ),
+          child: const Text('Annulla', style: TextStyle(fontSize: 16)),
         ),
         leadingWidth: 88,
         title: Text(
           _isEditing ? 'Modifica Corso' : 'Nuovo Corso',
           style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-            letterSpacing: -0.3,
+            fontSize: 17, 
+            fontWeight: FontWeight.w600, 
+            color: Theme.of(context).colorScheme.onSurface,
+            letterSpacing: -0.3
           ),
         ),
         actions: [
@@ -193,13 +167,7 @@ static const List<String> _semestri = [
               foregroundColor: AppColors.iosBlue,
               padding: const EdgeInsets.only(right: 16),
             ),
-            child: const Text(
-              'Salva',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text('Salva', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -208,26 +176,22 @@ static const List<String> _semestri = [
         child: ListView(
           padding: const EdgeInsets.only(top: 8, bottom: 32),
           children: [
-            // DATI PRINCIPALI 
-            _GroupHeader(label: 'Dati corso'),
-            _SettingsGroup(
-              isDark: isDark,
+            const FormGroupHeader(label: 'Dati corso'),
+            FormSettingsGroup(
               children: [
-                _TextFieldRow(
+                FormTextFieldRow(
                   label: 'Nome',
                   controller: _nomeCtrl,
                   hint: 'es. Analisi 1',
                   required: true,
-                  isDark: isDark,
                 ),
-                _TextFieldRow(
+                FormTextFieldRow(
                   label: 'Docente',
                   controller: _docenteCtrl,
                   hint: 'es. Mario Rossi',
                   required: true,
-                  isDark: isDark,
                 ),
-                _TextFieldRow(
+                FormTextFieldRow(
                   label: 'CFU',
                   controller: _cfuCtrl,
                   hint: '1-30',
@@ -241,40 +205,33 @@ static const List<String> _semestri = [
                     if (n > 30) return 'Massimo 30 CFU';
                     return null;
                   },
-                  isDark: isDark,
                 ),
               ],
             ),
 
-            // GRUPPO STATO E PERIODO
             const SizedBox(height: 24),
-            _GroupHeader(label: 'Stato e periodo'),
-            _SettingsGroup(
-              isDark: isDark,
+            const FormGroupHeader(label: 'Stato e periodo'),
+            FormSettingsGroup(
               children: [
-                _PickerRow(
+                FormPickerRow(
                   label: 'Semestre',
                   value: _semestre,
-                  onTap: () => _showSemestrePicker(context, isDark),
-                  isDark: isDark,
+                  onTap: () => _showSemestrePicker(context),
                 ),
-                _PickerRow(
+                FormPickerRow(
                   label: 'Stato',
-                  value: _statoLabel(_stato),
+                  value: _capitalize(_stato),
                   valueColor: AppColors.statoCorso(_stato),
-                  onTap: () => _showStatoPicker(context, isDark),
-                  isDark: isDark,
+                  onTap: () => _showStatoPicker(context),
                 ),
               ],
             ),
 
-            // GRUPPO VOTI
             const SizedBox(height: 24),
-            _GroupHeader(label: 'Voti'),
-            _SettingsGroup(
-              isDark: isDark,
+            const FormGroupHeader(label: 'Voti'),
+            FormSettingsGroup(
               children: [
-                _TextFieldRow(
+                FormTextFieldRow(
                   label: 'Voto desiderato',
                   controller: _votoDesideratoCtrl,
                   hint: '18-30 o 30L',
@@ -282,62 +239,47 @@ static const List<String> _semestri = [
                   validator: (v) {
                     if (v == null || v.isEmpty) return null;
                     final n = _parseVoto(v);
-                    if (n == null || n < 18 || n > 31) {
-                      return 'Voto tra 18 e 30 (o 30L)';
-                    }
+                    if (n == null || n < 18 || n > 31) return 'Voto tra 18 e 30 (o 30L)';
                     return null;
                   },
-                  isDark: isDark,
                 ),
                 if (_stato == 'superato')
-                  _TextFieldRow(
+                  FormTextFieldRow(
                     label: 'Voto ottenuto',
                     controller: _votoOttenutoCtrl,
                     hint: '18-30 o 30L',
                     keyboardType: TextInputType.text,
                     required: true,
                     validator: (v) {
-                      if (_stato == 'superato' &&
-                          (v == null || v.isEmpty)) {
-                        return 'Inserisci il voto';
-                      }
+                      if (_stato == 'superato' && (v == null || v.isEmpty)) return 'Inserisci il voto';
                       if (v != null && v.isNotEmpty) {
                         final n = _parseVoto(v);
-                        if (n == null || n < 18 || n > 31) {
-                          return 'Voto tra 18 e 30 (o 30L)';
-                        }
+                        if (n == null || n < 18 || n > 31) return 'Voto tra 18 e 30 (o 30L)';
                       }
                       return null;
                     },
-                    isDark: isDark,
                   ),
               ],
             ),
 
-            // GRUPPO RISORSE 
             const SizedBox(height: 24),
-            _GroupHeader(label: 'Risorse'),
-            _SettingsGroup(
-              isDark: isDark,
+            const FormGroupHeader(label: 'Risorse'),
+            FormSettingsGroup(
               children: [
-                _TextFieldRow(
+                FormTextFieldRow(
                   label: 'Materiale',
                   controller: _materialeCtrl,
                   hint: 'libri, link, ecc.',
-                  isDark: isDark,
                 ),
-                _TextAreaRow(
+                FormTextAreaRow(
                   label: 'Note',
                   controller: _noteCtrl,
                   hint: 'aggiungi una nota',
-                  isDark: isDark,
                 ),
               ],
             ),
 
             const SizedBox(height: 32),
-
-            // CTA PRINCIPALE
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
@@ -354,14 +296,8 @@ static const List<String> _semestri = [
                     ),
                   ),
                   child: Text(
-                    _isEditing
-                        ? 'Salva modifiche'
-                        : 'Aggiungi corso',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.3,
-                    ),
+                    _isEditing ? 'Salva modifiche' : 'Aggiungi corso',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.3),
                   ),
                 ),
               ),
@@ -372,38 +308,34 @@ static const List<String> _semestri = [
     );
   }
 
-  // BOTTOM SHEET PICKER stile IoS
-  void _showSemestrePicker(BuildContext context, bool isDark) {
+  void _showSemestrePicker(BuildContext context) {
     _showIosPicker<String>(
       context: context,
-      isDark: isDark,
       title: 'Semestre',
-      options: _semestri.map((s) => (s, s)).toList(),
+      options: _semestri,
       current: _semestre,
+      labelBuilder: (s) => s,
       onSelected: (v) => setState(() => _semestre = v),
     );
   }
 
-  void _showStatoPicker(BuildContext context, bool isDark) {
+  void _showStatoPicker(BuildContext context) {
     _showIosPicker<String>(
       context: context,
-      isDark: isDark,
       title: 'Stato',
       options: _stati,
       current: _stato,
+      labelBuilder: _capitalize,
       onSelected: (v) {
         setState(() => _stato = v);
         if ((v == 'superato' || v == 'completato') &&
             _votoOttenutoCtrl.text.isEmpty &&
             _isEditing &&
             widget.courseToEdit != null) {
-          final media = context
-              .read<PlannerProvider>()
-              .getAverageExamsGrade(widget.courseToEdit!.id);
+          final media = context.read<PlannerProvider>().getAverageExamsGrade(widget.courseToEdit!.id);
           if (media != null) {
             final arrotondato = media.round().clamp(18, 31);
-            _votoOttenutoCtrl.text =
-                arrotondato >= 31 ? '30L' : '$arrotondato';
+            _votoOttenutoCtrl.text = arrotondato >= 31 ? '30L' : '$arrotondato';
           }
         }
       },
@@ -411,13 +343,12 @@ static const List<String> _semestri = [
   }
 }
 
-// BOTTOM SHEET PICKER stile IoS
 void _showIosPicker<T>({
   required BuildContext context,
-  required bool isDark,
   required String title,
-  required List<(T, String)> options,
+  required List<T> options,
   required T current,
+  required String Function(T) labelBuilder,
   required ValueChanged<T> onSelected,
 }) {
   showModalBottomSheet(
@@ -427,12 +358,8 @@ void _showIosPicker<T>({
     builder: (_) => Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1C1C1E)
-            : AppColors.groupedSurface,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         top: false,
@@ -444,7 +371,7 @@ void _showIosPicker<T>({
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.4),
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -453,11 +380,9 @@ void _showIosPicker<T>({
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 17, 
                   fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? Colors.white
-                      : AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface
                 ),
               ),
             ),
@@ -466,7 +391,7 @@ void _showIosPicker<T>({
                 shrinkWrap: true,
                 itemCount: options.length,
                 itemBuilder: (context, index) {
-                  final (value, label) = options[index];
+                  final value = options[index];
                   final selected = value == current;
                   return Material(
                     color: Colors.transparent,
@@ -476,28 +401,20 @@ void _showIosPicker<T>({
                         Navigator.pop(context);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 14,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         child: Row(
                           children: [
                             Expanded(
                               child: Text(
-                                label,
+                                labelBuilder(value),
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                                 ),
                               ),
                             ),
-                            if (selected)
-                              const Icon(
-                                Icons.check_rounded,
-                                color: AppColors.iosBlue,
-                                size: 22,
-                              ),
+                            if (selected) const Icon(Icons.check_rounded, color: AppColors.iosBlue, size: 22),
                           ],
                         ),
                       ),
@@ -512,293 +429,4 @@ void _showIosPicker<T>({
       ),
     ),
   );
-}
-
-// GRUPPO HEADER 
-class _GroupHeader extends StatelessWidget {
-  final String label;
-  const _GroupHeader({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 8, 16, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textSecondary,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-// SETTINGS GROUP 
-class _SettingsGroup extends StatelessWidget {
-  final List<Widget> children;
-  final bool isDark;
-
-  const _SettingsGroup({
-    required this.children,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1C1C1E)
-            : AppColors.groupedSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: _withDividers(children, isDark),
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
-    if (rows.length <= 1) return rows;
-    final result = <Widget>[];
-    for (var i = 0; i < rows.length; i++) {
-      result.add(rows[i]);
-      if (i < rows.length - 1) {
-        result.add(Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Divider(
-            height: 1,
-            thickness: 0.5,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.groupedDivider,
-          ),
-        ));
-      }
-    }
-    return result;
-  }
-}
-
-// TEXT FIELD ROW 
-class _TextFieldRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final TextInputType keyboardType;
-  final bool required;
-  final String? Function(String?)? validator;
-  final bool isDark;
-
-  const _TextFieldRow({
-    required this.label,
-    required this.controller,
-    this.hint,
-    this.keyboardType = TextInputType.text,
-    this.required = false,
-    this.validator,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      constraints: const BoxConstraints(minHeight: 44),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextFormField(
-              controller: controller,
-              keyboardType: keyboardType,
-              textAlign: TextAlign.end,
-              cursorColor: AppColors.iosBlue,
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                letterSpacing: -0.3,
-              ),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textMuted,
-                ),
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 12),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                errorStyle: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.danger,
-                  height: 0.8,
-                ),
-              ),
-              validator: validator ??
-                  (required
-                      ? (v) => (v == null || v.isEmpty)
-                          ? 'Campo obbligatorio'
-                          : null
-                      : null),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// TEXT AREA ROW
-class _TextAreaRow extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String? hint;
-  final bool isDark;
-
-  const _TextAreaRow({
-    required this.label,
-    required this.controller,
-    this.hint,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark ? Colors.white : AppColors.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
-            controller: controller,
-            maxLines: 3,
-            minLines: 2,
-            cursorColor: AppColors.iosBlue,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark
-                  ? Colors.white60
-                  : AppColors.textSecondary,
-              letterSpacing: -0.2,
-              height: 1.4,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                fontSize: 15,
-                color: AppColors.textMuted,
-              ),
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// PICKER ROW 
-class _PickerRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _PickerRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark
-                        ? Colors.white
-                        : AppColors.textPrimary,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: Text(
-                  value,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: valueColor ??
-                        (isDark
-                            ? Colors.white60
-                            : AppColors.textSecondary),
-                    letterSpacing: -0.3,
-                    fontWeight: valueColor != null
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 18,
-                color: AppColors.textMuted,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

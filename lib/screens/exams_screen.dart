@@ -19,8 +19,7 @@ class _ExamsScreenState extends State<ExamsScreen>
   String _searchQuery = '';
   String _filterTipologia = 'tutti';
   String _sortBy = 'data';
-  // Inizializzato direttamente nella dichiarazione del campo 
-  TabController? _tabController;
+  late final TabController _tabController;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -28,17 +27,11 @@ class _ExamsScreenState extends State<ExamsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController!.addListener(_onTabChanged);
-  }
-
-  void _onTabChanged() {
-    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _tabController?.removeListener(_onTabChanged);
-    _tabController?.dispose();
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -103,114 +96,85 @@ class _ExamsScreenState extends State<ExamsScreen>
           final annullati =
               provider.exams.where((e) => e.stato == 'annullato').toList();
 
-          
-          final tabController = _tabController;
-          if (tabController == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          // Lista visibile in base al tab corrente
-          final examsCurrent = tabController.index == 0
-              ? programmati
-              : tabController.index == 1
-                  ? completati
-                  : annullati;
-          final examsVisible = _processList(examsCurrent);
-
-          return SafeArea(
-            child: Column(
-              children: [
-                _ExamsHeader(
-                  total: provider.exams.length,
-                  visible: examsVisible.length,
-                  sortBy: _sortBy,
-                  onSortChanged: (v) => setState(() => _sortBy = v),
-                  isDark: isDark,
-                ),
-                _SearchBar(
-                  controller: _searchController,
-                  hasQuery: _searchQuery.isNotEmpty,
-                  onChanged: (val) => setState(() => _searchQuery = val),
-                  onClear: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-                // Tab orizzontale (3 stati temporali)
-                _ExamTabBar(
-                  controller: tabController,
-                  counts: [
-                    programmati.length,
-                    completati.length,
-                    annullati.length,
-                  ],
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 12),
-                _FilterRow(
-                  options: const [
-                    ('tutti', 'Tutti'),
-                    ('scritto', 'Scritti'),
-                    ('orale', 'Orali'),
-                    ('intercorso', 'Intercorsi'),
-                    ('consegna', 'Consegne'),
-                    ('progetto', 'Progetti'),
-                  ],
-                  current: _filterTipologia,
-                  onSelected: (v) =>
-                      setState(() => _filterTipologia = v),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: examsVisible.isEmpty
-                      ? _EmptyState(
-                          hasAnyExam: provider.exams.isNotEmpty,
-                          isDark: isDark,
-                        )
-                      : ListView.builder(
-                          padding:
-                              const EdgeInsets.fromLTRB(20, 4, 20, 100),
-                          itemCount: examsVisible.length,
-                          itemBuilder: (context, index) {
-                            final exam = examsVisible[index];
-                            final corso =
-                                provider.getCourseById(exam.courseId);
-                            return _DismissibleExam(
-                              exam: exam,
-                              corsoNome: corso?.nome,
-                              colore: _coloreEsame(exam),
-                              etichetta: _etichettaStato(exam),
-                              onConfirmDelete: () =>
-                                  _confirmDelete(context, exam),
-                              onDelete: () async {
-                                await provider.deleteExam(exam.id);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  SnackBar(
-                                    content:
-                                        Text('${exam.titolo} eliminato'),
-                                  ),
-                                );
-                              },
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      ExamDetailScreen(exam: exam),
-                                ),
-                              ),
-                              isDark: isDark,
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          );
+    return SafeArea(
+      child: Column(
+        children: [
+          _ExamsHeader(
+          total: provider.exams.length,
+          visible: provider.exams.length,
+          sortBy: _sortBy,
+          onSortChanged: (v) => setState(() => _sortBy = v),
+          isDark: isDark,
+        ),
+        _SearchBar(
+          controller: _searchController,
+          hasQuery: _searchQuery.isNotEmpty,
+          onChanged: (val) => setState(() => _searchQuery = val),
+          onClear: () {
+            _searchController.clear();
+            setState(() => _searchQuery = '');
+          },
+          isDark: isDark,
+        ),
+        const SizedBox(height: 8),
+        _ExamTabBar(
+          controller: _tabController,
+          counts: [
+            programmati.length,
+            completati.length,
+            annullati.length,
+          ],
+          isDark: isDark,
+        ),
+        const SizedBox(height: 12),
+          _FilterRow(
+            options: const [
+            ('tutti', 'Tutti'),
+            ('scritto', 'Scritti'),
+            ('orale', 'Orali'),
+            ('intercorso', 'Intercorsi'),
+            ('consegna', 'Consegne'),
+            ('progetto', 'Progetti'),
+          ],
+          current: _filterTipologia,
+          onSelected: (v) => setState(() => _filterTipologia = v),
+          isDark: isDark,
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _ExamListView(
+                exams: _processList(programmati),
+                provider: provider,
+                coloreEsame: _coloreEsame,
+                etichettaStato: _etichettaStato,
+                onConfirmDelete: (e) => _confirmDelete(context, e),
+                isDark: isDark,
+              ),
+              _ExamListView(
+                exams: _processList(completati),
+                provider: provider,
+                coloreEsame: _coloreEsame,
+                etichettaStato: _etichettaStato,
+                onConfirmDelete: (e) => _confirmDelete(context, e),
+                isDark: isDark,
+              ),
+              _ExamListView(
+                exams: _processList(annullati),
+                provider: provider,
+                coloreEsame: _coloreEsame,
+                etichettaStato: _etichettaStato,
+                onConfirmDelete: (e) => _confirmDelete(context, e),
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
         },
       ),
       floatingActionButton: _SectionFab(
@@ -906,6 +870,63 @@ class _EmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ExamListView extends StatelessWidget {
+  final List<Exam> exams;
+  final PlannerProvider provider;
+  final Color Function(Exam) coloreEsame;
+  final String Function(Exam) etichettaStato;
+  final Future<bool?> Function(Exam) onConfirmDelete;
+  final bool isDark;
+
+  const _ExamListView({
+    required this.exams,
+    required this.provider,
+    required this.coloreEsame,
+    required this.etichettaStato,
+    required this.onConfirmDelete,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (exams.isEmpty) {
+      return _EmptyState(
+        hasAnyExam: provider.exams.isNotEmpty,
+        isDark: isDark,
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+      itemCount: exams.length,
+      itemBuilder: (context, index) {
+        final exam = exams[index];
+        final corso = provider.getCourseById(exam.courseId);
+        return _DismissibleExam(
+          exam: exam,
+          corsoNome: corso?.nome,
+          colore: coloreEsame(exam),
+          etichetta: etichettaStato(exam),
+          onConfirmDelete: () => onConfirmDelete(exam),
+          onDelete: () async {
+            await provider.deleteExam(exam.id);
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${exam.titolo} eliminato')),
+            );
+          },
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ExamDetailScreen(exam: exam),
+            ),
+          ),
+          isDark: isDark,
+        );
+      },
     );
   }
 }

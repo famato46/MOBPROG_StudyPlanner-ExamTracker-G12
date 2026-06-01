@@ -9,6 +9,9 @@ import '../models/study_session.dart';
 import '../models/course.dart';
 import 'task_form_screen.dart';
 import 'session_form_screen.dart';
+import '../widgets/planning_calendar.dart';
+import '../widgets/planning_filter_section.dart';
+import '../widgets/planning_task_picker.dart';
 
 // Tipo di sessione del timer Focus.
 enum FocusType { pomodoro, pausa }
@@ -49,8 +52,6 @@ class _PlanningScreenState extends State<PlanningScreen>
   bool _isTimerRunning = false;
   Task? _selectedTaskForPomodoro;
 
- // int get _secondsRemaining => _secondsNotifier.value;
-
   int get _currentTotal =>
       _focusType == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
 
@@ -76,8 +77,8 @@ class _PlanningScreenState extends State<PlanningScreen>
 
     _sessioniTabController = TabController(length: 2, vsync: this);
     _sessioniTabController.addListener(() {
-    if (_sessioniTabController.indexIsChanging) return;
-    setState(() => _isVistaSettimanale = _sessioniTabController.index == 1);
+      if (_sessioniTabController.indexIsChanging) return;
+      setState(() => _isVistaSettimanale = _sessioniTabController.index == 1);
     });
   }
 
@@ -200,15 +201,6 @@ class _PlanningScreenState extends State<PlanningScreen>
     final fineSettimana = inizioSettimana.add(const Duration(days: 7));
     return !date.isBefore(inizioSettimana) && date.isBefore(fineSettimana);
   }
-
-  /*String _formatGiornoPianificatore() {
-    if (_isVistaSettimanale) {
-      final inizio = _giornoPianificatore
-          .subtract(Duration(days: _giornoPianificatore.weekday - 1));
-      return 'Settimana del ${DateFormat('dd MMMM', 'it_IT').format(inizio)}';
-    }
-    return DateFormat('EEEE dd MMMM', 'it_IT').format(_giornoPianificatore);
-  }*/
 
   void _apriFormSessione({StudySession? sessione}) {
     final provider = context.read<PlannerProvider>();
@@ -410,8 +402,6 @@ class _PlanningScreenState extends State<PlanningScreen>
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
 
-    // --- 1. LOGICA FILTRAGGIO OBIETTIVI DI OGGI (Task Oggi + Scaduti) ---
-    // Solo task NON completati con scadenza oggi o già passata.
     final taskOggi = provider.tasks.where((t) {
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
@@ -422,8 +412,6 @@ class _PlanningScreenState extends State<PlanningScreen>
   return _pesoPriorita(b.priorita).compareTo(_pesoPriorita(a.priorita));
 });
 
-
-    // TASK FUTURI
     final taskFuturi = provider.tasks.where((t) {
       if (t.scadenza == null) return false;
       final scad = DateTime(t.scadenza!.year, t.scadenza!.month, t.scadenza!.day);
@@ -439,7 +427,6 @@ class _PlanningScreenState extends State<PlanningScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: [
-        // ─── SEZIONE 1: OBIETTIVI DI OGGI ───
         _HeaderLabel(title: 'Obiettivi di oggi', isDark: isDark),
 
         if (tuttoOggiVuoto)
@@ -472,7 +459,6 @@ class _PlanningScreenState extends State<PlanningScreen>
 
         const SizedBox(height: 36),
 
-        // IN PROGRAMMA
         _HeaderLabel(title: 'In programma', isDark: isDark),
 
         if (tuttoFuturoVuoto)
@@ -523,116 +509,123 @@ class _PlanningScreenState extends State<PlanningScreen>
         .map((s) => DateTime(s.data.year, s.data.month, s.data.day))
         .toSet();
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: _CalendarGrid(
-            selectedDay: _giornoPianificatore,
-            giorniConSessioni: giorniConSessioni,
-            onDaySelected: (d) => setState(() => _giornoPianificatore = d),
-            isDark: isDark,
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: _SubTabBar(
-          controller: _sessioniTabController,
-          isDark: isDark,
-  ),
-),
-        SliverToBoxAdapter(
-          child: _FilterSection(
-            espanso: _filtriEspansi,
-            filtriAttivi: filtriAttivi,
-            onToggle: () => setState(() => _filtriEspansi = !_filtriEspansi),
-            onReset: () => setState(() {
-              _filtroCorso = null;
-              _filtroTipoAttivita = 'Tutti';
-            }),
-            corsi: provider.courses,
-            filtroCorso: _filtroCorso,
-            filtroTipo: _filtroTipoAttivita,
-            onCorsoChanged: (c) => setState(() => _filtroCorso = c),
-            onTipoChanged: (t) => setState(() => _filtroTipoAttivita = t),
-            isDark: isDark,
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 8)),
-        if (sessioni.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: _EmptyState(
-              icon: Icons.event_busy_outlined,
-              text: 'Nessun impegno corrisponde ai criteri.',
-            ),
-          )
-        else ...[
-          if (sessioniInCorso.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              sliver: SliverToBoxAdapter(
-                child: _CardGroup(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: constraints.maxHeight * 0.75),
+                child: PlanningCalendarGrid(
+                  selectedDay: _giornoPianificatore,
+                  giorniConSessioni: giorniConSessioni,
+                  onDaySelected: (d) => setState(() => _giornoPianificatore = d),
                   isDark: isDark,
-                  children: sessioniInCorso
-                      .map((s) => _SessionRow(
-                            session: s,
-                            sottotitolo: _sottotitoloSessioneAttivita(s, provider),
-                            onToggle: () => provider.updateStudySession(
-                                s.copyWith(completata: !s.completata)),
-                            onEdit: () => _apriFormSessione(sessione: s),
-                            onDelete: () async {
-                              final c =
-                                  await _confirmDeleteSessione(context, s);
-                              if (c == true && context.mounted) {
-                                await provider.deleteStudySession(s.id);
-                              }
-                            },
-                            isDark: isDark,
-                          ))
-                      .toList(),
                 ),
               ),
             ),
-          if (sessioniCompletate.isNotEmpty) ...[
-            const SliverToBoxAdapter(child: SizedBox(height: 20)),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverToBoxAdapter(
-                child: _SectionLabel(
-                    label: 'Completate',
-                    isDark: isDark,
-                    color: AppColors.success),
+            SliverToBoxAdapter(
+              child: _SubTabBar(
+                controller: _sessioniTabController,
+                isDark: isDark,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: PlanningFilterSection(
+                espanso: _filtriEspansi,
+                filtriAttivi: filtriAttivi,
+                onToggle: () => setState(() => _filtriEspansi = !_filtriEspansi),
+                onReset: () => setState(() {
+                  _filtroCorso = null;
+                  _filtroTipoAttivita = 'Tutti';
+                }),
+                corsi: provider.courses,
+                filtroCorso: _filtroCorso,
+                filtroTipo: _filtroTipoAttivita,
+                onCorsoChanged: (c) => setState(() => _filtroCorso = c),
+                onTipoChanged: (t) => setState(() => _filtroTipoAttivita = t),
+                isDark: isDark,
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 8)),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-              sliver: SliverToBoxAdapter(
-                child: _CardGroup(
-                  isDark: isDark,
-                  children: sessioniCompletate
-                      .map((s) => _SessionRow(
-                            session: s,
-                            sottotitolo: _sottotitoloSessioneAttivita(s, provider),
-                            onToggle: () => provider.updateStudySession(
-                                s.copyWith(completata: !s.completata)),
-                            onEdit: () => _apriFormSessione(sessione: s),
-                            onDelete: () async {
-                              final c =
-                                  await _confirmDeleteSessione(context, s);
-                              if (c == true && context.mounted) {
-                                await provider.deleteStudySession(s.id);
-                              }
-                            },
-                            isDark: isDark,
-                          ))
-                      .toList(),
+            if (sessioni.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _EmptyState(
+                  icon: Icons.event_busy_outlined,
+                  text: 'Nessun impegno corrisponde ai criteri.',
                 ),
-              ),
-            ),
+              )
+            else ...[
+              if (sessioniInCorso.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _CardGroup(
+                      isDark: isDark,
+                      children: sessioniInCorso
+                          .map((s) => _SessionRow(
+                                session: s,
+                                sottotitolo: _sottotitoloSessioneAttivita(s, provider),
+                                onToggle: () => provider.updateStudySession(
+                                    s.copyWith(completata: !s.completata)),
+                                onEdit: () => _apriFormSessione(sessione: s),
+                                onDelete: () async {
+                                  final c =
+                                      await _confirmDeleteSessione(context, s);
+                                  if (c == true && context.mounted) {
+                                    await provider.deleteStudySession(s.id);
+                                  }
+                                },
+                                isDark: isDark,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              if (sessioniCompletate.isNotEmpty) ...[
+                const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionLabel(
+                        label: 'Completate',
+                        isDark: isDark,
+                        color: AppColors.success),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: _CardGroup(
+                      isDark: isDark,
+                      children: sessioniCompletate
+                          .map((s) => _SessionRow(
+                                session: s,
+                                sottotitolo: _sottotitoloSessioneAttivita(s, provider),
+                                onToggle: () => provider.updateStudySession(
+                                    s.copyWith(completata: !s.completata)),
+                                onEdit: () => _apriFormSessione(sessione: s),
+                                onDelete: () async {
+                                  final c =
+                                      await _confirmDeleteSessione(context, s);
+                                  if (c == true && context.mounted) {
+                                    await provider.deleteStudySession(s.id);
+                                  }
+                                },
+                                isDark: isDark,
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ],
+              const SliverToBoxAdapter(child: SizedBox(height: 90)),
+            ],
           ],
-          const SliverToBoxAdapter(child: SizedBox(height: 90)),
-        ],
-      ],
+        );
+      }
     );
   }
 
@@ -669,7 +662,6 @@ class _PlanningScreenState extends State<PlanningScreen>
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       child: Column(
         children: [
-          // ── Titolo ──
           Text(
             'Tecnica Pomodoro',
             style: TextStyle(
@@ -688,7 +680,6 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 20),
 
-          // Selettore Pomodoro / Pausa
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0),
             child: Container(
@@ -736,11 +727,10 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 24),
 
-          //Selettore obiettivo (Pomodoro)
           SizedBox(
             height: 56,
             child: isPomodoro
-                ? _TaskPickerButton(
+                ? PlanningTaskPickerButton(
                     selectedTask: _selectedTaskForPomodoro,
                     pendingTasks: pendingTasks,
                     enabled: !_isTimerRunning,
@@ -752,7 +742,6 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          // Cerchio timer
           ValueListenableBuilder<int>(
             valueListenable: _secondsNotifier,
             builder: (context, seconds, _) {
@@ -808,7 +797,6 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          // Controlli: Reset + Avvia/Pausa
           Row(
             children: [
               _CircleControl(
@@ -859,7 +847,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 }
 
-// UI COMPONENTI AGGIUNTIVI
+// UI COMPONENTI AGGIUNTIVI (Quelli richiesti da mantenere internamente)
 
 class _HeaderLabel extends StatelessWidget {
   final String title;
@@ -922,7 +910,6 @@ class _Header extends StatelessWidget {
   }
 }
 
-// TAB BAR PLANNING
 class _PlanningTabBar extends StatelessWidget {
   final TabController controller;
   final bool isDark;
@@ -987,488 +974,6 @@ class _PlanningTabBar extends StatelessWidget {
   }
 }
 
-// CALENDAR GRID
-class _CalendarGrid extends StatefulWidget {
-  final DateTime selectedDay;
-  final Set<DateTime> giorniConSessioni;
-  final ValueChanged<DateTime> onDaySelected;
-  final bool isDark;
-
-  const _CalendarGrid({
-    required this.selectedDay,
-    required this.giorniConSessioni,
-    required this.onDaySelected,
-    required this.isDark,
-  });
-
-  @override
-  State<_CalendarGrid> createState() => _CalendarGridState();
-}
-
-class _CalendarGridState extends State<_CalendarGrid> {
-  late DateTime _viewMonth;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewMonth = DateTime(widget.selectedDay.year, widget.selectedDay.month);
-  }
-
-  void _prevMonth() {
-    setState(() {
-      _viewMonth = DateTime(_viewMonth.year, _viewMonth.month - 1);
-    });
-  }
-
-  void _nextMonth() {
-    setState(() {
-      _viewMonth = DateTime(_viewMonth.year, _viewMonth.month + 1);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = widget.isDark;
-    final oggi = DateTime.now();
-    final oggiNorm = DateTime(oggi.year, oggi.month, oggi.day);
-
-    final primoDelMese = DateTime(_viewMonth.year, _viewMonth.month, 1);
-    final offset = (primoDelMese.weekday - 1) % 7;
-    final giorniNelMese =
-        DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
-    final totalCells = offset + giorniNelMese;
-    final rows = (totalCells / 7).ceil();
-
-    const mesi = [
-      '',
-      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-    ];
-    const giorniSettimana = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: _prevMonth,
-                child: Icon(Icons.chevron_left_rounded,
-                    color: AppColors.planningDeep, size: 24),
-              ),
-              Expanded(
-                child: Text(
-                  '${mesi[_viewMonth.month]} ${_viewMonth.year}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: _nextMonth,
-                child: Icon(Icons.chevron_right_rounded,
-                    color: AppColors.planningDeep, size: 24),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: giorniSettimana
-                .map((g) => Expanded(
-                      child: Center(
-                        child: Text(
-                          g,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textMuted,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 6),
-          GridView.count(
-            crossAxisCount: 7,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 2,
-            childAspectRatio: 1.0,
-            children: List.generate(rows * 7, (index) {
-              final dayNumber = index - offset + 1;
-              final isValidDay = dayNumber >= 1 && dayNumber <= giorniNelMese;
-
-              if (!isValidDay) return const SizedBox.shrink();
-
-              final thisDay =
-                  DateTime(_viewMonth.year, _viewMonth.month, dayNumber);
-              final thisDayNorm =
-                  DateTime(thisDay.year, thisDay.month, thisDay.day);
-              final isSelected = thisDayNorm ==
-                  DateTime(widget.selectedDay.year, widget.selectedDay.month,
-                      widget.selectedDay.day);
-              final isOggi = thisDayNorm == oggiNorm;
-              final hasSession =
-                  widget.giorniConSessioni.contains(thisDayNorm);
-
-              return GestureDetector(
-                onTap: () => widget.onDaySelected(thisDay),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.planning
-                        : isOggi
-                            ? AppColors.planning.withValues(alpha: 0.15)
-                            : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$dayNumber',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected || isOggi
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                          color: isSelected
-                              ? Colors.white
-                              : isOggi
-                                  ? AppColors.planningDeep
-                                  : (isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary),
-                        ),
-                      ),
-                      if (hasSession && !isSelected)
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.only(top: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.planningDeep,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      if (hasSession && isSelected)
-                        Container(
-                          width: 5,
-                          height: 5,
-                          margin: const EdgeInsets.only(top: 2),
-                          decoration: const BoxDecoration(
-                            color: Colors.white70,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-// FILTER SECTION
-class _FilterSection extends StatelessWidget {
-  final bool espanso;
-  final bool filtriAttivi;
-  final VoidCallback onToggle;
-  final VoidCallback onReset;
-  final List<Course> corsi;
-  final Course? filtroCorso;
-  final String filtroTipo;
-  final ValueChanged<Course?> onCorsoChanged;
-  final ValueChanged<String> onTipoChanged;
-  final bool isDark;
-
-  const _FilterSection({
-    required this.espanso,
-    required this.filtriAttivi,
-    required this.onToggle,
-    required this.onReset,
-    required this.corsi,
-    required this.filtroCorso,
-    required this.filtroTipo,
-    required this.onCorsoChanged,
-    required this.onTipoChanged,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: onToggle,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(Icons.filter_list_rounded,
-                        size: 18, color: AppColors.planningDeep),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Filtra attività',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (filtriAttivi)
-                      GestureDetector(
-                        onTap: onReset,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Text(
-                            'Reset',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.danger,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Icon(
-                      espanso
-                          ? Icons.keyboard_arrow_up_rounded
-                          : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.textMuted,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (espanso)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
-              child: Column(
-                children: [
-                  _FilterPickerRow(
-                    label: 'Corso',
-                    displayValue: filtroCorso?.nome ?? 'Tutti',
-                    options: [
-                      ('__tutti__', 'Tutti i corsi'),
-                      ...corsi.map((c) => (c.id, c.nome)),
-                    ],
-                    currentValue: filtroCorso?.id ?? '__tutti__',
-                    onSelected: (v) {
-                      if (v == '__tutti__') {
-                        onCorsoChanged(null);
-                      } else {
-                        onCorsoChanged(corsi.firstWhere((c) => c.id == v));
-                      }
-                    },
-                    isDark: isDark,
-                  ),
-                  const SizedBox(height: 10),
-                  _FilterPickerRow(
-                    label: 'Tipo',
-                    displayValue: filtroTipo,
-                    options: const [
-                      ('Tutti', 'Tutti'),
-                      ('Studio', 'Studio'),
-                      ('Ripasso', 'Ripasso'),
-                      ('Esercitazione', 'Esercitazione'),
-                      ('Progetto', 'Progetto'),
-                      ('Consegna', 'Consegna'),
-                    ],
-                    currentValue: filtroTipo,
-                    onSelected: onTipoChanged,
-                    isDark: isDark,
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-// FILTER PICKER ROW
-class _FilterPickerRow extends StatelessWidget {
-  final String label;
-  final String displayValue;
-  final List<(String, String)> options;
-  final String currentValue;
-  final ValueChanged<String> onSelected;
-  final bool isDark;
-
-  const _FilterPickerRow({
-    required this.label,
-    required this.displayValue,
-    required this.options,
-    required this.currentValue,
-    required this.onSelected,
-    required this.isDark,
-  });
-
-  void _openPicker(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor:
-          isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            ...options.map((opt) {
-              final (value, labelText) = opt;
-              final selected = value == currentValue;
-              return InkWell(
-                onTap: () {
-                  onSelected(value);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 15),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          labelText,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                      if (selected)
-                        Icon(Icons.check_rounded,
-                            color: AppColors.iosBlue, size: 20),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openPicker(context),
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : AppColors.background,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : AppColors.border,
-            ),
-          ),
-          child: Row(
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white70 : AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  displayValue,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(Icons.keyboard_arrow_down_rounded,
-                  size: 18, color: AppColors.textMuted),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// SECTION LABEL
 class _SectionLabel extends StatelessWidget {
   final String label;
   final bool isDark;
@@ -1497,7 +1002,6 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// CARD GROUP
 class _CardGroup extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -1540,7 +1044,6 @@ class _CardGroup extends StatelessWidget {
   }
 }
 
-// TASK ROW
 class _TaskRow extends StatelessWidget {
   final Task task;
   final String sottotitolo;
@@ -1674,7 +1177,6 @@ class _TaskRow extends StatelessWidget {
   }
 }
 
-// SESSION ROW (Utilizzato solo nella Tab 2)
 class _SessionRow extends StatelessWidget {
   final StudySession session;
   final String sottotitolo;
@@ -1805,7 +1307,6 @@ class _SessionRow extends StatelessWidget {
   }
 }
 
-// CIRCLE CONTROL
 class _CircleControl extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -1837,161 +1338,6 @@ class _CircleControl extends StatelessWidget {
         ),
         child:
             Icon(icon, color: isDark ? Colors.white : AppColors.textPrimary),
-      ),
-    );
-  }
-}
-
-// TASK PICKER BUTTON
-class _TaskPickerButton extends StatelessWidget {
-  final Task? selectedTask;
-  final List<Task> pendingTasks;
-  final bool enabled;
-  final ValueChanged<Task?> onSelected;
-  final bool isDark;
-
-  const _TaskPickerButton({
-    required this.selectedTask,
-    required this.pendingTasks,
-    required this.enabled,
-    required this.onSelected,
-    required this.isDark,
-  });
-
-  void _openPicker(BuildContext context) {
-    if (!enabled) return;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor:
-          isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text(
-                'Seleziona obiettivo',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            if (pendingTasks.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'Nessuna attività da completare.\nCreane una prima!',
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(color: AppColors.textMuted, fontSize: 15),
-                ),
-              )
-            else
-              ...pendingTasks.map((t) {
-                final selected = t.id == selectedTask?.id;
-                return InkWell(
-                  onTap: () {
-                    onSelected(t);
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.priorita(t.priorita),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            t.titolo,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                        if (selected)
-                          Icon(Icons.check_rounded,
-                              color: AppColors.iosBlue, size: 20),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: enabled ? () => _openPicker(context) : null,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: enabled ? 0.05 : 0.02)
-                : (enabled ? AppColors.surface : AppColors.background),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  selectedTask?.titolo ?? 'Seleziona obiettivo',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: selectedTask != null
-                        ? (isDark ? Colors.white : AppColors.textPrimary)
-                        : AppColors.textMuted,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Icon(
-                Icons.unfold_more_rounded,
-                color: enabled
-                    ? AppColors.textMuted
-                    : AppColors.textMuted.withValues(alpha: 0.4),
-                size: 20,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -2048,7 +1394,6 @@ class _SubTabBar extends StatelessWidget {
   }
 }
 
-// EMPTY STATE
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String text;

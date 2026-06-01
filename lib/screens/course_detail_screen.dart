@@ -8,7 +8,6 @@ import 'course_form_screen.dart';
 import 'task_form_screen.dart';
 import 'exam_detail_screen.dart';
 
-/// CourseDetailScreen
 class CourseDetailScreen extends StatelessWidget {
   final Course course;
   const CourseDetailScreen({super.key, required this.course});
@@ -43,14 +42,13 @@ class CourseDetailScreen extends StatelessWidget {
     }
   }
 
-  // Converte un voto numerico interno in stringa display
+  // Converte un voto numerico interno in stringa per gestire 30L
   String _formatVoto(int? voto) {
     if (voto == null) return '-';
     if (voto >= 31) return '30L';
     return voto.toString();
   }
 
-  // Mostra "1° sem 24/25"
   String _shortSemestre(String s) {
     return s
         .replaceAll('Primo semestre', '1° sem')
@@ -194,13 +192,12 @@ class CourseDetailScreen extends StatelessWidget {
                       .toList(),
                 ),
 
-              // SEZIONE ATTIVITÀ
+              // Sezione attività
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Attività',
                 count: tasks.length,
                 isDark: isDark,
-                // Aggiungi come trailing della section title
                 trailing: _AddInlineButton(
                   label: 'Aggiungi',
                   onTap: () => Navigator.push(
@@ -312,7 +309,6 @@ class CourseDetailScreen extends StatelessWidget {
   }
 }
 
-// HERO CARD
 class _HeroCard extends StatelessWidget {
   final Course course;
   final String statoLabel;
@@ -335,7 +331,6 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        // Pastello rosa coerente con palette "courses"
         color: isDark
             ? AppColors.pastelRedDeep.withValues(alpha: 0.18)
             : AppColors.pastelRedLight,
@@ -387,7 +382,6 @@ class _HeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Badge CFU
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 14, vertical: 10),
@@ -474,7 +468,7 @@ class _StatoChip extends StatelessWidget {
   }
 }
 
-// INFO CARD (semestre, voto, ecc.)
+// Info card (semestre, voto, ecc.)
 class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
@@ -528,7 +522,7 @@ class _MiniInfoCard extends StatelessWidget {
   }
 }
 
-// NOTE CARD (per Note e Materiale del corso)
+// Note Card (per Note e Materiale del corso)
 class _NoteCard extends StatelessWidget {
   final String? note;
   final String? materiale;
@@ -610,7 +604,7 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// SECTION TITLE
+// Section title (Esami, Attività, ecc.)
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
@@ -657,7 +651,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// Aggiungi inline accanto al titolo di sezione
+// Aggiunge inline accanto al titolo di sezione
 class _AddInlineButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -695,7 +689,7 @@ class _AddInlineButton extends StatelessWidget {
 }
 
 
-// CONTAINER LISTA
+// Container Lista
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
   final bool isDark;
@@ -737,7 +731,7 @@ class _ItemsContainer extends StatelessWidget {
   }
 }
 
-// EMPTY CARD Nessun esame collegato
+// Empty Card (se nessun esame collegato)
 class _EmptyCard extends StatelessWidget {
   final String text;
   final bool isDark;
@@ -763,7 +757,7 @@ class _EmptyCard extends StatelessWidget {
 }
 
 
-// EXAM ROW (dentro la card lista)
+// Exam Row (dentro la card lista)
 class _ExamRow extends StatelessWidget {
   final String titolo;
   final String tipologia;
@@ -851,7 +845,7 @@ class _ExamRow extends StatelessWidget {
   }
 }
 
-// TASK ROW (con checkbox style IoS, tap modifica e swipe delete)
+// Task row (con checkbox, tap modifica e swipe delete)
 class _TaskRow extends StatelessWidget {
   final Task task;
   final VoidCallback onToggle;
@@ -955,8 +949,7 @@ class _TaskRow extends StatelessWidget {
         ),
         confirmDismiss: (_) async {
           await onDelete!();
-          // Restituiamo false perché la rimozione la fa il Provider via
-          // notifyListeners, non il Dismissible.
+          // false perché la rimozione la fa il Provider via notifyListeners e non il Dismissible
           return false;
         },
         child: row,
