@@ -112,14 +112,6 @@ class StudyPlannerApp extends StatelessWidget {
             themeMode: themeProvider.isDarkMode
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            builder: (context, child) {
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 430),
-                  child: child!,
-                ),
-              );
-            },
             home: const SplashScreen(),
           );
         },
