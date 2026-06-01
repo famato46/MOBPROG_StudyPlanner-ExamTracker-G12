@@ -13,13 +13,8 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : AppColors.background;
-
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           final prossimoEsame = _findProssimoEsame(provider);
@@ -30,43 +25,37 @@ class HomeScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
               children: [
-                _HeaderSection(isDark: isDark),
+                const _HeaderSection(),
                 const SizedBox(height: 28),
                 _StatGrid(
                   provider: provider,
-                  isDark: isDark,
                   onNavigateToTab: onNavigateToTab,
                 ),
                 const SizedBox(height: 28),
-
-                _SectionLabel(
+                const _SectionLabel(
                   icon: Icons.auto_awesome_rounded,
                   label: 'Spunto del giorno',
-                  isDark: isDark,
                 ),
                 const SizedBox(height: 12),
                 const MotivationalFlashcard(),
                 const SizedBox(height: 28),
-
                 if (prossimoEsame != null) ...[
-                  _SectionLabel(
+                  const _SectionLabel(
                     icon: Icons.timer_outlined,
                     label: "Prossimo obiettivo d'esame",
-                    isDark: isDark,
                   ),
                   const SizedBox(height: 12),
-                  _NextExamCard(exam: prossimoEsame, isDark: isDark),
+                  _NextExamCard(exam: prossimoEsame),
                   const SizedBox(height: 28),
                 ],
                 if (suggerimentiUnici.isNotEmpty) ...[
-                  _SectionLabel(
+                  const _SectionLabel(
                     icon: Icons.lightbulb_outline_rounded,
                     label: 'Suggerimenti per te',
-                    isDark: isDark,
                   ),
                   const SizedBox(height: 12),
                   ...suggerimentiUnici.map(
-                    (s) => _SuggestionTile(text: s, isDark: isDark),
+                    (s) => _SuggestionTile(text: s),
                   ),
                 ],
               ],
@@ -105,7 +94,6 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
   @override
   void initState() {
     super.initState();
-    // Lista di frasi motivazionali hardcoded 
     final pairs = [
       (
         "Qual è il segreto per superare questo esame difficile?",
@@ -141,18 +129,19 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLight =
+        Theme.of(context).colorScheme.brightness == Brightness.light;
 
-    final frontBg = isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surface;
+    final frontBg = Theme.of(context).colorScheme.surfaceContainerHighest;
     final backBg = AppColors.pastelBlueDeep;
 
     final bgColor = _flipped ? backBg : frontBg;
     final borderColor = _flipped
         ? Colors.transparent
-        : (isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border);
+        : Theme.of(context).dividerColor;
     final textColor = _flipped
         ? Colors.white
-        : (isDark ? Colors.white : AppColors.textPrimary);
+        : Theme.of(context).colorScheme.onSurface;
     final hintColor = _flipped ? Colors.white70 : AppColors.textMuted;
     final labelColor = _flipped ? Colors.white70 : AppColors.pastelBlueDeep;
 
@@ -168,7 +157,7 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: borderColor),
           boxShadow: [
-            if (!isDark && !_flipped)
+            if (isLight && !_flipped)
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 12,
@@ -193,7 +182,8 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
             ),
             Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
                 child: Text(
                   _flipped ? _back : _front,
                   style: TextStyle(
@@ -236,15 +226,12 @@ class _MotivationalFlashcardState extends State<MotivationalFlashcard> {
 }
 
 class _HeaderSection extends StatelessWidget {
-  final bool isDark;
-  const _HeaderSection({required this.isDark});
+  const _HeaderSection();
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor =
-        isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white70 : AppColors.textSecondary;
+    final primaryColor = Theme.of(context).colorScheme.onSurface;
+    final secondaryColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -282,13 +269,9 @@ class _HeaderSection extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : AppColors.surface,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.12)
-                      : AppColors.border,
+                  color: Theme.of(context).dividerColor,
                   width: 1,
                 ),
               ),
@@ -318,12 +301,10 @@ class _HeaderSection extends StatelessWidget {
 
 class _StatGrid extends StatelessWidget {
   final PlannerProvider provider;
-  final bool isDark;
   final void Function(int)? onNavigateToTab;
 
   const _StatGrid({
     required this.provider,
-    required this.isDark,
     this.onNavigateToTab,
   });
 
@@ -342,7 +323,6 @@ class _StatGrid extends StatelessWidget {
           value: provider.activeCourses.toString(),
           icon: Icons.menu_book_rounded,
           pastel: AppColors.pastelRed,
-          isDark: isDark,
           onTap: () => onNavigateToTab?.call(1),
         ),
         _GlowStatCard(
@@ -350,7 +330,6 @@ class _StatGrid extends StatelessWidget {
           value: provider.upcomingExams.toString(),
           icon: Icons.calendar_month_rounded,
           pastel: AppColors.pastelBlue,
-          isDark: isDark,
           onTap: () => onNavigateToTab?.call(2),
         ),
         _GlowStatCard(
@@ -358,7 +337,6 @@ class _StatGrid extends StatelessWidget {
           value: provider.pendingTasks.toString(),
           icon: Icons.check_circle_outline_rounded,
           pastel: AppColors.pastelGreen,
-          isDark: isDark,
           onTap: () => onNavigateToTab?.call(3),
         ),
         _GlowStatCard(
@@ -366,7 +344,6 @@ class _StatGrid extends StatelessWidget {
           value: '${provider.earnedCfu}/180',
           icon: Icons.school_rounded,
           pastel: AppColors.pastelYellow,
-          isDark: isDark,
           onTap: () => onNavigateToTab?.call(4),
         ),
       ],
@@ -379,7 +356,6 @@ class _GlowStatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color pastel;
-  final bool isDark;
   final VoidCallback? onTap;
 
   const _GlowStatCard({
@@ -387,21 +363,21 @@ class _GlowStatCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.pastel,
-    required this.isDark,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textColor =
-        isDark ? Colors.white : AppColors.textPrimary;
+    final isLight =
+        Theme.of(context).colorScheme.brightness == Brightness.light;
+    final textColor = Theme.of(context).colorScheme.onSurface;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: pastel.withValues(alpha: isDark ? 0.18 : 0.45),
+            color: pastel.withValues(alpha: isLight ? 0.45 : 0.18),
             blurRadius: 24,
             spreadRadius: -4,
             offset: const Offset(0, 8),
@@ -423,9 +399,9 @@ class _GlowStatCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  pastel.withValues(alpha: isDark ? 0.85 : 1.0),
-                  Color.lerp(pastel, Colors.white, isDark ? 0.0 : 0.18)!,
-                  pastel.withValues(alpha: isDark ? 0.85 : 1.0),
+                  pastel.withValues(alpha: isLight ? 1.0 : 0.85),
+                  Color.lerp(pastel, Colors.white, isLight ? 0.18 : 0.0)!,
+                  pastel.withValues(alpha: isLight ? 1.0 : 0.85),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -517,18 +493,15 @@ class _ValueText extends StatelessWidget {
 class _SectionLabel extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool isDark;
 
   const _SectionLabel({
     required this.icon,
     required this.label,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        isDark ? Colors.white : AppColors.textPrimary;
+    final color = Theme.of(context).colorScheme.onSurface;
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
@@ -549,9 +522,8 @@ class _SectionLabel extends StatelessWidget {
 
 class _NextExamCard extends StatelessWidget {
   final Exam exam;
-  final bool isDark;
 
-  const _NextExamCard({required this.exam, required this.isDark});
+  const _NextExamCard({required this.exam});
 
   @override
   Widget build(BuildContext context) {
@@ -567,24 +539,19 @@ class _NextExamCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.border,
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow:
+            Theme.of(context).colorScheme.brightness == Brightness.dark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
       ),
       child: Row(
         children: [
@@ -629,9 +596,7 @@ class _NextExamCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? Colors.white
-                        : AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.3,
                   ),
                   maxLines: 2,
@@ -640,7 +605,7 @@ class _NextExamCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.calendar_today_rounded,
                       size: 13,
                       color: AppColors.pastelRedDeep,
@@ -651,9 +616,8 @@ class _NextExamCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: isDark
-                            ? Colors.white60
-                            : AppColors.textSecondary,
+                        color:
+                            Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -669,30 +633,22 @@ class _NextExamCard extends StatelessWidget {
 
 class _SuggestionTile extends StatelessWidget {
   final String text;
-  final bool isDark;
 
-  const _SuggestionTile({required this.text, required this.isDark});
+  const _SuggestionTile({required this.text});
 
   @override
   Widget build(BuildContext context) {
     final isUrgent = text.startsWith('!!');
-    final color = isUrgent
-        ? AppColors.pastelRedDeep
-        : AppColors.pastelLavenderDeep;
+    final color =
+        isUrgent ? AppColors.pastelRedDeep : AppColors.pastelLavenderDeep;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.border,
-        ),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -711,9 +667,7 @@ class _SuggestionTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isDark
-                    ? Colors.white
-                    : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.2,
                 height: 1.35,
               ),
