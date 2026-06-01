@@ -154,7 +154,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       return;
     }
 
-    final provider = context.read<PlannerProvider>();
+    final provider = Provider.of<PlannerProvider>(context, listen: false);
     final int? stimato = _tempoStimatoCtrl.text.isEmpty ? null : int.tryParse(_tempoStimatoCtrl.text.trim());
 
     if (_isEditing) {

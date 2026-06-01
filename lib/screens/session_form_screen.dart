@@ -136,7 +136,7 @@ class _SessionFormScreenState extends State<SessionFormScreen> {
       return;
     }
 
-    final provider = context.read<PlannerProvider>();
+    final provider = Provider.of<PlannerProvider>(context, listen: false);
     final int durata = int.parse(_durataCtrl.text.trim());
 
     if (_isEditing) {

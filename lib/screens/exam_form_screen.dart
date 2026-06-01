@@ -157,7 +157,7 @@ class _ExamFormScreenState extends State<ExamFormScreen> {
       return;
     }
 
-    final provider = context.read<PlannerProvider>();
+    final provider = Provider.of<PlannerProvider>(context, listen: false);
     final nomeCorso = provider.getCourseById(_courseId!)?.nome ?? 'Esame';
 
     final votoFinale = _stato == 'completato' && _votoCtrl.text.isNotEmpty
