@@ -5,14 +5,12 @@ class PlanningCalendarGrid extends StatefulWidget {
   final DateTime selectedDay;
   final Set<DateTime> giorniConSessioni;
   final ValueChanged<DateTime> onDaySelected;
-  final bool isDark;
 
   const PlanningCalendarGrid({
     super.key,
     required this.selectedDay,
     required this.giorniConSessioni,
-    required this.onDaySelected,
-    required this.isDark,
+    required this.onDaySelected
   });
 
   @override
@@ -42,7 +40,9 @@ class _PlanningCalendarGridState extends State<PlanningCalendarGrid> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.isDark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     final oggi = DateTime.now();
     final oggiNorm = DateTime(oggi.year, oggi.month, oggi.day);
 
@@ -64,10 +64,8 @@ class _PlanningCalendarGridState extends State<PlanningCalendarGrid> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.surface,
+      borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -162,12 +160,10 @@ class _PlanningCalendarGridState extends State<PlanningCalendarGrid> {
                                 ? FontWeight.w700
                                 : FontWeight.w400,
                             color: isSelected
-                                ? Colors.white
-                                : isOggi
-                                    ? AppColors.planningDeep
-                                    : (isDark
-                                        ? Colors.white
-                                        : AppColors.textPrimary),
+                            ? Colors.white
+                            : isOggi
+                                ? AppColors.planningDeep
+                                : (isDark ? Colors.white : AppColors.textPrimary),
                           ),
                         ),
                         if (hasSession && !isSelected)
