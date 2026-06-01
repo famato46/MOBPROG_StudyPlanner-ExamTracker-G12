@@ -60,7 +60,7 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   // RIEPILOGO
-  Widget _buildTabRiepilogo(PlannerProvider provider, bool isDark) {
+  Widget _buildTabRiepilogo(PlannerProvider provider) {
     final esamiDaSostenere = provider.exams
         .where((e) =>
             e.isPassato &&
@@ -181,7 +181,6 @@ class _StatsScreenState extends State<StatsScreen>
                     '${provider.earnedCfu} / $cfuObiettivoLaurea CFU',
                 value: percentualeCfu.clamp(0.0, 1.0),
                 color: AppColors.pastelLavenderDeep,
-                isDark: isDark,
               ),
             ),
             const SizedBox(width: 12),
@@ -191,7 +190,6 @@ class _StatsScreenState extends State<StatsScreen>
                 subtitle: '$oreEffettive h / ${orePianificate}h',
                 value: percentualeOre.clamp(0.0, 1.0),
                 color: AppColors.statsDeep,
-                isDark: isDark,
               ),
             ),
           ],
@@ -209,7 +207,6 @@ class _StatsScreenState extends State<StatsScreen>
                 value: provider.pomodoriCompletati.toString(),
                 icon: Icons.check_circle_outline_rounded,
                 color: AppColors.danger,
-                isDark: isDark,
               ),
             ),
             const SizedBox(width: 8),
@@ -219,7 +216,6 @@ class _StatsScreenState extends State<StatsScreen>
                 value: provider.pauseCompletate.toString(),
                 icon: Icons.local_cafe_outlined,
                 color: AppColors.success,
-                isDark: isDark,
               ),
             ),
             const SizedBox(width: 8),
@@ -229,19 +225,18 @@ class _StatsScreenState extends State<StatsScreen>
                 value: provider.minutiTotaliFocus.toString(),
                 icon: Icons.timer_outlined,
                 color: AppColors.planningDeep,
-                isDark: isDark,
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        _buildFocusHistory(provider, isDark),
+        _buildFocusHistory(provider,),
       ],
     );
   }
 
   // LISTA STORICO FOCUS RECENTE
-  Widget _buildFocusHistory(PlannerProvider provider, bool isDark) {
+  Widget _buildFocusHistory(PlannerProvider provider) {
     // Filtra e ordina le sessioni (ultime 5 completate)
     final history = provider.studySessions
         .where((s) => s.completata && (s.tipo == 'pomodoro' || s.tipo == 'pausa'))
@@ -256,9 +251,7 @@ class _StatsScreenState extends State<StatsScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
       ),
@@ -295,7 +288,7 @@ class _StatsScreenState extends State<StatsScreen>
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -305,7 +298,7 @@ class _StatsScreenState extends State<StatsScreen>
                             timeStr,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isDark ? Colors.white60 : AppColors.textSecondary,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -327,7 +320,7 @@ class _StatsScreenState extends State<StatsScreen>
                   height: 1,
                   thickness: 0.5,
                   indent: 52, // Allineato col testo
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.groupedDivider,
+                  color: Theme.of(context).colorScheme.outlineVariant,
                 ),
             ],
           );
@@ -337,29 +330,29 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   // TAB 1 — GRAFICI
-  Widget _buildTabGrafici(PlannerProvider provider, bool isDark) {
+  Widget _buildTabGrafici(PlannerProvider provider) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
         const _SectionLabel(title: 'Tempo di Studio per Corso'),
         const SizedBox(height: 12),
-        _buildPieChart(provider, isDark),
+        _buildPieChart(provider),
         const SizedBox(height: 24),
 
         const _SectionLabel(title: 'Andamento Settimanale'),
         const SizedBox(height: 12),
-        _buildBarChart(provider, isDark),
+        _buildBarChart(provider),
         const SizedBox(height: 24),
 
         const _SectionLabel(title: 'Focus Obiettivi per Corso'),
         const SizedBox(height: 12),
-        _buildCorsiAttivita(provider, isDark),
+        _buildCorsiAttivita(provider),
       ],
     );
   }
 
   // TAB 2 — SIMULATORE
-  Widget _buildTabSimulatore(PlannerProvider provider, bool isDark) {
+  Widget _buildTabSimulatore(PlannerProvider provider) {
     final corsiSuperati = provider.courses
         .where((c) => c.stato == 'superato' && c.votoOttenuto != null)
         .toList();
@@ -570,7 +563,7 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   // Grafico a torta 
-  Widget _buildPieChart(PlannerProvider provider, bool isDark) {
+  Widget _buildPieChart(PlannerProvider provider) {
     final List<Color> colors = [
       AppColors.pastelRedDeep,
       AppColors.pastelBlueDeep,
@@ -598,7 +591,6 @@ class _StatsScreenState extends State<StatsScreen>
     final total = entries.fold(0, (sum, e) => sum + e.value);
 
     return _Card(
-      isDark: isDark,
       child: Column(
         children: [
           SizedBox(
@@ -657,7 +649,7 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   // Grafico a barre 
-  Widget _buildBarChart(PlannerProvider provider, bool isDark) {
+  Widget _buildBarChart(PlannerProvider provider) {
     final oggi = DateTime.now();
     final giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
 
@@ -696,7 +688,6 @@ class _StatsScreenState extends State<StatsScreen>
     }
 
     return _Card(
-      isDark: isDark,
       child: Column(
         children: [
           // Legenda del grafico
@@ -730,13 +721,13 @@ class _StatsScreenState extends State<StatsScreen>
                 borderData: FlBorderData(show: false),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => isDark ? const Color(0xFF2A2A2C) : Colors.white,
+                    getTooltipColor: (group) => Theme.of(context).colorScheme.surfaceContainerHighest,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final dayData = minutiSettimana[group.x.toInt()];
                       return BarTooltipItem(
                         '${giorni[group.x.toInt()]}\n',
                         TextStyle(
-                          color: isDark ? Colors.white : Colors.black, 
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.bold
                         ),
                         children: [
@@ -808,7 +799,7 @@ class _StatsScreenState extends State<StatsScreen>
   }
 
   // Corsi con più obiettivi attivi 
-  Widget _buildCorsiAttivita(PlannerProvider provider, bool isDark) {
+  Widget _buildCorsiAttivita(PlannerProvider provider) {
     final Map<String, int> map = {};
     for (final t in provider.tasks.where((t) => !t.completata)) {
       if (t.courseId != null) {
@@ -828,7 +819,6 @@ class _StatsScreenState extends State<StatsScreen>
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return _Card(
-      isDark: isDark,
       child: Column(
         children: entries.map((e) {
           return Padding(
@@ -929,16 +919,14 @@ class _StatsScreenState extends State<StatsScreen>
   // BUILD
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : AppColors.background;
+  final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
-        child: Consumer<PlannerProvider>(
-          builder: (context, provider, _) {
+        child: Builder(
+          builder: (context) {
+            final provider = Provider.of<PlannerProvider>(context);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -957,9 +945,7 @@ class _StatsScreenState extends State<StatsScreen>
                             fontWeight: FontWeight.w800,
                             letterSpacing: -1.2,
                             height: 1.05,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textPrimary,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -967,9 +953,7 @@ class _StatsScreenState extends State<StatsScreen>
                           'Il tuo andamento accademico',
                           style: TextStyle(
                             fontSize: 15,
-                            color: isDark
-                                ? Colors.white70
-                                : AppColors.textSecondary,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -982,7 +966,6 @@ class _StatsScreenState extends State<StatsScreen>
                 // Tab bar con icone + testo, animazione nativa fluida
                 _StatsTabBar(
                   controller: _tabController,
-                  isDark: isDark,
                 ),
                 const SizedBox(height: 8),
 
@@ -993,9 +976,9 @@ class _StatsScreenState extends State<StatsScreen>
                           controller: _tabController,
                           physics: const NeverScrollableScrollPhysics(),
                           children: [
-                            _buildTabRiepilogo(provider, isDark),
-                            _buildTabGrafici(provider, isDark),
-                            _buildTabSimulatore(provider, isDark),
+                            _buildTabRiepilogo(provider),
+                            _buildTabGrafici(provider),
+                            _buildTabSimulatore(provider),
                           ],
                         ),
                 ),
@@ -1014,14 +997,12 @@ class _FocusStatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  final bool isDark;
 
   const _FocusStatCard({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
-    required this.isDark,
   });
 
   @override
@@ -1029,10 +1010,10 @@ class _FocusStatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color.withValues(alpha: isDark ? 0.3 : 0.2),
+          color: color.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -1068,25 +1049,20 @@ class _FocusStatCard extends StatelessWidget {
 // STATS TAB BAR — TabBar nativo con icona sopra e testo sotto
 class _StatsTabBar extends StatelessWidget {
   final TabController controller;
-  final bool isDark;
 
   const _StatsTabBar({
     required this.controller,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textUnsel =
-        isDark ? Colors.white70 : AppColors.textSecondary;
+    final textUnsel = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
@@ -1107,17 +1083,14 @@ class _StatsTabBar extends StatelessWidget {
             _IconTab(
               icon: Icons.grid_view_rounded,
               label: 'Riepilogo',
-              isDark: isDark,
             ),
             _IconTab(
               icon: Icons.bar_chart_rounded,
               label: 'Grafici',
-              isDark: isDark,
             ),
             _IconTab(
               icon: Icons.school_rounded,
               label: 'Voto di Laurea',
-              isDark: isDark,
             ),
           ],
         ),
@@ -1129,12 +1102,10 @@ class _StatsTabBar extends StatelessWidget {
 class _IconTab extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool isDark;
 
   const _IconTab({
     required this.icon,
     required this.label,
-    required this.isDark,
   });
 
   @override
@@ -1219,14 +1190,12 @@ class _CircularCard extends StatelessWidget {
   final String subtitle;
   final double value;
   final Color color;
-  final bool isDark;
 
   const _CircularCard({
     required this.title,
     required this.subtitle,
     required this.value,
     required this.color,
-    required this.isDark,
   });
 
   @override
@@ -1234,9 +1203,7 @@ class _CircularCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.12)),
       ),
@@ -1295,8 +1262,7 @@ class _SectionLabel extends StatelessWidget {
 
 class _Card extends StatelessWidget {
   final Widget child;
-  final bool isDark;
-  const _Card({required this.child, required this.isDark});
+  const _Card({required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -1304,9 +1270,7 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+      color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.08)),
         boxShadow: [
