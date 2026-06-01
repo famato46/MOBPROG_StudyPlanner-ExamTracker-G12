@@ -120,8 +120,6 @@ class _CoursesScreenState extends State<CoursesScreen>{
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final primaryColor = colorScheme.onSurface;
-    final secondaryColor = colorScheme.onSurfaceVariant;
 
     return DefaultTabController(
     length: 5,

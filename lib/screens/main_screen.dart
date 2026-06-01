@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import '../utils/app_colors.dart';
 import 'home_screen.dart';
 import 'courses_screen.dart';
 import 'exams_screen.dart';
 import 'planning_screen.dart';
 import 'stats_screen.dart';
 
-/// MainScreen 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 

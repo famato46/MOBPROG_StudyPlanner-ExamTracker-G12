@@ -6,7 +6,6 @@ import '../utils/app_colors.dart';
 import 'exam_form_screen.dart';
 import 'exam_detail_screen.dart';
 
-/// ExamsScreen 
 class ExamsScreen extends StatefulWidget {
   const ExamsScreen({super.key});
 
@@ -70,15 +69,10 @@ class _ExamsScreenState extends State<ExamsScreen>{
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : AppColors.background;
-
     return DefaultTabController(
     length: 3,
     child: Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
@@ -103,7 +97,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
           visible: provider.exams.length,
           sortBy: _sortBy,
           onSortChanged: (v) => setState(() => _sortBy = v),
-          isDark: isDark,
         ),
         _SearchBar(
           controller: _searchController,
@@ -113,7 +106,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
             _searchController.clear();
             setState(() => _searchQuery = '');
           },
-          isDark: isDark,
         ),
         const SizedBox(height: 8),
         _ExamTabBar(
@@ -122,7 +114,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
             completati.length,
             annullati.length,
           ],
-          isDark: isDark,
         ),
         const SizedBox(height: 12),
           _FilterRow(
@@ -136,7 +127,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
           ],
           current: _filterTipologia,
           onSelected: (v) => setState(() => _filterTipologia = v),
-          isDark: isDark,
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -148,7 +138,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
                 coloreEsame: _coloreEsame,
                 etichettaStato: _etichettaStato,
                 onConfirmDelete: (e) => _confirmDelete(context, e),
-                isDark: isDark,
               ),
               _ExamListView(
                 exams: _processList(completati),
@@ -156,7 +145,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
                 coloreEsame: _coloreEsame,
                 etichettaStato: _etichettaStato,
                 onConfirmDelete: (e) => _confirmDelete(context, e),
-                isDark: isDark,
               ),
               _ExamListView(
                 exams: _processList(annullati),
@@ -164,7 +152,6 @@ class _ExamsScreenState extends State<ExamsScreen>{
                 coloreEsame: _coloreEsame,
                 etichettaStato: _etichettaStato,
                 onConfirmDelete: (e) => _confirmDelete(context, e),
-                isDark: isDark,
               ),
             ],
           ),
@@ -218,14 +205,12 @@ class _ExamsHeader extends StatelessWidget {
   final int visible;
   final String sortBy;
   final ValueChanged<String> onSortChanged;
-  final bool isDark;
 
   const _ExamsHeader({
     required this.total,
     required this.visible,
     required this.sortBy,
     required this.onSortChanged,
-    required this.isDark,
   });
 
   String _sortLabel(String s) {
@@ -241,9 +226,8 @@ class _ExamsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white70 : AppColors.textSecondary;
+    final primaryColor = Theme.of(context).colorScheme.onSurface;
+    final secondaryColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 16, 12),
@@ -280,7 +264,7 @@ class _ExamsHeader extends StatelessWidget {
           PopupMenuButton<String>(
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16)),
-            color: isDark ? const Color(0xFF2A2A2C) : AppColors.surface,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             position: PopupMenuPosition.under,
             onSelected: onSortChanged,
             itemBuilder: (_) => [
@@ -292,14 +276,10 @@ class _ExamsHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : AppColors.surface,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : AppColors.border,
+                  color: Theme.of(context).dividerColor,
                 ),
               ),
               child: Row(
@@ -346,21 +326,18 @@ class _SearchBar extends StatelessWidget {
   final bool hasQuery;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
-  final bool isDark;
+  
 
   const _SearchBar({
     required this.controller,
     required this.hasQuery,
     required this.onChanged,
     required this.onClear,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fillColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.05);
+    final fillColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -369,7 +346,7 @@ class _SearchBar extends StatelessWidget {
         onChanged: onChanged,
         style: TextStyle(
           fontSize: 15,
-          color: isDark ? Colors.white : AppColors.textPrimary,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         cursorColor: AppColors.examsDeep,
         decoration: InputDecoration(
@@ -411,11 +388,9 @@ class _SearchBar extends StatelessWidget {
 // TAB BAR PER STATI (Programmati / Completati / Annullati)
 class _ExamTabBar extends StatelessWidget {
   final List<int> counts;
-  final bool isDark;
 
   const _ExamTabBar({
-    required this.counts,
-    required this.isDark,
+    required this.counts
   });
 
   @override
@@ -424,9 +399,7 @@ class _ExamTabBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
@@ -438,8 +411,7 @@ class _ExamTabBar extends StatelessWidget {
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor:
-              isDark ? Colors.white70 : AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -482,13 +454,11 @@ class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
   final ValueChanged<String> onSelected;
-  final bool isDark;
 
   const _FilterRow({
     required this.options,
     required this.current,
     required this.onSelected,
-    required this.isDark,
   });
 
   @override
@@ -534,9 +504,7 @@ class _FilterRowState extends State<_FilterRow>
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          color: widget.isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         padding: const EdgeInsets.all(4),
@@ -552,9 +520,7 @@ class _FilterRowState extends State<_FilterRow>
           indicatorSize: TabBarIndicatorSize.tab,
           dividerColor: Colors.transparent,
           labelColor: Colors.white,
-          unselectedLabelColor: widget.isDark
-              ? Colors.white70
-              : AppColors.textSecondary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
           labelStyle: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -581,7 +547,7 @@ class _DismissibleExam extends StatelessWidget {
   final Future<bool?> Function() onConfirmDelete;
   final Future<void> Function() onDelete;
   final VoidCallback onTap;
-  final bool isDark;
+  
 
   const _DismissibleExam({
     required this.exam,
@@ -591,7 +557,6 @@ class _DismissibleExam extends StatelessWidget {
     required this.onConfirmDelete,
     required this.onDelete,
     required this.onTap,
-    required this.isDark,
   });
 
   @override
@@ -617,7 +582,6 @@ class _DismissibleExam extends StatelessWidget {
         colore: colore,
         etichetta: etichetta,
         onTap: onTap,
-        isDark: isDark,
       ),
     );
   }
@@ -629,7 +593,6 @@ class _ExamCard extends StatelessWidget {
   final Color colore;
   final String etichetta;
   final VoidCallback onTap;
-  final bool isDark;
 
   const _ExamCard({
     required this.exam,
@@ -637,7 +600,6 @@ class _ExamCard extends StatelessWidget {
     required this.colore,
     required this.etichetta,
     required this.onTap,
-    required this.isDark,
   });
 
   IconData _iconaTipologia(String tipologia) {
@@ -659,26 +621,18 @@ class _ExamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor =
-        isDark ? Colors.white : AppColors.textPrimary;
-    final secondaryColor =
-        isDark ? Colors.white60 : AppColors.textSecondary;
+    final primaryColor = Theme.of(context).colorScheme.onSurface;
+    final secondaryColor = Theme.of(context).colorScheme.onSurfaceVariant;
     final dataString =
         '${exam.data.day.toString().padLeft(2, '0')}/${exam.data.month.toString().padLeft(2, '0')}/${exam.data.year}';
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.border,
-        ),
-        boxShadow: isDark
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: Theme.of(context).brightness == Brightness.dark
             ? null
             : [
                 BoxShadow(
@@ -767,7 +721,7 @@ class _ExamCard extends StatelessWidget {
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded,
-                    color: isDark ? Colors.white38 : Colors.black26),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
               ],
             ),
           ),
@@ -815,11 +769,9 @@ class _Badge extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   final bool hasAnyExam;
-  final bool isDark;
 
   const _EmptyState({
     required this.hasAnyExam,
-    required this.isDark,
   });
 
   @override
@@ -847,7 +799,7 @@ class _EmptyState extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.3,
             ),
           ),
@@ -858,9 +810,7 @@ class _EmptyState extends StatelessWidget {
                 : 'Premi + per aggiungere il primo',
             style: TextStyle(
               fontSize: 14,
-              color: isDark
-                  ? Colors.white60
-                  : AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -875,7 +825,7 @@ class _ExamListView extends StatelessWidget {
   final Color Function(Exam) coloreEsame;
   final String Function(Exam) etichettaStato;
   final Future<bool?> Function(Exam) onConfirmDelete;
-  final bool isDark;
+  
 
   const _ExamListView({
     required this.exams,
@@ -883,7 +833,6 @@ class _ExamListView extends StatelessWidget {
     required this.coloreEsame,
     required this.etichettaStato,
     required this.onConfirmDelete,
-    required this.isDark,
   });
 
   @override
@@ -891,7 +840,6 @@ class _ExamListView extends StatelessWidget {
     if (exams.isEmpty) {
       return _EmptyState(
         hasAnyExam: provider.exams.isNotEmpty,
-        isDark: isDark,
       );
     }
     return ListView.builder(
@@ -919,7 +867,6 @@ class _ExamListView extends StatelessWidget {
               builder: (_) => ExamDetailScreen(exam: exam),
             ),
           ),
-          isDark: isDark,
         );
       },
     );
