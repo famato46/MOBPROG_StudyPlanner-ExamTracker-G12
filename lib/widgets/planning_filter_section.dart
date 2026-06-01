@@ -186,6 +186,10 @@ class PlanningFilterPickerRow extends StatelessWidget {
               ),
             ),
             const Divider(height: 1),
+            Flexible(                          
+            child: ListView(               
+            shrinkWrap: true,            
+            children: [
             ...options.map((opt) {
               final (value, labelText) = opt;
               final selected = value == currentValue;
@@ -221,6 +225,9 @@ class PlanningFilterPickerRow extends StatelessWidget {
                 ),
               );
             }),
+            ],
+            ),
+            ),
             const SizedBox(height: 8),
           ],
         ),

@@ -14,26 +14,23 @@ class ExamsScreen extends StatefulWidget {
   State<ExamsScreen> createState() => _ExamsScreenState();
 }
 
-class _ExamsScreenState extends State<ExamsScreen>
-    with TickerProviderStateMixin {
+class _ExamsScreenState extends State<ExamsScreen>{
   String _searchQuery = '';
   String _filterTipologia = 'tutti';
   String _sortBy = 'data';
-  late final TabController _tabController;
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
+  @override
   void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
+  _searchController.dispose();
+  super.dispose();
   }
 
   Color _coloreEsame(Exam e) {
@@ -78,7 +75,9 @@ class _ExamsScreenState extends State<ExamsScreen>
         ? Theme.of(context).colorScheme.surface
         : AppColors.background;
 
-    return Scaffold(
+    return DefaultTabController(
+    length: 3,
+    child: Scaffold(
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
@@ -118,7 +117,6 @@ class _ExamsScreenState extends State<ExamsScreen>
         ),
         const SizedBox(height: 8),
         _ExamTabBar(
-          controller: _tabController,
           counts: [
             programmati.length,
             completati.length,
@@ -143,7 +141,6 @@ class _ExamsScreenState extends State<ExamsScreen>
         const SizedBox(height: 16),
         Expanded(
           child: TabBarView(
-            controller: _tabController,
             children: [
               _ExamListView(
                 exams: _processList(programmati),
@@ -184,6 +181,7 @@ class _ExamsScreenState extends State<ExamsScreen>
           MaterialPageRoute(builder: (_) => const ExamFormScreen()),
         ),
       ),
+    ),
     );
   }
 
@@ -412,12 +410,10 @@ class _SearchBar extends StatelessWidget {
 
 // TAB BAR PER STATI (Programmati / Completati / Annullati)
 class _ExamTabBar extends StatelessWidget {
-  final TabController controller;
   final List<int> counts;
   final bool isDark;
 
   const _ExamTabBar({
-    required this.controller,
     required this.counts,
     required this.isDark,
   });
@@ -435,7 +431,6 @@ class _ExamTabBar extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(4),
         child: TabBar(
-          controller: controller,
           indicator: BoxDecoration(
             color: AppColors.pastelBlue,
             borderRadius: BorderRadius.circular(10),

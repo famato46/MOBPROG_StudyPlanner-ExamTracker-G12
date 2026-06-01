@@ -45,7 +45,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   static const int _pomodoroSeconds = 25 * 60;
   static const int _pausaSeconds = 5 * 60;
 
-  final ValueNotifier<int> _secondsNotifier = ValueNotifier(_pomodoroSeconds);
+  int _timerSeconds = _pomodoroSeconds;
 
   FocusType _focusType = FocusType.pomodoro;
   Timer? _focusTimer;
@@ -88,7 +88,6 @@ class _PlanningScreenState extends State<PlanningScreen>
     _tabController.dispose();
     _focusTabController.dispose();
     _sessioniTabController.dispose();
-    _secondsNotifier.dispose();
     super.dispose();
   }
 
@@ -103,12 +102,14 @@ class _PlanningScreenState extends State<PlanningScreen>
     }
     setState(() => _isTimerRunning = true);
     _focusTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsNotifier.value > 0) {
-        _secondsNotifier.value--;
-      } else {
-        _completaSessione();
-      }
-    });
+  setState(() {
+    if (_timerSeconds > 0) {
+      _timerSeconds--;
+    } else {
+      _completaSessione();
+    }
+  });
+});
   }
 
   void _pauseTimer() {
@@ -118,14 +119,17 @@ class _PlanningScreenState extends State<PlanningScreen>
 
   void _resetTimer() {
     _focusTimer?.cancel();
-    _secondsNotifier.value = _currentTotal;
+    setState(() => _timerSeconds = _currentTotal);
     setState(() => _isTimerRunning = false);
   }
 
   void _switchFocusType(FocusType type) {
     _focusTimer?.cancel();
-    _secondsNotifier.value =
-        type == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
+    setState(() {
+  _focusType = type;
+  _isTimerRunning = false;
+  _timerSeconds = type == FocusType.pomodoro ? _pomodoroSeconds : _pausaSeconds;
+});
     setState(() {
       _focusType = type;
       _isTimerRunning = false;
@@ -156,7 +160,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     }
 
     setState(() => _isTimerRunning = false);
-    _secondsNotifier.value = _currentTotal;
+    setState(() => _timerSeconds = _currentTotal);
     if (mounted) _mostraDialogFine();
   }
 
@@ -742,59 +746,51 @@ class _PlanningScreenState extends State<PlanningScreen>
           ),
           const SizedBox(height: 36),
 
-          ValueListenableBuilder<int>(
-            valueListenable: _secondsNotifier,
-            builder: (context, seconds, _) {
-              final progress = seconds / _currentTotal;
-              final mm = (seconds ~/ 60).toString().padLeft(2, '0');
-              final ss = (seconds % 60).toString().padLeft(2, '0');
-              return SizedBox(
+          SizedBox(
+            width: 240,
+            height: 240,
+            child: Stack(
+              alignment: Alignment.center,
+            children: [
+              SizedBox(
                 width: 240,
                 height: 240,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 8,
-                        backgroundColor: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : accent.withValues(alpha: 0.15),
-                        valueColor: AlwaysStoppedAnimation<Color>(accent),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$mm:$ss',
-                          style: TextStyle(
-                            fontSize: 52,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
-                            letterSpacing: -1,
-                          ),
-                        ),
-                        Text(
-                          _isTimerRunning
-                              ? 'In corso'
-                              : (isPomodoro ? 'Pomodoro' : 'Pausa'),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textMuted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
+            child: CircularProgressIndicator(
+              value: _timerSeconds / _currentTotal,
+              strokeWidth: 8,
+              backgroundColor: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : accent.withValues(alpha: 0.15),
+            valueColor: AlwaysStoppedAnimation<Color>(accent),
           ),
+        ),
+              Column(
+              mainAxisSize: MainAxisSize.min,
+            children: [
+            Text(
+            '${(_timerSeconds ~/ 60).toString().padLeft(2, '0')}:${(_timerSeconds % 60).toString().padLeft(2, '0')}',
+            style: TextStyle(
+              fontSize: 52,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -1,
+            ),
+          ),
+          Text(
+            _isTimerRunning
+                ? 'In corso'
+                : (isPomodoro ? 'Pomodoro' : 'Pausa'),
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
           const SizedBox(height: 36),
 
           Row(

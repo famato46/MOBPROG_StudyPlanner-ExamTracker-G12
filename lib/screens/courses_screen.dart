@@ -13,12 +13,10 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen>
-    with TickerProviderStateMixin {
+class _CoursesScreenState extends State<CoursesScreen>{
   String _searchQuery = '';
   String _filterSemestre = 'tutti_sem';
   String _sortBy = 'nome';
-  late final TabController _statoTabController;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -47,15 +45,10 @@ class _CoursesScreenState extends State<CoursesScreen>
   @override
   void initState() {
     super.initState();
-    _statoTabController = TabController(
-      length: _statiOptions.length,
-      vsync: this,
-    );
   }
 
   @override
   void dispose() {
-    _statoTabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -131,7 +124,9 @@ class _CoursesScreenState extends State<CoursesScreen>
         ? Theme.of(context).colorScheme.surface
         : AppColors.background;
 
-    return Scaffold(
+    return DefaultTabController(
+    length: 5,
+    child: Scaffold(
       backgroundColor: bgColor,
       body: Consumer<PlannerProvider>(
         builder: (context, provider, child) {
@@ -183,7 +178,6 @@ class _CoursesScreenState extends State<CoursesScreen>
                     ),
                     padding: const EdgeInsets.all(4),
                     child: TabBar(
-                      controller: _statoTabController,
                       isScrollable: true,
                       tabAlignment: TabAlignment.start,
                       indicator: BoxDecoration(
@@ -223,7 +217,6 @@ class _CoursesScreenState extends State<CoursesScreen>
                 const SizedBox(height: 16),
                 Expanded(
                   child: TabBarView(
-                    controller: _statoTabController,
                     children: [
                       _CourseListView(
                         courses: tutti,
@@ -275,6 +268,7 @@ class _CoursesScreenState extends State<CoursesScreen>
           MaterialPageRoute(builder: (_) => const CourseFormScreen()),
         ),
       ),
+    ),
     );
   }
 }
