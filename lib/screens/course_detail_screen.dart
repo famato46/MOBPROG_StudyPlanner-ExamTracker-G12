@@ -14,35 +14,24 @@ class CourseDetailScreen extends StatelessWidget {
 
   String _formatStato(String stato) {
     switch (stato) {
-      case 'da_iniziare':
-        return 'Da iniziare';
-      case 'in_corso':
-        return 'In corso';
-      case 'completato':
-        return 'Frequentato';
-      case 'superato':
-        return 'Superato';
-      default:
-        return stato;
+      case 'da_iniziare': return 'Da iniziare';
+      case 'in_corso': return 'In corso';
+      case 'completato': return 'Frequentato';
+      case 'superato': return 'Superato';
+      default: return stato;
     }
   }
 
   String _formatTipologia(String t) {
     switch (t) {
-      case 'esame':
-        return 'Esame';
-      case 'appello':
-        return 'Appello';
-      case 'consegna':
-        return 'Consegna';
-      case 'progetto':
-        return 'Progetto';
-      default:
-        return t;
+      case 'esame': return 'Esame';
+      case 'appello': return 'Appello';
+      case 'consegna': return 'Consegna';
+      case 'progetto': return 'Progetto';
+      default: return t;
     }
   }
 
-  // Converte un voto numerico interno in stringa per gestire 30L
   String _formatVoto(int? voto) {
     if (voto == null) return '-';
     if (voto >= 31) return '30L';
@@ -58,21 +47,16 @@ class CourseDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF000000) : AppColors.background;
-
     return Consumer<PlannerProvider>(
       builder: (context, provider, child) {
-        final updatedCourse =
-            provider.getCourseById(course.id) ?? course;
+        final updatedCourse = provider.getCourseById(course.id) ?? course;
         final exams = provider.getExamsByCourse(updatedCourse.id);
         final tasks = provider.getTasksByCourse(updatedCourse.id);
 
         return Scaffold(
-          backgroundColor: bgColor,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           appBar: AppBar(
-            backgroundColor: bgColor,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             elevation: 0,
             scrolledUnderElevation: 0,
             centerTitle: true,
@@ -86,7 +70,7 @@ class CourseDetailScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.3,
               ),
               overflow: TextOverflow.ellipsis,
@@ -98,16 +82,14 @@ class CourseDetailScreen extends StatelessWidget {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        CourseFormScreen(courseToEdit: updatedCourse),
+                    builder: (_) => CourseFormScreen(courseToEdit: updatedCourse),
                   ),
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 22),
                 color: AppColors.danger,
-                onPressed: () =>
-                    _handleDelete(context, provider, updatedCourse),
+                onPressed: () => _handleDelete(context, provider, updatedCourse),
               ),
               const SizedBox(width: 4),
             ],
@@ -120,18 +102,14 @@ class CourseDetailScreen extends StatelessWidget {
                 statoLabel: _formatStato(updatedCourse.stato),
                 votoOttenuto: _formatVoto(updatedCourse.votoOttenuto),
                 votoDesiderato: _formatVoto(updatedCourse.votoDesiderato),
-                isDark: isDark,
               ),
               const SizedBox(height: 14),
-
-              //MINI-GRID INFO
               Row(
                 children: [
                   Expanded(
                     child: _MiniInfoCard(
                       label: 'SEMESTRE',
                       value: _shortSemestre(updatedCourse.semestre),
-                      isDark: isDark,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -144,44 +122,34 @@ class CourseDetailScreen extends StatelessWidget {
                       valueColor: updatedCourse.votoOttenuto != null
                           ? AppColors.success
                           : null,
-                      isDark: isDark,
                     ),
                   ),
                 ],
               ),
-
-              // NOTE
               if ((updatedCourse.note?.isNotEmpty ?? false) ||
-                  (updatedCourse.materialeAssociato?.isNotEmpty ??
-                      false)) ...[
+                  (updatedCourse.materialeAssociato?.isNotEmpty ?? false)) ...[
                 const SizedBox(height: 14),
                 _NoteCard(
                   note: updatedCourse.note,
                   materiale: updatedCourse.materialeAssociato,
-                  isDark: isDark,
                 ),
               ],
-
-              // SEZIONE ESAMI 
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Esami',
                 count: exams.length,
-                isDark: isDark,
               ),
               const SizedBox(height: 8),
               if (exams.isEmpty)
-                _EmptyCard(text: 'Nessun esame collegato', isDark: isDark)
+                const _EmptyCard(text: 'Nessun esame collegato')
               else
                 _ItemsContainer(
-                  isDark: isDark,
                   children: exams
                       .map((e) => _ExamRow(
                             titolo: e.titolo,
                             tipologia: _formatTipologia(e.tipologia),
                             data: e.data,
                             isCompletato: e.isCompletato,
-                            isDark: isDark,
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -191,13 +159,10 @@ class CourseDetailScreen extends StatelessWidget {
                           ))
                       .toList(),
                 ),
-
-              // Sezione attività
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'Attività',
                 count: tasks.length,
-                isDark: isDark,
                 trailing: _AddInlineButton(
                   label: 'Aggiungi',
                   onTap: () => Navigator.push(
@@ -212,16 +177,13 @@ class CourseDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               if (tasks.isEmpty)
-                _EmptyCard(
-                    text: 'Nessuna attività collegata', isDark: isDark)
+                const _EmptyCard(text: 'Nessuna attività collegata')
               else
                 _ItemsContainer(
-                  isDark: isDark,
                   children: tasks
                       .map((t) => _TaskRow(
                             task: t,
-                            onToggle: () =>
-                                provider.toggleTaskCompletion(t.id),
+                            onToggle: () => provider.toggleTaskCompletion(t.id),
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -232,13 +194,11 @@ class CourseDetailScreen extends StatelessWidget {
                               ),
                             ),
                             onDelete: () async {
-                              final c = await _confirmDeleteTask(
-                                  context, t);
+                              final c = await _confirmDeleteTask(context, t);
                               if (c == true && context.mounted) {
                                 await provider.deleteTask(t.id);
                               }
                             },
-                            isDark: isDark,
                           ))
                       .toList(),
                 ),
@@ -253,8 +213,7 @@ class CourseDetailScreen extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Elimina attività'),
         content: Text('Eliminare "${t.titolo}"?'),
         actions: [
@@ -264,8 +223,7 @@ class CourseDetailScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Elimina',
-                style: TextStyle(color: AppColors.danger)),
+            child: Text('Elimina', style: TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -280,8 +238,7 @@ class CourseDetailScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Elimina corso'),
         content: Text(
             'Eliminare "${course.nome}"? Saranno eliminati anche esami e attività collegate.'),
@@ -292,10 +249,7 @@ class CourseDetailScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              'Elimina',
-              style: TextStyle(color: AppColors.danger),
-            ),
+            child: Text('Elimina', style: TextStyle(color: AppColors.danger)),
           ),
         ],
       ),
@@ -314,26 +268,26 @@ class _HeroCard extends StatelessWidget {
   final String statoLabel;
   final String votoOttenuto;
   final String votoDesiderato;
-  final bool isDark;
 
   const _HeroCard({
     required this.course,
     required this.statoLabel,
     required this.votoOttenuto,
     required this.votoDesiderato,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isLight =
+        Theme.of(context).colorScheme.brightness == Brightness.light;
     final statoColor = AppColors.statoCorso(course.stato);
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.pastelRedDeep.withValues(alpha: 0.18)
-            : AppColors.pastelRedLight,
+        color: isLight
+            ? AppColors.pastelRedLight
+            : AppColors.pastelRedDeep.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -346,7 +300,7 @@ class _HeroCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'CORSO',
                       style: TextStyle(
                         fontSize: 11,
@@ -361,9 +315,9 @@ class _HeroCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.pastelRedDeep,
+                        color: isLight
+                            ? AppColors.pastelRedDeep
+                            : Colors.white,
                         letterSpacing: -0.5,
                         height: 1.1,
                       ),
@@ -373,10 +327,9 @@ class _HeroCard extends StatelessWidget {
                       course.docente,
                       style: TextStyle(
                         fontSize: 13,
-                        color: isDark
-                            ? Colors.white70
-                            : AppColors.pastelRedDeep
-                                .withValues(alpha: 0.8),
+                        color: isLight
+                            ? AppColors.pastelRedDeep.withValues(alpha: 0.8)
+                            : Colors.white70,
                       ),
                     ),
                   ],
@@ -393,7 +346,7 @@ class _HeroCard extends StatelessWidget {
                   children: [
                     Text(
                       course.cfu.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.pastelRedDeep,
@@ -402,7 +355,7 @@ class _HeroCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
+                    const Text(
                       'CFU',
                       style: TextStyle(
                         fontSize: 10,
@@ -417,17 +370,13 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          // Chips di stato e voto
           Wrap(
             spacing: 6,
             runSpacing: 6,
             children: [
               _StatoChip(label: statoLabel, color: statoColor),
               if (course.votoOttenuto != null)
-                _StatoChip(
-                  label: '$votoOttenuto/30',
-                  color: AppColors.success,
-                ),
+                _StatoChip(label: '$votoOttenuto/30', color: AppColors.success),
               if (course.votoDesiderato != null)
                 _StatoChip(
                   label: 'obiettivo $votoDesiderato',
@@ -441,7 +390,6 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// Chip per il testo
 class _StatoChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -468,18 +416,15 @@ class _StatoChip extends StatelessWidget {
   }
 }
 
-// Info card (semestre, voto, ecc.)
 class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  final bool isDark;
 
   const _MiniInfoCard({
     required this.label,
     required this.value,
     this.valueColor,
-    required this.isDark,
   });
 
   @override
@@ -487,9 +432,7 @@ class _MiniInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -497,7 +440,7 @@ class _MiniInfoCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textMuted,
@@ -510,8 +453,7 @@ class _MiniInfoCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: valueColor ??
-                  (isDark ? Colors.white : AppColors.textPrimary),
+              color: valueColor ?? Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.2,
             ),
             overflow: TextOverflow.ellipsis,
@@ -522,33 +464,25 @@ class _MiniInfoCard extends StatelessWidget {
   }
 }
 
-// Note Card (per Note e Materiale del corso)
 class _NoteCard extends StatelessWidget {
   final String? note;
   final String? materiale;
-  final bool isDark;
 
-  const _NoteCard({
-    required this.note,
-    required this.materiale,
-    required this.isDark,
-  });
+  const _NoteCard({required this.note, required this.materiale});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (materiale != null && materiale!.isNotEmpty) ...[
-            Text(
+            const Text(
               'MATERIALE',
               style: TextStyle(
                 fontSize: 11,
@@ -562,7 +496,7 @@ class _NoteCard extends StatelessWidget {
               materiale!,
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 height: 1.4,
               ),
             ),
@@ -572,14 +506,12 @@ class _NoteCard extends StatelessWidget {
                 child: Divider(
                   height: 1,
                   thickness: 0.5,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : AppColors.groupedDivider,
+                  color: Theme.of(context).dividerColor,
                 ),
               ),
           ],
           if (note != null && note!.isNotEmpty) ...[
-            Text(
+            const Text(
               'NOTE',
               style: TextStyle(
                 fontSize: 11,
@@ -593,7 +525,7 @@ class _NoteCard extends StatelessWidget {
               note!,
               style: TextStyle(
                 fontSize: 14,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 height: 1.4,
               ),
             ),
@@ -604,18 +536,15 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-// Section title (Esami, Attività, ecc.)
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
   final Widget? trailing;
-  final bool isDark;
 
   const _SectionTitle({
     required this.title,
     required this.count,
     this.trailing,
-    required this.isDark,
   });
 
   @override
@@ -629,14 +558,14 @@ class _SectionTitle extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.3,
             ),
           ),
           const SizedBox(width: 8),
           Text(
             count.toString(),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
               color: AppColors.textMuted,
@@ -651,7 +580,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// Aggiunge inline accanto al titolo di sezione
 class _AddInlineButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -669,11 +597,10 @@ class _AddInlineButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.add_rounded,
-                  size: 18, color: AppColors.iosBlue),
+              const Icon(Icons.add_rounded, size: 18, color: AppColors.iosBlue),
               const SizedBox(width: 2),
-              Text(
-                label,
+              const Text(
+                'Aggiungi',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -688,28 +615,23 @@ class _AddInlineButton extends StatelessWidget {
   }
 }
 
-
-// Container Lista
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
-  final bool isDark;
 
-  const _ItemsContainer({required this.children, required this.isDark});
+  const _ItemsContainer({required this.children});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(children: _withDividers(children, isDark)),
+      child: Column(children: _withDividers(children, context)),
     );
   }
 
-  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
+  List<Widget> _withDividers(List<Widget> rows, BuildContext context) {
     if (rows.length <= 1) return rows;
     final result = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
@@ -720,9 +642,7 @@ class _ItemsContainer extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 0.5,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.groupedDivider,
+            color: Theme.of(context).dividerColor,
           ),
         ));
       }
@@ -731,39 +651,32 @@ class _ItemsContainer extends StatelessWidget {
   }
 }
 
-// Empty Card (se nessun esame collegato)
 class _EmptyCard extends StatelessWidget {
   final String text;
-  final bool isDark;
-  const _EmptyCard({required this.text, required this.isDark});
+  const _EmptyCard({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
       child: Text(
         text,
-        style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+        style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
       ),
     );
   }
 }
 
-
-// Exam Row (dentro la card lista)
 class _ExamRow extends StatelessWidget {
   final String titolo;
   final String tipologia;
   final DateTime data;
   final bool isCompletato;
-  final bool isDark;
   final VoidCallback? onTap;
 
   const _ExamRow({
@@ -771,8 +684,7 @@ class _ExamRow extends StatelessWidget {
     required this.tipologia,
     required this.data,
     required this.isCompletato,
-    required this.isDark,
-    this.onTap, 
+    this.onTap,
   });
 
   @override
@@ -786,79 +698,74 @@ class _ExamRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.pastelBlueLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.calendar_today_rounded,
-              size: 16,
-              color: AppColors.pastelBlueDeep,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titolo,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.pastelBlueLight,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$tipologia · $dateStr',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary,
-                  ),
+                child: const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 16,
+                  color: AppColors.pastelBlueDeep,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      titolo,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$tipologia · $dateStr',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isCompletato)
+                const Icon(Icons.check_circle_rounded,
+                    size: 20, color: AppColors.success)
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+            ],
           ),
-          if (isCompletato)
-            Icon(Icons.check_circle_rounded,
-                size: 20, color: AppColors.success)
-          else
-            Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? Colors.white38 : Colors.black26,
-            ),
-        ],
-      ),
-    ),
+        ),
       ),
     );
   }
 }
 
-// Task row (con checkbox, tap modifica e swipe delete)
 class _TaskRow extends StatelessWidget {
   final Task task;
   final VoidCallback onToggle;
   final VoidCallback? onTap;
   final Future<void> Function()? onDelete;
-  final bool isDark;
 
   const _TaskRow({
     required this.task,
     required this.onToggle,
     this.onTap,
     this.onDelete,
-    required this.isDark,
   });
 
   @override
@@ -877,21 +784,16 @@ class _TaskRow extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: task.completata
-                    ? AppColors.iosBlue
-                    : Colors.transparent,
+                color: task.completata ? AppColors.iosBlue : Colors.transparent,
                 border: Border.all(
                   color: task.completata
                       ? AppColors.iosBlue
-                      : (isDark
-                          ? Colors.white38
-                          : AppColors.textMuted),
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   width: 2,
                 ),
               ),
               child: task.completata
-                  ? const Icon(Icons.check_rounded,
-                      size: 14, color: Colors.white)
+                  ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
                   : null,
             ),
           ),
@@ -901,10 +803,8 @@ class _TaskRow extends StatelessWidget {
               task.titolo,
               style: TextStyle(
                 fontSize: 15,
-                color: isDark ? Colors.white : AppColors.textPrimary,
-                decoration: task.completata
-                    ? TextDecoration.lineThrough
-                    : null,
+                color: Theme.of(context).colorScheme.onSurface,
+                decoration: task.completata ? TextDecoration.lineThrough : null,
                 decorationColor: AppColors.textMuted,
                 letterSpacing: -0.2,
               ),
@@ -912,8 +812,7 @@ class _TaskRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: priorityColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
@@ -949,7 +848,6 @@ class _TaskRow extends StatelessWidget {
         ),
         confirmDismiss: (_) async {
           await onDelete!();
-          // false perché la rimozione la fa il Provider via notifyListeners e non il Dismissible
           return false;
         },
         child: row,

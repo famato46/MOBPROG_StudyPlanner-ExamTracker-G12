@@ -66,9 +66,6 @@ class ExamDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor =
-        isDark ? const Color(0xFF000000) : AppColors.background;
 
     return Consumer<PlannerProvider>(
       builder: (context, provider, child) {
@@ -79,9 +76,9 @@ class ExamDetailScreen extends StatelessWidget {
             .toList();
 
         return Scaffold(
-          backgroundColor: bgColor,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           appBar: AppBar(
-            backgroundColor: bgColor,
+            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
             elevation: 0,
             scrolledUnderElevation: 0,
             centerTitle: true,
@@ -95,7 +92,7 @@ class ExamDetailScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.3,
               ),
               overflow: TextOverflow.ellipsis,
@@ -130,7 +127,6 @@ class ExamDetailScreen extends StatelessWidget {
                 priorita: _formatPriorita(updatedExam.priorita),
                 statoLabel: _etichettaStato(updatedExam),
                 statoColor: _coloreStato(updatedExam),
-                isDark: isDark,
               ),
               const SizedBox(height: 14),
 
@@ -141,7 +137,6 @@ class ExamDetailScreen extends StatelessWidget {
                       label: 'DATA',
                       value: DateFormat('dd MMM yyyy', 'it_IT')
                           .format(updatedExam.data),
-                      isDark: isDark,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -158,7 +153,6 @@ class ExamDetailScreen extends StatelessWidget {
                       valueColor: updatedExam.stato == 'completato'
                           ? AppColors.success
                           : AppColors.priorita(updatedExam.priorita),
-                      isDark: isDark,
                     ),
                   ),
                 ],
@@ -168,7 +162,7 @@ class ExamDetailScreen extends StatelessWidget {
               if (updatedExam.note != null &&
                   updatedExam.note!.isNotEmpty) ...[
                 const SizedBox(height: 14),
-                _NoteCard(note: updatedExam.note!, isDark: isDark),
+                _NoteCard(note: updatedExam.note!),
               ],
 
               // SESSIONI DI STUDIO COLLEGATE 
@@ -176,23 +170,19 @@ class ExamDetailScreen extends StatelessWidget {
               _SectionTitle(
                 title: 'Sessioni di studio',
                 count: sessioni.length,
-                isDark: isDark,
               ),
               const SizedBox(height: 8),
               if (sessioni.isEmpty)
                 _EmptyCard(
-                    text: 'Nessuna sessione collegata',
-                    isDark: isDark)
+                    text: 'Nessuna sessione collegata')
               else
                 _ItemsContainer(
-                  isDark: isDark,
                   children: sessioni
                       .map((s) => _SessionRow(
                             titolo: s.titolo,
                             durata: s.durataPianificata,
                             tipo: s.tipo,
                             completata: s.completata,
-                            isDark: isDark,
                           ))
                       .toList(),
                 ),
@@ -245,7 +235,6 @@ class _HeroCard extends StatelessWidget {
   final String priorita;
   final String statoLabel;
   final Color statoColor;
-  final bool isDark;
 
   const _HeroCard({
     required this.exam,
@@ -254,7 +243,6 @@ class _HeroCard extends StatelessWidget {
     required this.priorita,
     required this.statoLabel,
     required this.statoColor,
-    required this.isDark,
   });
 
   @override
@@ -269,7 +257,7 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: isDark
+        color: Theme.of(context).brightness == Brightness.dark
             ? AppColors.pastelBlueDeep.withValues(alpha: 0.18)
             : AppColors.pastelBlueLight,
         borderRadius: BorderRadius.circular(20),
@@ -299,7 +287,7 @@ class _HeroCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: isDark
+                        color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
                             : AppColors.pastelBlueDeep,
                         letterSpacing: -0.5,
@@ -426,13 +414,12 @@ class _MiniInfoCard extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  final bool isDark;
+  
 
   const _MiniInfoCard({
     required this.label,
     required this.value,
     this.valueColor,
-    required this.isDark,
   });
 
   @override
@@ -440,9 +427,7 @@ class _MiniInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -464,7 +449,7 @@ class _MiniInfoCard extends StatelessWidget {
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: valueColor ??
-                  (isDark ? Colors.white : AppColors.textPrimary),
+                  (Theme.of(context).colorScheme.onSurface),
               letterSpacing: -0.2,
             ),
             overflow: TextOverflow.ellipsis,
@@ -478,18 +463,15 @@ class _MiniInfoCard extends StatelessWidget {
 // NOTE CARD
 class _NoteCard extends StatelessWidget {
   final String note;
-  final bool isDark;
 
-  const _NoteCard({required this.note, required this.isDark});
+  const _NoteCard({required this.note});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -509,7 +491,7 @@ class _NoteCard extends StatelessWidget {
             note,
             style: TextStyle(
               fontSize: 14,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               height: 1.4,
             ),
           ),
@@ -523,12 +505,11 @@ class _NoteCard extends StatelessWidget {
 class _SectionTitle extends StatelessWidget {
   final String title;
   final int count;
-  final bool isDark;
+  
 
   const _SectionTitle({
     required this.title,
     required this.count,
-    required this.isDark,
   });
 
   @override
@@ -542,7 +523,7 @@ class _SectionTitle extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: Theme.of(context).colorScheme.onSurface,
               letterSpacing: -0.3,
             ),
           ),
@@ -565,24 +546,22 @@ class _SectionTitle extends StatelessWidget {
 // CONTAINER LISTA
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
-  final bool isDark;
+  
 
-  const _ItemsContainer({required this.children, required this.isDark});
+  const _ItemsContainer({required this.children});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(children: _withDividers(children, isDark)),
+      child: Column(children: _withDividers(children, context)),
     );
   }
 
-  List<Widget> _withDividers(List<Widget> rows, bool isDark) {
+  List<Widget> _withDividers(List<Widget> rows, BuildContext context) {
     if (rows.length <= 1) return rows;
     final result = <Widget>[];
     for (var i = 0; i < rows.length; i++) {
@@ -593,9 +572,7 @@ class _ItemsContainer extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 0.5,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.groupedDivider,
+            color: Theme.of(context).dividerColor
           ),
         ));
       }
@@ -607,17 +584,15 @@ class _ItemsContainer extends StatelessWidget {
 // EMPTY CARD
 class _EmptyCard extends StatelessWidget {
   final String text;
-  final bool isDark;
-  const _EmptyCard({required this.text, required this.isDark});
+  
+  const _EmptyCard({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       alignment: Alignment.center,
@@ -635,14 +610,12 @@ class _SessionRow extends StatelessWidget {
   final int durata;
   final String tipo;
   final bool completata;
-  final bool isDark;
 
   const _SessionRow({
     required this.titolo,
     required this.durata,
     required this.tipo,
     required this.completata,
-    required this.isDark,
   });
 
   @override
@@ -674,7 +647,7 @@ class _SessionRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.2,
                   ),
                 ),
@@ -683,9 +656,7 @@ class _SessionRow extends StatelessWidget {
                   '$durata min · $tipo',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark
-                        ? Colors.white60
-                        : AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant
                   ),
                 ),
               ],
