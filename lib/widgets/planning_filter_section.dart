@@ -12,7 +12,6 @@ class PlanningFilterSection extends StatelessWidget {
   final String filtroTipo;
   final ValueChanged<Course?> onCorsoChanged;
   final ValueChanged<String> onTipoChanged;
-  final bool isDark;
 
   const PlanningFilterSection({
     super.key,
@@ -25,17 +24,16 @@ class PlanningFilterSection extends StatelessWidget {
     required this.filtroTipo,
     required this.onCorsoChanged,
     required this.onTipoChanged,
-    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -58,7 +56,7 @@ class PlanningFilterSection extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const Spacer(),
@@ -81,7 +79,7 @@ class PlanningFilterSection extends StatelessWidget {
                       espanso
                           ? Icons.keyboard_arrow_up_rounded
                           : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.textMuted,
+                          color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -108,7 +106,6 @@ class PlanningFilterSection extends StatelessWidget {
                         onCorsoChanged(corsi.firstWhere((c) => c.id == v));
                       }
                     },
-                    isDark: isDark,
                   ),
                   const SizedBox(height: 10),
                   PlanningFilterPickerRow(
@@ -124,7 +121,6 @@ class PlanningFilterSection extends StatelessWidget {
                     ],
                     currentValue: filtroTipo,
                     onSelected: onTipoChanged,
-                    isDark: isDark,
                   ),
                 ],
               ),
@@ -141,7 +137,6 @@ class PlanningFilterPickerRow extends StatelessWidget {
   final List<(String, String)> options;
   final String currentValue;
   final ValueChanged<String> onSelected;
-  final bool isDark;
 
   const PlanningFilterPickerRow({
     super.key,
@@ -150,14 +145,14 @@ class PlanningFilterPickerRow extends StatelessWidget {
     required this.options,
     required this.currentValue,
     required this.onSelected,
-    required this.isDark,
   });
 
   void _openPicker(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          isDark ? const Color(0xFF1C1C1E) : AppColors.surface,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -170,7 +165,7 @@ class PlanningFilterPickerRow extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white24 : Colors.black12,
+                color: colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -181,7 +176,7 @@ class PlanningFilterPickerRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -208,9 +203,7 @@ class PlanningFilterPickerRow extends StatelessWidget {
                           labelText,
                           style: TextStyle(
                             fontSize: 16,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textPrimary,
+                            color: colorScheme.onSurface,
                             fontWeight: selected
                                 ? FontWeight.w600
                                 : FontWeight.w400,
@@ -237,6 +230,8 @@ class PlanningFilterPickerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -245,14 +240,10 @@ class PlanningFilterPickerRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : AppColors.background,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : AppColors.border,
+            color: colorScheme.outlineVariant,
             ),
           ),
           child: Row(
@@ -262,7 +253,7 @@ class PlanningFilterPickerRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white70 : AppColors.textSecondary,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 12),
@@ -273,14 +264,14 @@ class PlanningFilterPickerRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 6),
               Icon(Icons.keyboard_arrow_down_rounded,
-                  size: 18, color: AppColors.textMuted),
+                  size: 18, color: colorScheme.onSurfaceVariant),
             ],
           ),
         ),
