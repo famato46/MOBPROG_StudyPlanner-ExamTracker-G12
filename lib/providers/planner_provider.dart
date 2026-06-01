@@ -6,7 +6,7 @@ import '../models/exam.dart';
 import '../models/study_session.dart';
 import '../models/task.dart';
 
-// PlannerProvider, Gestisce lo stato 
+// PlannerProvider: gestisce lo stato 
 class PlannerProvider extends ChangeNotifier {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final Uuid _uuid = const Uuid();
@@ -220,7 +220,7 @@ class PlannerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // FUNZIONI POMODORO/PAUSA
+  // FUNZIONI POMODORO
   Future<void> savePomodoroSession({
     required String titolo,
     String? courseId,
@@ -360,8 +360,7 @@ class PlannerProvider extends ChangeNotifier {
     return _tasks.where((t) => t.completata).toList();
   }
 
-
-  // STATISTICHE TECNICA POMODORO 
+  // STATISTICHE POMODORO 
   int get pomodoriCompletati => _studySessions
       .where((s) => s.completata && s.tipo == 'pomodoro')
       .length;
@@ -373,7 +372,6 @@ class PlannerProvider extends ChangeNotifier {
   int get minutiTotaliFocus => _studySessions
       .where((s) => s.completata && s.tipo == 'pomodoro')
       .fold(0, (sum, s) => sum + (s.durataEffettiva ?? 0));
-
 
   // STATISTICHE GENERALI 
   int get totalCourses => _courses.length;
@@ -435,7 +433,6 @@ class PlannerProvider extends ChangeNotifier {
         60;
   }
 
-
   // SUGGERITORE AUTOMATICO 
   List<String> get suggerimentiAutomatici {
     final suggerimenti = <String>[];
@@ -482,8 +479,7 @@ class PlannerProvider extends ChangeNotifier {
     return suggerimenti;
   }
 
-
-  // UTILITY 
+  // RESET DATABASE per testing
   Future<void> resetDatabase() async {
     await _db.deleteDatabase();
     _courses = [];

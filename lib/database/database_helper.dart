@@ -5,7 +5,7 @@ import '../models/exam.dart';
 import '../models/study_session.dart';
 import '../models/task.dart';
 
-// DatabaseHelper - Pattern Singleton per gestire SQLite
+// DatabaseHelper: pattern Singleton per gestire SQLite
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
   DatabaseHelper._privateConstructor();
@@ -18,7 +18,7 @@ class DatabaseHelper {
     return _database!;
   }
 
-  // INIZIALIZZAZIONE DATABASE 
+  // Inizializzazione del database
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'unipath.db');
     return await openDatabase(
@@ -214,9 +214,6 @@ class DatabaseHelper {
     return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 
-
-  // UTILITY 
-
   // Elimina tutto il database (per debug)
   Future<void> deleteDatabase() async {
     String path = join(await getDatabasesPath(), 'unipath.db');
@@ -224,13 +221,12 @@ class DatabaseHelper {
     _database = null;
   }
 
-  // TRANSAZIONE POMODORO 
- 
+  // POMODORO 
   // Salva una sessione di studio e aggiorna il tempo effettivo della Task associata
   Future<void> saveSessionAndUpdateTaskTime(StudySession session, String taskId) async {
     Database db = await database;
     
-    // Usiamo una transaction: o fa entrambe le cose, o non ne fa nessuna (sicurezza dei dati)
+    // Usiamo una transaction: o fa entrambe le cose o nessuna
     await db.transaction((txn) async {
       // Inserisce la sessione nello storico
       await txn.insert('study_sessions', session.toMap());

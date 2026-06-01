@@ -90,7 +90,7 @@ class Task {
     );
   }
 
-  // Helper per verificare se è in scadenza (entro 3 giorni)
+  // Helper per verificare se è in scadenza entro 3 giorni
   bool get isInScadenza {
     if (scadenza == null) return false;
     final oggi = DateTime.now();

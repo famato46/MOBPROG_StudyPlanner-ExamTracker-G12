@@ -8,6 +8,7 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+// Schermata di splash iniziale che mostra il logo e il nome dell'app per qualche secondo
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {

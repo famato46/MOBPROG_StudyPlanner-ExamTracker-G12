@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// ThemeProvider - Gestisce il tema (Light e Dark Mode)
+// ThemeProvider: gestisce il tema (Light e Dark Mode)
 // Usa SharedPreferences per mantenere la scelta dell'utente
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
@@ -31,7 +31,7 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Per impostare manualmente il tema
+  // Per impostare il tema
   Future<void> setTheme(bool isDark) async {
     if (_isDarkMode == isDark) return;
 

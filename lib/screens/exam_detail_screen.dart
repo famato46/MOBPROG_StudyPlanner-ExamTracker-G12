@@ -6,7 +6,6 @@ import '../providers/planner_provider.dart';
 import '../utils/app_colors.dart';
 import 'exam_form_screen.dart';
 
-/// ExamDetailScreen
 class ExamDetailScreen extends StatelessWidget {
   final Exam exam;
   const ExamDetailScreen({super.key, required this.exam});
@@ -227,7 +226,7 @@ class ExamDetailScreen extends StatelessWidget {
   }
 }
 
-// HERO CARD: card grande pastello BLU
+// HERO CARD
 class _HeroCard extends StatelessWidget {
   final Exam exam;
   final String corso;
@@ -382,7 +381,7 @@ class _CountdownBadge extends StatelessWidget {
   }
 }
 
-// Chip bianco
+// Chip di stato e priorità
 class _StatoChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -543,7 +542,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// CONTAINER LISTA
+// CONTAINER LISTA SESSIONI DI STUDIO
 class _ItemsContainer extends StatelessWidget {
   final List<Widget> children;
   
@@ -581,7 +580,7 @@ class _ItemsContainer extends StatelessWidget {
   }
 }
 
-// EMPTY CARD
+// EMPTY CARD usata per mostrare un messaggio quando non ci sono sessioni collegate
 class _EmptyCard extends StatelessWidget {
   final String text;
   
@@ -604,7 +603,7 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
-// SESSION ROW (riga sessione di studio)
+// SESSION ROW (riga sessione di studio) 
 class _SessionRow extends StatelessWidget {
   final String titolo;
   final int durata;

@@ -29,12 +29,12 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
-      // IndexedStack mantiene tutte le tab in memoria
+      // IndexedStack mantiene tutte le tab in memoria e mostra solo quella attiva preservando lo stato interno di tutte le schermate
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
       ),
-      // NavigationBar
+      // NavigationBar 
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) =>

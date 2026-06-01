@@ -17,7 +17,7 @@ class AppColors {
   // Sfondo singolo gruppo 
   static const Color groupedSurface = Color(0xFFFFFFFF);
 
-  // Separatore tra righe dentro un gruppo.
+  // Separatore tra righe dentro un gruppo
   static const Color groupedDivider = Color(0xFFE5E5EA);
 
   // Colori della Dashboard 

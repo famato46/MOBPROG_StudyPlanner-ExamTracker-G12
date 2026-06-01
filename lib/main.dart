@@ -112,7 +112,6 @@ class StudyPlannerApp extends StatelessWidget {
             themeMode: themeProvider.isDarkMode
                 ? ThemeMode.dark
                 : ThemeMode.light,
-            // Larghezza massima dell'intera app 
             builder: (context, child) {
               return Center(
                 child: ConstrainedBox(

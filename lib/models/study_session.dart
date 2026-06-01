@@ -1,8 +1,8 @@
 class StudySession {
   final String id;
   final String titolo;
-  final String? courseId; // FK facoltativa verso Course
-  final String? examId; // FK facoltativa verso Exam
+  final String? courseId; // FK verso Course
+  final String? examId; // FK verso Exam
   final DateTime data;
   final int durataPianificata; // Minuti previsti
   final int? durataEffettiva; // Minuti effettivi 

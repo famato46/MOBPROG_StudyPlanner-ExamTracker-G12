@@ -16,7 +16,6 @@ class _StatsScreenState extends State<StatsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  // Ephemeral state simulatore
   double _votoIpotetico = 24;
   int _cfuIpotetici = 6;
 

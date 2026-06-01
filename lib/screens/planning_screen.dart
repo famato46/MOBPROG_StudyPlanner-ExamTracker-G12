@@ -13,10 +13,9 @@ import '../widgets/planning_calendar.dart';
 import '../widgets/planning_filter_section.dart';
 import '../widgets/planning_task_picker.dart';
 
-// Tipo di sessione del timer Focus.
+// Tipo di sessione del timer Focus
 enum FocusType { pomodoro, pausa }
 
-/// PlanningScreen 
 class PlanningScreen extends StatefulWidget {
   const PlanningScreen({super.key});
 
@@ -28,7 +27,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     with TickerProviderStateMixin {
   late final TabController _tabController;
   late final TabController _focusTabController;
-  late final TabController _sessioniTabController; // Controller per Giornaliera/Settimanale
+  late final TabController _sessioniTabController; 
 
   // 0 = Attività, 1 = Sessioni, 2 = Focus
   int _currentSegment = 0;
@@ -184,7 +183,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // HELPER 
+  // HELPER per conversione da Task a Map (per database)
   int _pesoPriorita(String priorita) {
     switch (priorita.toLowerCase()) {
       case 'alta':
@@ -269,11 +268,10 @@ class _PlanningScreenState extends State<PlanningScreen>
   Widget build(BuildContext context) {
     final provider = Provider.of<PlannerProvider>(context);
 
-    // DATI TAB SESSIONI
+    // DATI TAB SESSIONI 
     var sessioniPianificatore = provider.studySessions.where((s) {
       final tipo = s.tipo.toLowerCase();
-      // Escludiamo le sessioni generate dai timer per la schermata pianificatore
-      if (tipo == 'pomodoro' || tipo == 'pausa') return false;
+      if (tipo == 'pomodoro' || tipo == 'pausa') return false; // Per escludere le sessioni generate dai timer nel tab sessioni
 
       return _isVistaSettimanale
           ? _isSameWeek(s.data, _giornoPianificatore)
@@ -396,7 +394,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // TAB 1 — ATTIVITÀ 
+  // TAB 1 — Attività 
   Widget _buildTabOggi(PlannerProvider provider) {
     final oggi = DateTime.now();
     final oggiDate = DateTime(oggi.year, oggi.month, oggi.day);
@@ -487,7 +485,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // PIANIFICATORE 
+  // TAB 2 — Sessioni 
   Widget _buildTabPianificatore(
     List<StudySession> sessioni, PlannerProvider provider) {
     final sessioniInCorso = sessioni.where((s) => !s.completata).toList();
@@ -638,7 +636,7 @@ class _PlanningScreenState extends State<PlanningScreen>
     );
   }
 
-  // TAB 3 — FOCUS (Tecnica Pomodoro)
+  // TAB 3 — Focus (Tecnica Pomodoro)
   Widget _buildTabFocus(List<Task> pendingTasks) {
     final isPomodoro = _focusType == FocusType.pomodoro;
     final accent = isPomodoro ? AppColors.danger : AppColors.success;
@@ -819,8 +817,7 @@ class _PlanningScreenState extends State<PlanningScreen>
   }
 }
 
-// UI COMPONENTI AGGIUNTIVI (Quelli richiesti da mantenere internamente)
-
+// UI COMPONENTI AGGIUNTIVI
 class _HeaderLabel extends StatelessWidget {
   final String title;
   

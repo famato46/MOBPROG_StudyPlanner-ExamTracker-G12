@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/app_colors.dart'; // Manteniamo l'import per alcuni colori specifici come iosBlue
+import '../utils/app_colors.dart';
 
 class FormGroupHeader extends StatelessWidget {
   final String label;
@@ -197,7 +197,7 @@ class FormPickerRow extends StatelessWidget {
 
   return Material(
     color: Colors.transparent,
-    child: Column(                    // ← Column che avvolge tutto
+    child: Column(                
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(

@@ -55,12 +55,7 @@ class Course {
     };
   }
 
-  // Metodo copyWith per modifiche immutabili.
-  // Per i campi nullable usiamo un sentinel Object() come default
-  // così distinguiamo "parametro omesso" (mantieni il valore attuale)
-  // da "passato null" (azzera il campo). Senza questo, quando si
-  // cambia stato da 'superato' ad altro e si salva con votoOttenuto:null,
-  // il ?? mantiene il voto precedente invece di azzerarlo.
+  // Metodo copyWith 
   static const _unset = Object();
 
   Course copyWith({

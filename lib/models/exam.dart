@@ -1,7 +1,7 @@
 class Exam {
   final String id;
   final String titolo;
-  final String courseId; // FK verso Course (obbligatorio)
+  final String courseId; // FK verso Course 
   final DateTime data;
   final String tipologia; // scritto , orale, intercorso, consegna, progetto
   final String priorita; // alta, media, bassa
@@ -54,12 +54,12 @@ class Exam {
       'tipologia': tipologia,
       'priorita': priorita,
       'stato': stato,
-      'voto': voto, // Se voto è null, sqflite scriverà correttamente NULL sovrascrivendo l'intero
+      'voto': voto, 
       'note': note,
     };
   }
 
-  // Metodo copyWith aggiornato con clearVoto
+  // Metodo copyWith
   Exam copyWith({
     String? id,
     String? titolo,
@@ -69,7 +69,7 @@ class Exam {
     String? priorita,
     String? stato,
     int? voto,
-    bool clearVoto = false, // Parametro per forzare il null
+    bool clearVoto = false,
     String? note,
   }) {
     return Exam(
@@ -80,7 +80,6 @@ class Exam {
       tipologia: tipologia ?? this.tipologia,
       priorita: priorita ?? this.priorita,
       stato: stato ?? this.stato,
-      // Applica esplicitamente null se richiesto
       voto: clearVoto ? null : (voto ?? this.voto), 
       note: note ?? this.note,
     );

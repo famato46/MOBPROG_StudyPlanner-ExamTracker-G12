@@ -79,7 +79,7 @@ class _ExamsScreenState extends State<ExamsScreen>{
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Split per stato (Tab)
+          // Split per stato (Tab) 
           final programmati = provider.exams
               .where((e) =>
                   e.stato != 'completato' && e.stato != 'annullato')
@@ -199,7 +199,7 @@ class _ExamsScreenState extends State<ExamsScreen>{
   }
 }
 
-// HEADER titolo e menu
+// HEADER
 class _ExamsHeader extends StatelessWidget {
   final int total;
   final int visible;
@@ -320,7 +320,7 @@ class _ExamsHeader extends StatelessWidget {
   }
 }
 
-// SEARCH BAR (identica alla courses_screen ma con accent blu)
+// SEARCH BAR
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final bool hasQuery;
@@ -385,7 +385,7 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-// TAB BAR PER STATI (Programmati / Completati / Annullati)
+// TAB BAR PER STATI
 class _ExamTabBar extends StatelessWidget {
   final List<int> counts;
 
@@ -449,7 +449,7 @@ class _ExamTabBar extends StatelessWidget {
   }
 }
 
-// FILTER PILL ROW (orizzontale)
+// FILTER ROW
 class _FilterRow extends StatefulWidget {
   final List<(String, String)> options;
   final String current;
@@ -538,7 +538,7 @@ class _FilterRowState extends State<_FilterRow>
   }
 }
 
-// CARD ESAME (swipe-to-delete)
+// CARD ESAME con swipe-to-delete
 class _DismissibleExam extends StatelessWidget {
   final Exam exam;
   final String? corsoNome;
@@ -651,7 +651,6 @@ class _ExamCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Icona pastello con bg colorato in base allo stato
                 Container(
                   width: 44,
                   height: 44,
