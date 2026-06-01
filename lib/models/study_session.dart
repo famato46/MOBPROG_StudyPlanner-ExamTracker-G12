@@ -76,12 +76,5 @@ class StudySession {
     );
   }
 
-  // Helper per verificare se è oggi
-  bool get isOggi {
-    final oggi = DateTime.now();
-    return data.year == oggi.year &&
-           data.month == oggi.month &&
-           data.day == oggi.day;
-  }
   
 }

@@ -98,10 +98,5 @@ class Task {
     return differenza >= 0 && differenza <= 3;
   }
   
-  // Helper per verificare se è scaduta
-  bool get isScaduta {
-    if (scadenza == null) return false;
-    return scadenza!.isBefore(DateTime.now()) && !completata;
-  }
   
 }

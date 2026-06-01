@@ -98,6 +98,4 @@ class Course {
   // Helper per verificare se è superato
   bool get isSuperato => stato == 'superato';
   
-  // Helper per verificare se ha un voto
-  bool get hasVoto => votoOttenuto != null;
 }

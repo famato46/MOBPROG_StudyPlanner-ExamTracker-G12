@@ -115,17 +115,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Course.fromMap(maps[i]));
   }
 
-  Future<Course?> getCourseById(String id) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'courses',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isEmpty) return null;
-    return Course.fromMap(maps.first);
-  }
-
   Future<int> updateCourse(Course course) async {
     Database db = await database;
     return await db.update(
@@ -141,28 +130,6 @@ class DatabaseHelper {
     return await db.delete('courses', where: 'id = ?', whereArgs: [id]);
   }
 
-  // Query avanzate per i corsi
-  Future<List<Course>> getCoursesBySemester(String semestre) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'courses',
-      where: 'semestre = ?',
-      whereArgs: [semestre],
-    );
-    return List.generate(maps.length, (i) => Course.fromMap(maps[i]));
-  }
-
-  Future<List<Course>> getCoursesByStatus(String stato) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'courses',
-      where: 'stato = ?',
-      whereArgs: [stato],
-    );
-    return List.generate(maps.length, (i) => Course.fromMap(maps[i]));
-  }
-
-
   // CRUD ESAMI 
   Future<int> insertExam(Exam exam) async {
     Database db = await database;
@@ -172,28 +139,6 @@ class DatabaseHelper {
   Future<List<Exam>> getExams() async {
     Database db = await database;
     List<Map<String, dynamic>> maps = await db.query('exams', orderBy: 'data ASC');
-    return List.generate(maps.length, (i) => Exam.fromMap(maps[i]));
-  }
-
-  Future<Exam?> getExamById(String id) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'exams',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isEmpty) return null;
-    return Exam.fromMap(maps.first);
-  }
-
-  Future<List<Exam>> getExamsByCourse(String courseId) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'exams',
-      where: 'courseId = ?',
-      whereArgs: [courseId],
-      orderBy: 'data ASC',
-    );
     return List.generate(maps.length, (i) => Exam.fromMap(maps[i]));
   }
 
@@ -225,38 +170,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => StudySession.fromMap(maps[i]));
   }
 
-  Future<StudySession?> getStudySessionById(String id) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'study_sessions',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isEmpty) return null;
-    return StudySession.fromMap(maps.first);
-  }
-
-  Future<List<StudySession>> getStudySessionsByCourse(String courseId) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'study_sessions',
-      where: 'courseId = ?',
-      whereArgs: [courseId],
-      orderBy: 'data DESC',
-    );
-    return List.generate(maps.length, (i) => StudySession.fromMap(maps[i]));
-  }
-
-  Future<List<StudySession>> getStudySessionsByDate(DateTime date) async {
-    Database db = await database;
-    String dateStr = date.toIso8601String().split('T')[0]; // Solo la data
-    List<Map<String, dynamic>> maps = await db.query(
-      'study_sessions',
-      where: 'data LIKE ?',
-      whereArgs: ['$dateStr%'],
-    );
-    return List.generate(maps.length, (i) => StudySession.fromMap(maps[i]));
-  }
 
   Future<int> updateStudySession(StudySession session) async {
     Database db = await database;
@@ -286,37 +199,6 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
   }
 
-  Future<Task?> getTaskById(String id) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'tasks',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (maps.isEmpty) return null;
-    return Task.fromMap(maps.first);
-  }
-
-  Future<List<Task>> getTasksByCourse(String courseId) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'tasks',
-      where: 'courseId = ?',
-      whereArgs: [courseId],
-    );
-    return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
-  }
-
-  Future<List<Task>> getTasksByStatus(bool completata) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'tasks',
-      where: 'completata = ?',
-      whereArgs: [completata ? 1 : 0],
-    );
-    return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
-  }
-
   Future<int> updateTask(Task task) async {
     Database db = await database;
     return await db.update(
@@ -340,12 +222,6 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'unipath.db');
     await databaseFactory.deleteDatabase(path);
     _database = null;
-  }
-
-  // Chiude il database
-  Future<void> close() async {
-    Database db = await database;
-    await db.close();
   }
 
   // TRANSAZIONE POMODORO 

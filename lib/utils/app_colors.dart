@@ -35,36 +35,23 @@ class AppColors {
 
   static const Color pastelYellow = Color(0xFFFFEE8E);
   static const Color pastelYellowDeep = Color(0xFFB58F00);
-  static const Color pastelYellowLight = Color(0xFFFFF8DC);
 
   static const Color pastelLavender = Color(0xFFB8B0E8);
   static const Color pastelLavenderDeep = Color(0xFF6C5BC9);
-  static const Color pastelLavenderLight = Color(0xFFEEEDFE);
 
   // Alias semantici per sezione 
   static const Color home = pastelLavender;
-  static const Color homeDeep = pastelLavenderDeep;
-  static const Color homeLight = pastelLavenderLight;
 
   static const Color courses = pastelRed;
-  static const Color coursesDeep = pastelRedDeep;
-  static const Color coursesDark = pastelRedDeep;
-  static const Color coursesLight = pastelRedLight;
 
-  static const Color exams = pastelBlue;
+  //static const Color exams = pastelBlue;
   static const Color examsDeep = pastelBlueDeep;
-  static const Color examsDark = pastelBlueDeep;
-  static const Color examsLight = pastelBlueLight;
 
   static const Color planning = pastelGreen;
   static const Color planningDeep = pastelGreenDeep;
-  static const Color planningDark = pastelGreenDeep;
-  static const Color planningLight = pastelGreenLight;
 
   static const Color stats = pastelYellow;
   static const Color statsDeep = pastelYellowDeep;
-  static const Color statsDark = pastelYellowDeep;
-  static const Color statsLight = pastelYellowLight;
 
   // Colore Blu usato per la tab bar selezionata e per i link/CTA testuali
   static const Color iosBlue = Color(0xFF007AFF);
@@ -74,10 +61,6 @@ class AppColors {
   static const Color warning = Color(0xFFFF9500);
   static const Color danger = Color(0xFFFF3B30);
   static const Color info = Color(0xFF007AFF);
-
-  // Header riquadrati 
-  static const Color headerBg = Color(0xFFF1EFE8);
-  static const Color headerText = Color(0xFF444441);
 
   // Helper: colore per priorità 
   static Color priorita(String p) {
